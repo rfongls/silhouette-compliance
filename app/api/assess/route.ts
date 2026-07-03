@@ -18,13 +18,14 @@ export async function POST(req: Request) {
   const totalChars = docs.reduce((n: number, d: any) => n + d.text.length, 0);
   if (totalChars > MAX_DOC_CHARS) return NextResponse.json({ error: "Document payload exceeds cost guard" }, { status: 413 });
   const accountId = guard.session.user.accountId;
+  const isAdmin = guard.session.user.role === "admin";
   const industry = String(body.industry || "health-center");
   const standards = Array.isArray(body.standards) && body.standards.length ? body.standards.map(String).slice(0, 6) : defaultStandards(industry);
 
   try {
     const created = await prisma.$transaction(async (tx) => {
-      await consumeEntitlementTx(tx, accountId, EntKind.ASSESSMENT_CREDIT, 1);
-      const ledger = await tx.usageLedger.create({ data: { accountId, kind: "assessment", status: "succeeded", orgsBilled: 1, amountCents: Number(process.env.ASSESSMENT_RATE_CENTS || 25000) } });
+      if (!isAdmin) await consumeEntitlementTx(tx, accountId, EntKind.ASSESSMENT_CREDIT, 1);
+      const ledger = await tx.usageLedger.create({ data: { accountId, kind: "assessment", status: isAdmin ? "admin_comped" : "succeeded", orgsBilled: 1, amountCents: Number(process.env.ASSESSMENT_RATE_CENTS || 25000) } });
       const assessment = await tx.assessment.create({ data: { accountId, orgId: String(body.orgId || body.orgName || "org"), orgName: body.orgName ? String(body.orgName) : undefined, industry, status: "RUNNING", ledgerId: ledger.id } });
       return { assessment, ledger };
     });

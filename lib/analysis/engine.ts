@@ -1,6 +1,7 @@
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/analysis/prompts";
 import { callAnthropicJson, type ModelUsage } from "@/lib/analysis/anthropic";
 import { defaultStandards } from "@/lib/analysis/standards";
+import { demoOrgName } from "@/lib/demo";
 import { sanitizeForExport } from "@/lib/sanitize";
 
 export type AssessInput = { orgName?: string; industry: string; standards?: string[]; documents: { name: string; text: string }[]; controls: unknown[]; boardCite?: string };
@@ -27,11 +28,12 @@ export function normalizeResult(raw: unknown, fallbackOrg?: string) {
   return r;
 }
 
-export function demoAssessment(orgName = "Kalihi Palama Health Center", industry = "health-center") {
+export function demoAssessment(_orgName = "", industry = "health-center") {
+  const safeOrgName = demoOrgName(industry);
   return normalizeResult({
-    organization_name: orgName,
+    organization_name: safeOrgName,
     document_type: "Incident Response Plan",
-    document_name: `${orgName} - Incident Response Plan`,
+    document_name: `${safeOrgName} - Incident Response Plan`,
     entity_type: "CE",
     overall_posture: "Partially Compliant",
     compliance_score: 74,
@@ -52,5 +54,5 @@ export function demoAssessment(orgName = "Kalihi Palama Health Center", industry
     ] },
     _demo: true,
     _industry: industry
-  }, orgName);
+  }, safeOrgName);
 }

@@ -1,0 +1,7 @@
+PassengerEnabled on
+PassengerAppType node
+PassengerNodejs /opt/alt/alt-nodejs22/root/usr/bin/node
+PassengerAppRoot /home/u706122952/domains/complianceapp.silhouettellc.com/public_html
+PassengerStartupFile server.js
+PassengerAppEnv production
+PassengerFriendlyErrorPages on

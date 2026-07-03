@@ -8,7 +8,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if ("response" in guard) return guard.response;
   const engagement = await prisma.sraEngagement.findFirst({ where: { id: params.id, accountId: guard.session.user.accountId } });
   if (!engagement) return NextResponse.json({ error: "Engagement not found" }, { status: 404 });
-  const { roadmap } = await draftRoadmap((engagement.findings as any[]) || []);
+  const { roadmap, usage } = await draftRoadmap((engagement.findings as any[]) || []);
   await prisma.sraEngagement.update({ where: { id: engagement.id }, data: { roadmap: roadmap as any, stage: "ROADMAP" } });
+  await prisma.usageLedger.create({ data: { accountId: guard.session.user.accountId, kind: "sra_roadmap", status: guard.session.user.role === "admin" ? "admin_comped" : "succeeded", inputTokens: usage.inputTokens, outputTokens: usage.outputTokens } }).catch(() => undefined);
   return NextResponse.json({ roadmap });
 }

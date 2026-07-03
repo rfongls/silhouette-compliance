@@ -9,8 +9,9 @@ export async function POST() {
   if ("response" in guard) return guard.response;
   try {
     await prisma.$transaction(async (tx) => {
-      await consumeEntitlementTx(tx, guard.session.user.accountId, EntKind.PROPOSAL_CREDIT, 1);
-      await tx.usageLedger.create({ data: { accountId: guard.session.user.accountId, kind: "proposal", status: "succeeded", amountCents: Number(process.env.PROPOSAL_RATE_CENTS || 9900) } });
+      const isAdmin = guard.session.user.role === "admin";
+      if (!isAdmin) await consumeEntitlementTx(tx, guard.session.user.accountId, EntKind.PROPOSAL_CREDIT, 1);
+      await tx.usageLedger.create({ data: { accountId: guard.session.user.accountId, kind: "proposal", status: isAdmin ? "admin_comped" : "succeeded", amountCents: Number(process.env.PROPOSAL_RATE_CENTS || 9900) } });
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

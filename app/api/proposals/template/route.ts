@@ -31,8 +31,10 @@ export async function GET(req: Request) {
   if (!demo) {
     const session = await auth();
     if (!session?.user?.accountId) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    const balance = await getEntitlementBalance(session.user.accountId, EntKind.PROPOSAL_CREDIT);
-    if (balance <= 0) return NextResponse.json({ error: "Confirmed proposal credit required" }, { status: 402 });
+    if (session.user.role !== "admin") {
+      const balance = await getEntitlementBalance(session.user.accountId, EntKind.PROPOSAL_CREDIT);
+      if (balance <= 0) return NextResponse.json({ error: "Confirmed proposal credit required" }, { status: 402 });
+    }
   }
   const file = path.join(process.cwd(), "uploads", "silhouette-proposal-template.html");
   const html = await fs.readFile(file, "utf8");

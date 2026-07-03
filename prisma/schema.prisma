@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BoardStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AssessStatus {
+  PENDING
+  RUNNING
+  DELIVERED
+  FAILED
+  REFUNDED
+}
+
+enum EntKind {
+  ASSESSMENT_CREDIT
+  SRA_CREDIT
+  PROPOSAL_CREDIT
+}
+
+enum EntStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+enum SraStage {
+  SCOPE
+  INVENTORY
+  EVIDENCE
+  FINDINGS
+  ROADMAP
+  REPORT
+}
+
+enum SraStatus {
+  ACTIVE
+  DELIVERED
+  ARCHIVED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("customer")
+  accountId     String    @default(cuid())
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ControlBoard {
+  id           String      @id @default(cuid())
+  industry     String
+  standardKey  String
+  version      Int
+  status       BoardStatus
+  controls     Json
+  controlCount Int
+  publishedAt  DateTime?
+  createdAt    DateTime    @default(now())
+
+  @@index([industry, standardKey, status])
+}
+
+model Assessment {
+  id         String       @id @default(cuid())
+  orgId      String
+  orgName    String?
+  accountId  String
+  industry   String
+  status     AssessStatus
+  score      Int?
+  posture    String?
+  result     Json?
+  boardCite  String?
+  refineUsed Boolean      @default(false)
+  ledgerId   String?      @unique
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  ledger     UsageLedger? @relation(fields: [ledgerId], references: [id])
+
+  @@index([accountId, createdAt])
+  @@index([accountId, status])
+}
+
+model UsageLedger {
+  id           String      @id @default(cuid())
+  accountId    String
+  kind         String
+  status       String
+  assessmentId String?     @unique
+  orgsBilled   Int?
+  amountCents  Int?
+  inputTokens  Int?
+  outputTokens Int?
+  stripeRef    String?
+  createdAt    DateTime    @default(now())
+  assessment   Assessment?
+
+  @@index([accountId, kind, status])
+  @@index([stripeRef])
+}
+
+model Entitlement {
+  id        String    @id @default(cuid())
+  accountId String
+  kind      EntKind
+  status    EntStatus @default(ACTIVE)
+  balance   Int?
+  renewsAt  DateTime?
+  stripeRef String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([accountId, kind])
+}
+
+model SraEngagement {
+  id        String        @id @default(cuid())
+  accountId String
+  orgName   String
+  industry  String
+  stage     SraStage      @default(SCOPE)
+  status    SraStatus     @default(ACTIVE)
+  scope     Json?
+  inventory Json?
+  findings  Json?
+  roadmap   Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  evidence  SraEvidence[]
+
+  @@index([accountId, status])
+}
+
+model SraEvidence {
+  id           String        @id @default(cuid())
+  engagementId String
+  kind         String
+  filename     String?
+  parsed       Json?
+  storageKey   String?
+  createdAt    DateTime      @default(now())
+  engagement   SraEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([engagementId])
+}

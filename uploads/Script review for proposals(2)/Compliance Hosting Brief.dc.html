@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{margin:0;background:#eef1ef;font-family:'DM Sans',sans-serif;color:#1a1a1a;}
+.doc{box-sizing:border-box;max-width:8.5in;margin:0 auto;background:#fff;padding:64px clamp(24px,5vw,0.85in) 96px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.doc-frame{width:100%;border-collapse:collapse;}
+.doc-frame td{padding:0;}
+.hdr-space,.ftr-space{display:none;}
+h1,h2,h3{text-wrap:balance;}
+p,li{text-wrap:pretty;}
+.kicker{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#2d6a4f;margin-bottom:14px;}
+h1.title{font-family:'EB Garamond',Georgia,serif;font-size:38px;font-weight:600;line-height:1.12;color:#111;margin-bottom:10px;}
+.sub{font-size:15px;color:#5d5d5d;line-height:1.6;max-width:6.2in;}
+.meta{font-family:'DM Mono',monospace;font-size:10.5px;color:#999;margin-top:14px;letter-spacing:.04em;}
+.rule{height:3px;background:#2d6a4f;width:64px;margin:26px 0 0;}
+h2.sec{font-family:'EB Garamond',Georgia,serif;font-size:23px;font-weight:600;color:#1f4e3b;margin:38px 0 4px;}
+h2.sec .n{font-family:'DM Mono',monospace;font-size:13px;color:#2d6a4f;margin-right:10px;letter-spacing:.05em;}
+.lead{font-size:14px;color:#555;line-height:1.62;margin:8px 0 16px;}
+h3.sub3{font-size:14.5px;font-weight:700;color:#111;margin:18px 0 6px;}
+p.body{font-size:14px;line-height:1.62;color:#2a2a2a;margin-bottom:11px;}
+ul.body,ol.body{margin:6px 0 14px;padding-left:20px;}
+ul.body li,ol.body li{font-size:14px;line-height:1.6;color:#2a2a2a;margin-bottom:6px;}
+strong{color:#111;font-weight:600;}
+code{font-family:'DM Mono',monospace;font-size:12.5px;background:#f0f3f1;border:1px solid #e1e8e4;border-radius:4px;padding:1px 5px;color:#1f4e3b;}
+.callout{border:1px solid #cfe0d8;background:#f3f7f5;border-left:4px solid #2d6a4f;border-radius:8px;padding:14px 18px;margin:16px 0;}
+.callout .lbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#2d6a4f;margin-bottom:5px;}
+.callout p{font-size:13.5px;line-height:1.58;color:#244;margin:0;}
+table.spec{width:100%;border-collapse:collapse;margin:10px 0 16px;}
+table.spec th{text-align:left;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;border-bottom:2px solid #111;padding:7px 8px;}
+table.spec td{font-size:13px;line-height:1.5;color:#2a2a2a;border-bottom:1px solid #eef1ef;padding:9px 8px;vertical-align:top;}
+table.spec td.k{font-weight:600;color:#111;white-space:nowrap;}
+.pill{display:inline-block;font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;}
+.have{background:rgba(22,101,52,.12);color:#166534;}
+.build{background:rgba(146,64,14,.12);color:#92400e;}
+.codeblock{font-family:'DM Mono',monospace;font-size:11.5px;line-height:1.55;background:#1a2420;color:#cfe0d8;border-radius:9px;padding:16px 18px;margin:12px 0 16px;white-space:pre;overflow-x:auto;}
+.codeblock .c{color:#7fa896;}
+.codeblock .k{color:#9ec5b4;}
+.phase{border:1px solid #e1e8e4;border-radius:10px;padding:14px 16px;margin-bottom:10px;border-top:3px solid #2d6a4f;}
+.phase .ph-h{font-size:14px;font-weight:700;color:#111;margin-bottom:4px;}
+.phase .ph-h .tag{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#2d6a4f;margin-left:8px;}
+.phase p{font-size:13px;color:#555;line-height:1.55;margin:0;}
+@page{size:letter;margin:0;}
+@media print{
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  html,body{margin:0;padding:0;background:#fff;}
+  .doc{max-width:none!important;margin:0!important;padding:0 0.75in!important;box-shadow:none!important;}
+  .hdr-space,.ftr-space{display:table-cell;height:0.7in;}
+  h2.sec,h3.sub3,h1,h2,h3,h4{break-after:avoid;}
+  .callout,.codeblock,.phase,table.spec,tr,figure{break-inside:avoid;}
+  p,li{orphans:3;widows:3;}
+}
+</style>
+</helmet>
+<main class="doc">
+  <table class="doc-frame" role="presentation">
+    <thead><tr><td class="hdr-space"></td></tr></thead>
+    <tbody><tr><td>
+
+      <div class="kicker">Silhouette Compliance · Technical Brief</div>
+      <h1 class="title">Compliance Gap Analyzer — Hosting &amp; Integration Requirements</h1>
+      <div class="sub">What it takes to move the analyzer and portal from standalone HTML prototypes to a hosted module inside your existing Next.js / Prisma / PostgreSQL application — without compromising the stateless, no-data-stored posture.</div>
+      <div class="meta">Prepared June 26, 2026 · Target stack: Node / Next.js · Prisma ORM · PostgreSQL · Stripe · Anthropic API</div>
+      <div class="rule"></div>
+
+      <h2 class="sec"><span class="n">00</span>Context</h2>
+      <p class="lead">Three browser-based prototypes exist today. The goal is to host the compliance pieces as a feature module within your already-built premiere application, reusing its auth, database, and infrastructure rather than standing up a separate product.</p>
+      <table class="spec">
+        <thead><tr><th>Asset</th><th>State</th><th>Role in hosted version</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Gap Analyzer engine</td><td><span class="pill have">Have</span></td><td>Core logic. Calls the LLM directly from the browser today — must be repointed at a server proxy.</td></tr>
+          <tr><td class="k">Portal shell</td><td><span class="pill have">Have</span></td><td>Customer dashboard + admin control-board UI. Currently simulated; becomes the front-end of the module.</td></tr>
+          <tr><td class="k">Server / API</td><td><span class="pill build">Build</span></td><td>Next.js route handlers + Prisma. Does not exist yet — the central work.</td></tr>
+          <tr><td class="k">Control-board store</td><td><span class="pill build">Build</span></td><td>Versioned, admin-published control sets used for scoring. Moves from hardcoded JS into Postgres.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <div class="lbl">Guiding constraint</div>
+        <p>No uploaded documents and no patient/client data are ever persisted. The database stores accounts, billing, control boards, and (optionally) generated results — never the source files. The document is held in memory only for the duration of a single analysis request.</p>
+      </div>
+
+      <h2 class="sec"><span class="n">01</span>Architecture at a glance</h2>
+      <p class="lead">A thin, stateless request path. The browser never holds the API key and never talks to the LLM directly. Every billable action is gated server-side before any token is spent.</p>
+      <div class="codeblock"><span class="c">// Request path for one assessment</span>
+Browser (portal)
+   │  upload doc + industry  <span class="c">(multipart, in-memory)</span>
+   ▼
+Next.js route handler  <span class="k">/api/assess</span>
+   │  1. verify session + role        <span class="c">(auth)</span>
+   │  2. check funded / decrement      <span class="c">(Prisma tx)</span>
+   │  3. load published control board  <span class="c">(Postgres)</span>
+   │  4. call Anthropic w/ server key   <span class="c">(ZDR tier)</span>
+   │  5. persist RESULT only            <span class="c">(never the file)</span>
+   ▼
+Response → render report → export PDF/JSON</div>
+
+      <h2 class="sec"><span class="n">02</span>The proxy — the one non-negotiable</h2>
+      <p class="lead">Today the analyzer ships the Anthropic key to the browser. In production that key lives only on the server, and the route handler is what makes "pay before run" enforceable — client JS can be edited, a server check cannot.</p>
+      <ul class="body">
+        <li><strong>Holds the key server-side</strong> via environment variables; never exposed to the client bundle.</li>
+        <li><strong>Enforces the gate:</strong> no funded balance or confirmed payment → returns <code>402</code> and spends nothing.</li>
+        <li><strong>Meters tokens</strong> from the provider response and writes them to the usage ledger.</li>
+        <li><strong>Streams or returns</strong> the structured result; the document body is discarded when the request ends.</li>
+      </ul>
+      <div class="callout">
+        <div class="lbl">Provider setting, not code</div>
+        <p>Enable the Anthropic API zero-data-retention (ZDR) tier on the production account so prompts and outputs are not retained provider-side. This is what makes the "we store nothing" claim true end-to-end, not just on your servers.</p>
+      </div>
+
+      <h2 class="sec"><span class="n">03</span>Data model (Prisma)</h2>
+      <p class="lead">Reuse the existing <code>User</code> / <code>Organization</code> models from the premiere app; add the compliance-specific models below. Note the deliberate absence of any document or file model.</p>
+      <div class="codeblock">model ControlBoard {
+  id          String   <span class="k">@id @default(cuid())</span>
+  industry    String   <span class="c">// "health-center", "financial", ...</span>
+  standardKey String   <span class="c">// "NIST", "PCIDSS", ...</span>
+  version     Int
+  status      BoardStatus <span class="c">// DRAFT | PUBLISHED | ARCHIVED</span>
+  controls    Json     <span class="c">// the enumerated control set</span>
+  controlCount Int
+  publishedAt DateTime?
+  createdAt   DateTime <span class="k">@default(now())</span>
+  <span class="k">@@index</span>([industry, standardKey, status])
+}
+
+model Assessment {
+  id          String   <span class="k">@id @default(cuid())</span>
+  orgId       String   <span class="c">// the assessed org (customer's client)</span>
+  accountId   String   <span class="c">// billing account / team</span>
+  industry    String
+  status      AssessStatus <span class="c">// PENDING|RUNNING|DELIVERED|FAILED|REFUNDED</span>
+  score       Int?
+  posture     String?
+  result      Json?    <span class="c">// findings, breakdown, roadmap — NOT the source doc</span>
+  boardCite   String?  <span class="c">// "PCI DSS 4.0.1 · rev 2026-05"</span>
+  refineUsed  Boolean  <span class="k">@default(false)</span>
+  ledgerId    String?  <span class="c">// hard link to the charge</span>
+  createdAt   DateTime <span class="k">@default(now())</span>
+}
+
+model UsageLedger {
+  id          String   <span class="k">@id @default(cuid())</span>
+  accountId   String
+  kind        String   <span class="c">// "assessment" | "refine" | "purchase" | "refund"</span>
+  status      String   <span class="c">// "succeeded" | "failed" | "refunded"</span>
+  assessmentId String? <span class="c">// hard link to the delivered result</span>
+  orgsBilled  Int?
+  amountCents Int?
+  inputTokens Int?
+  outputTokens Int?
+  stripeRef   String?
+  createdAt   DateTime <span class="k">@default(now())</span>
+}</div>
+      <p class="body">Declare the datasource as PostgreSQL and add the two enums the models reference. <code>Json</code> compiles to Postgres <code>jsonb</code>, <code>DateTime</code> to <code>timestamp</code>, and each enum to a native Postgres <code>ENUM</code> type.</p>
+      <div class="codeblock">datasource db {
+  provider = <span class="k">"postgresql"</span>
+  url      = env(<span class="k">"DATABASE_URL"</span>)
+}
+
+enum BoardStatus  { DRAFT PUBLISHED ARCHIVED }
+enum AssessStatus { PENDING RUNNING DELIVERED FAILED REFUNDED }</div>
+
+      <h3 class="sub3">Auth models (Auth.js + Prisma adapter)</h3>
+      <p class="body">Google and Microsoft sign-in is OIDC, not SAML — the light kind of SSO. Auth.js (NextAuth) ships Google and Microsoft Entra providers plus a Prisma adapter that writes identity straight into the same Postgres. Add its standard models; map your <code>customer</code> / <code>admin</code> role and account/team onto <code>User</code>.</p>
+      <div class="codeblock">model User {
+  id        String  <span class="k">@id @default(cuid())</span>
+  email     String  <span class="k">@unique</span>
+  name      String?
+  image     String?
+  role      String  <span class="k">@default("customer")</span>  <span class="c">// customer | admin</span>
+  accountId String?  <span class="c">// billing account / team</span>
+  accounts  Account[]
+  sessions  Session[]
+}
+model Account {       <span class="c">// OAuth link (Google / Microsoft) — Auth.js</span>
+  id                String  <span class="k">@id @default(cuid())</span>
+  userId            String
+  provider          String  <span class="c">// "google" | "microsoft-entra-id"</span>
+  providerAccountId String
+  access_token      String?
+  user              User    <span class="k">@relation</span>(fields: [userId], references: [id], onDelete: Cascade)
+  <span class="k">@@unique</span>([provider, providerAccountId])
+}
+model Session {
+  id           String   <span class="k">@id @default(cuid())</span>
+  sessionToken String   <span class="k">@unique</span>
+  userId       String
+  expires      DateTime
+  user         User     <span class="k">@relation</span>(fields: [userId], references: [id], onDelete: Cascade)
+}</div>
+      <div class="callout">
+        <div class="lbl">Integrating into the primary app DB</div>
+        <p>These models live in the same PostgreSQL instance as the premiere app. If a <code>User</code> already exists there, extend it with <code>role</code> / <code>accountId</code> instead of duplicating, and add only the compliance models (<code>ControlBoard</code>, <code>Assessment</code>, <code>UsageLedger</code>) plus Auth.js's <code>Account</code> / <code>Session</code>. Run as a single additive Prisma migration.</p>
+      </div>
+
+      <h2 class="sec"><span class="n">04</span>API surface (Next.js route handlers)</h2>
+      <table class="spec">
+        <thead><tr><th>Route</th><th>Who</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td class="k">POST /api/assess</td><td>Customer</td><td>Gate → run one org's analysis against the published board → persist result.</td></tr>
+          <tr><td class="k">POST /api/assess/refine</td><td>Customer</td><td>One cached refinement per assessment; rejects if <code>refineUsed</code>.</td></tr>
+          <tr><td class="k">POST /api/checkout</td><td>Customer</td><td>Create Stripe session for (rate × orgs) or a prepaid pack.</td></tr>
+          <tr><td class="k">POST /api/webhooks/stripe</td><td>Stripe</td><td>Source of truth for payment; credits the ledger / unlocks the run.</td></tr>
+          <tr><td class="k">GET /api/assessments</td><td>Customer</td><td>Dashboard history for the account.</td></tr>
+          <tr><td class="k">POST /api/admin/boards/fetch</td><td>Admin</td><td>Fetch latest controls for a standard → DRAFT version.</td></tr>
+          <tr><td class="k">POST /api/admin/boards/publish</td><td>Admin</td><td>Promote a draft to the live PUBLISHED version.</td></tr>
+          <tr><td class="k">GET /api/admin/boards/export</td><td>Admin</td><td>Snapshot export (the weekly/monthly archive).</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="sec"><span class="n">05</span>Auth, roles &amp; tenancy</h2>
+      <p class="lead">Inherit from the premiere app. Two roles drive the UI and the route guards.</p>
+      <ul class="body">
+        <li><strong>Customer</strong> — queue, pay, run, view history, one refine per report, export. Scoped to their account/team.</li>
+        <li><strong>Admin</strong> — control-board fetch / publish / versioning, snapshot export, per-org rate, accounts &amp; usage. Every admin route re-checks the role server-side.</li>
+        <li><strong>Tenancy</strong> — bill and scope by account/team (a health system or association), not individual users, so a team shares balance and report history. SSO (Google / Microsoft) for enterprise buyers.</li>
+      </ul>
+
+      <h2 class="sec"><span class="n">06</span>Payments &amp; gating</h2>
+      <p class="lead">Flat, per-organization pricing makes "fund first" clean: collect the full amount up front, then run.</p>
+      <ul class="body">
+        <li><strong>Unit:</strong> one assessment = one organization (any number of its documents), one report, all exports, one refine.</li>
+        <li><strong>Two flows:</strong> pay-at-run (one-time Stripe PaymentIntent) and prepaid packs (3 / 10) that decrement a ledger balance.</li>
+        <li><strong>Trust the webhook,</strong> never the browser, as proof of payment. The run unlocks on <code>payment_intent.succeeded</code>.</li>
+        <li><strong>Cost guard:</strong> cap document size and standard count per run so worst-case token spend is bounded and the flat price stays high-margin.</li>
+        <li><strong>Auto-refund</strong> the unit on a failed run so a broken job is never charged.</li>
+      </ul>
+
+      <h2 class="sec"><span class="n">07</span>Billing history, receipts &amp; dispute protection</h2>
+      <p class="lead">The defense against "I was billed but nothing ran" or "I couldn't save it." Every charge is structurally tied to a delivered or refunded result, and every result stays re-downloadable.</p>
+      <h3 class="sub3">Two records, always linked</h3>
+      <ul class="body">
+        <li><strong>Billing ledger</strong> — append-only, immutable: timestamp, account, amount, org count, Stripe reference, token usage, and status. This is the audit evidence.</li>
+        <li><strong>Report history</strong> — customer-facing list: org, date, score, board version, status, and a re-download link for the report / deck / JSON.</li>
+        <li><strong>Hard link</strong> — each <code>UsageLedger</code> charge references its <code>Assessment</code> and vice versa, so a charge can never exist without a delivered or refunded result attached.</li>
+      </ul>
+      <h3 class="sub3">Persist the result, not the document</h3>
+      <p class="body">Store the generated <em>output</em> (findings, score, roadmap) so it is always retrievable from History — surviving a closed tab, a blocked download, or a new device. Auto-trigger the download on completion as a convenience, but the durable retained copy is the real protection. The source document is still never stored.</p>
+      <div class="callout">
+        <div class="lbl">Status lifecycle closes the gap</div>
+        <p>An assessment moves <code>pending → running → delivered</code>, or <code>failed → refunded</code>. Payment is captured only after the run unlocks (webhook-confirmed), and a failed run auto-refunds and shows as <code>refunded</code> in History. There is no state in which a charge sits next to a missing report.</p>
+      </div>
+      <h3 class="sub3">Privacy statement, stated precisely</h3>
+      <p class="body">"We never store your uploaded documents. Generated reports are retained in your account so you can re-download them, and you can delete them at any time." This keeps the strong posture while making the history feature honest.</p>
+
+      <h2 class="sec"><span class="n">08</span>Control boards — store, version, refresh</h2>
+      <p class="lead">The single biggest cost lever. Pre-fetch and cache control sets once, shared across all customers, instead of paying to enumerate them per run.</p>
+      <ul class="body">
+        <li><strong>Reference data, not customer data</strong> — public framework controls (PCI, NIST, …). Storing them does not touch the no-data-stored posture.</li>
+        <li><strong>Admin workflow:</strong> Fetch → DRAFT → review → Publish as version N. Customers always score against the latest PUBLISHED version.</li>
+        <li><strong>Versioned + date-stamped</strong> so a report can cite "PCI DSS 4.0.1, control set rev. 2026-05" and a past assessment is reproducible.</li>
+        <li><strong>Scheduled snapshot export</strong> (weekly / monthly cron) writes an archived copy — your durable record and the admin-export feature already designed in the portal.</li>
+      </ul>
+
+      <h2 class="sec"><span class="n">09</span>Local testing (before hosting)</h2>
+      <p class="lead">The entire flow — account creation, SSO, purchase, run, history — runs on localhost. Nothing needs to be deployed to validate the model.</p>
+      <table class="spec">
+        <thead><tr><th>Piece</th><th>Local setup</th></tr></thead>
+        <tbody>
+          <tr><td class="k">PostgreSQL</td><td>Docker <code>postgres:16</code> (or Postgres.app). Point <code>DATABASE_URL</code> at <code>localhost:5432</code>; <code>prisma migrate dev</code> builds the tables, <code>prisma studio</code> shows rows live.</td></tr>
+          <tr><td class="k">Next.js app</td><td>Runs on <code>localhost:3000</code> — the portal + analyzer + route handlers together.</td></tr>
+          <tr><td class="k">Google / MS SSO</td><td>Both allow <code>localhost</code> redirect URIs. Register an OAuth app in Google Cloud Console and Azure/Entra; paste client ID + secret into Auth.js. Full sign-in works locally.</td></tr>
+          <tr><td class="k">Stripe</td><td>Test mode + Stripe CLI forwards webhooks to <code>localhost</code>, so the pay → webhook → unlock → ledger path is fully exercisable offline.</td></tr>
+          <tr><td class="k">Anthropic</td><td>Real API key, called server-side from localhost. Use a low-cost model while testing.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <div class="lbl">Suggested .env.local</div>
+        <p><code>DATABASE_URL</code>, <code>NEXTAUTH_SECRET</code>, <code>NEXTAUTH_URL=http://localhost:3000</code>, <code>GOOGLE_CLIENT_ID/SECRET</code>, <code>MICROSOFT_ENTRA_ID_CLIENT_ID/SECRET/ISSUER</code>, <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>ANTHROPIC_API_KEY</code>, <code>ASSESSMENT_RATE_CENTS</code>.</p>
+      </div>
+
+      <h2 class="sec"><span class="n">10</span>Productionizing the prototypes</h2>
+      <ul class="body">
+        <li><strong>Analyzer:</strong> replace direct Anthropic calls with <code>fetch('/api/assess')</code>; remove the client-side key entirely.</li>
+        <li><strong>Portal:</strong> swap simulated data for real route calls; move localStorage state into Postgres-backed queries; keep the existing UI/brand.</li>
+        <li><strong>Exports:</strong> the HTML report / deck / JSON generators port as-is; optionally move PDF rendering server-side for consistency.</li>
+        <li><strong>Industries &amp; standards:</strong> the existing config maps cleanly onto <code>ControlBoard.industry</code> / <code>standardKey</code>.</li>
+      </ul>
+
+      <h2 class="sec"><span class="n">11</span>Phased build</h2>
+      <div class="phase"><div class="ph-h">Phase 1 — Accounts + take money safely<span class="tag">MVP</span></div><p>Auth.js with Google + Microsoft (OIDC) sign-in, the proxy route, Stripe one-time charge, and webhook gating. Light SSO is in from the start to cut signup friction; SAML/SCIM stay demand-triggered in Phase 4.</p></div>
+      <div class="phase"><div class="ph-h">Phase 2 — Consistent scoring<span class="tag">Core</span></div><p>ControlBoard model + admin fetch/publish/versioning + scheduled snapshot export. Removes per-run fetch cost.</p></div>
+      <div class="phase"><div class="ph-h">Phase 3 — Repeat-buyer convenience<span class="tag">Growth</span></div><p>Assessment + billing history with re-downloadable results, prepaid packs, immutable usage ledger, status lifecycle with auto-refund, dashboard wired to real data.</p></div>
+      <div class="phase"><div class="ph-h">Phase 4 — Enterprise readiness<span class="tag">Scale</span></div><p>Team accounts, SAML SSO + SCIM (demand-triggered), sales-assisted invoicing for gov / finance buyers. The operator-run workflow continues in parallel throughout.</p></div>
+
+      <div class="callout">
+        <div class="lbl">Bottom line</div>
+        <p>The true MVP is the <strong>proxy + auth + Stripe</strong> trio — everything else is enhancement layered on the same stateless path. Because the premiere app already provides Postgres, Prisma, and auth, the compliance module is largely new route handlers, three Prisma models, and repointing two existing front-ends.</p>
+      </div>
+
+    </td></tr></tbody>
+    <tfoot><tr><td class="ftr-space"></td></tr></tfoot>
+  </table>
+</main>
+</x-dc>
+</body>
+</html>

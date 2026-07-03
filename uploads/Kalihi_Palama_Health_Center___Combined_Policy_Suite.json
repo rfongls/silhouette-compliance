@@ -1,0 +1,1994 @@
+{
+  "organization_name": "Kalihi Palama Health Center",
+  "document_name": "Kalihi Palama Health Center - Combined Policy Suite",
+  "document_type": "Combined Gap Analysis",
+  "overall_posture": "Non-Compliant",
+  "overall_score": 22,
+  "compliance_score": 22,
+  "posture_summary": "Kalihi Palama Health Center exhibits critical compliance gaps across HIPAA, HITECH, and NIST SP 800-53 controls, with no breach notification procedures, no risk analysis, no business associate agreements, and no contingency or disaster recovery plans documented. The organization's incident response documents address operational steps for individual scenarios but lack the foundational compliance framework required of a covered entity, creating substantial regulatory exposure including potential civil money penalties. Immediate remediation is required across notification obligations, risk management, workforce training, and contingency planning to achieve a baseline compliant posture.",
+  "entity_type": "CE",
+  "ep_provider_type": "",
+  "ep_condition_level_risk": false,
+  "score_breakdown": {
+    "nist": {
+      "score": 43,
+      "controls_reviewed": 44,
+      "controls_met": 13,
+      "controls_partial": 12,
+      "controls_failed": 19
+    },
+    "hipaa": {
+      "score": 15,
+      "controls_reviewed": 33,
+      "controls_met": 3,
+      "controls_partial": 4,
+      "controls_failed": 26
+    },
+    "hitech": {
+      "score": 9,
+      "controls_reviewed": 16,
+      "controls_met": 0,
+      "controls_partial": 3,
+      "controls_failed": 13
+    }
+  },
+  "gaps": [
+    {
+      "control_id": "13400",
+      "control_name": "HITECH Breach Notification Requirement",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Covered entities must notify individuals, HHS, and media of breaches as defined under HITECH.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "HITECH breach notification obligations are entirely absent; only FBI and insurance are notified.",
+      "gap_description": "HITECH breach notification obligations are entirely absent; only FBI and insurance are notified.",
+      "_sources": [
+        "Ransomware.pdf"
+      ]
+    },
+    {
+      "control_id": "13401",
+      "control_name": "HITECH Security Requirements",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Business associates must comply with HIPAA Security Rule safeguards under HITECH Section 13401.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "Entity type is unknown; no BAA references, security safeguard documentation, or HITECH compliance program is present.",
+      "gap_description": "Entity type is unknown; no BAA references, security safeguard documentation, or HITECH compliance program is present.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "13402",
+      "control_name": "Breach Notification Requirements",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Notify affected individuals, HHS, and media (if applicable) following discovery of a breach of unsecured ePHI.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No breach notification policy, procedure, timeline, or responsible party is identified anywhere in the document.",
+      "gap_description": "No breach notification policy, procedure, timeline, or responsible party is identified anywhere in the document.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "13407",
+      "control_name": "Temporary Breach Notification Requirement for Vendors",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Business associates must notify covered entities of breaches without unreasonable delay and within 60 days.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Section 3: 'Official letter from the vendor' listed as a credible claim trigger for escalation.",
+      "finding": "Vendor notification is acknowledged as a trigger but no formal BA notification agreement, timeline, or protocol is defined.",
+      "gap_description": "Vendor notification is acknowledged as a trigger but no formal BA notification agreement, timeline, or protocol is defined.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "13411",
+      "control_name": "HITECH - Audit Requirements",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "HHS must conduct periodic audits of covered entities and business associates for HIPAA compliance.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Section 7: annual plan review and tabletop exercises mentioned; section 6 references adherence to applicable regulations.",
+      "finding": "Annual review and testing referenced but no OCR audit readiness, documentation retention, or audit response procedures defined.",
+      "gap_description": "Annual review and testing referenced but no OCR audit readiness, documentation retention, or audit response procedures defined.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "13412",
+      "control_name": "HITECH - Enforcement",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "State attorneys general may bring civil actions for HIPAA violations affecting state residents.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Section 5.2: legal counsel engagement and law enforcement notification referenced; section 6 cites regulatory compliance intent.",
+      "finding": "Legal counsel role and regulatory compliance commitment present but no state AG enforcement awareness or state-specific obligations defined.",
+      "gap_description": "Legal counsel role and regulatory compliance commitment present but no state AG enforcement awareness or state-specific obligations defined.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-1",
+      "control_name": "Incident Response Policy and Procedures",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Develop, document, disseminate, review, and update incident response policy and procedures",
+      "status": "Yes",
+      "risk_level": "Medium",
+      "evidence": "Document provides step-by-step response procedure for a SentinelOne BSOD scenario including containment, fix, and lessons learned notes.",
+      "finding": "A rudimentary procedure exists for this specific scenario, partially satisfying the procedural element, though not a formal reviewed policy.",
+      "gap_description": "A rudimentary procedure exists for this specific scenario, partially satisfying the procedural element, though not a formal reviewed policy.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-4",
+      "control_name": "Incident Handling",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Implement IR capability including preparation, detection, analysis, containment, eradication, and recovery.",
+      "status": "Yes",
+      "risk_level": "Medium",
+      "evidence": "Sections 4.1-4.5 cover Preparation, Identification, Containment, Eradication, and Recovery phases with specific steps.",
+      "finding": "All six core IR handling phases are addressed with named personnel, tools (SentinelOne), and procedures.",
+      "gap_description": "All six core IR handling phases are addressed with named personnel, tools (SentinelOne), and procedures.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-5",
+      "control_name": "Incident Monitoring",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Track and document incidents on an ongoing basis.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Section 4.2: 'Log in Google docs each action taken, Date, approx time, person who executed it, what was noticed.'",
+      "finding": "Ongoing incident logging documented with required data fields; Google Docs designated as the logging platform.",
+      "gap_description": "Ongoing incident logging documented with required data fields; Google Docs designated as the logging platform.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-6",
+      "control_name": "Incident Reporting",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Report security incidents to organizational officials and external authorities within defined timeframes",
+      "status": "Yes",
+      "risk_level": "High",
+      "evidence": "External contacts listed: FBI office 808-566-4300, HPD Cybercrime 808-529-3111, Hawaii State Fusion Center 808-369-3589, and OHS cyber reporting URL.",
+      "finding": "External law enforcement and government reporting contacts are present. No timeframes for reporting are defined.",
+      "gap_description": "External law enforcement and government reporting contacts are present. No timeframes for reporting are defined.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-7",
+      "control_name": "Incident Response Assistance",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Provide IR support resources, including access to outside counsel and forensic assistance.",
+      "status": "Yes",
+      "risk_level": "Medium",
+      "evidence": "Section 4.1: 'They will start procedures with a recovery company, and Legal console.'",
+      "finding": "Plan references engagement of recovery company and legal counsel through cybersecurity insurance provider, satisfying this control.",
+      "gap_description": "Plan references engagement of recovery company and legal counsel through cybersecurity insurance provider, satisfying this control.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-8",
+      "control_name": "Incident Response Plan",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Develop and distribute a formal IR plan that includes roles, metrics, reporting, and plan protection.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Document covers roles, phases, and review cycle but omits metrics, resource requirements, and plan protection measures.",
+      "finding": "Formal IRP exists with roles and phases but lacks metrics for measuring effectiveness, resource requirements, and plan classification.",
+      "gap_description": "Formal IRP exists with roles and phases but lacks metrics for measuring effectiveness, resource requirements, and plan classification.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-9",
+      "control_name": "Information Spillage Response",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Respond to information spills by identifying contaminated systems and eradicating the spill.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Run remote scan for all systems known recipients have logged into; Mimecast remediate purge from users inbox.",
+      "finding": "Email purge and endpoint scanning are addressed, but no formal data spill response procedure or PHI-specific containment steps are defined.",
+      "gap_description": "Email purge and endpoint scanning are addressed, but no formal data spill response procedure or PHI-specific containment steps are defined.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-2",
+      "control_name": "Incident Response Training",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Provide IR training to system users consistent with assigned roles and responsibilities.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No training requirements, frequency, or role-based IR training program is mentioned anywhere in the document.",
+      "gap_description": "No training requirements, frequency, or role-based IR training program is mentioned anywhere in the document.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-3",
+      "control_name": "Incident Response Testing",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Test the IR capability using defined tests and exercises at defined frequency.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Section 7: 'Regular tabletop exercises and simulations will be conducted to test the effectiveness of the plan.'",
+      "finding": "Tabletop exercises mentioned but no defined frequency, scope, success criteria, or records requirement provided.",
+      "gap_description": "Tabletop exercises mentioned but no defined frequency, scope, success criteria, or records requirement provided.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "AU-6",
+      "control_name": "Audit Record Review, Analysis, and Reporting",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Review and analyze audit records for indications of inappropriate activity and report findings.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Section 3: 'KPHC IT finds something from an incident and has confirmed a breach through system logs or reports.'",
+      "finding": "Log review is referenced as a validation mechanism but no formal audit review process, frequency, or reporting chain is defined.",
+      "gap_description": "Log review is referenced as a validation mechanism but no formal audit review process, frequency, or reporting chain is defined.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "CP-2",
+      "control_name": "Contingency Plan",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Develop a contingency plan that addresses essential missions and business functions.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Section 9 references separate response plans for power outage, ransomware, and other scenarios but no CP content in this document.",
+      "finding": "Contingency scenarios acknowledged via references to linked plans but no BCP/DRP content or RTO/RPO objectives present.",
+      "gap_description": "Contingency scenarios acknowledged via references to linked plans but no BCP/DRP content or RTO/RPO objectives present.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "RA-3",
+      "control_name": "Risk Assessment",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Conduct risk assessment identifying threats, vulnerabilities, likelihood, and impact to operations and assets.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No risk assessment process, threat modeling, or breach risk scoring methodology is described anywhere in the plan.",
+      "gap_description": "No risk assessment process, threat modeling, or breach risk scoring methodology is described anywhere in the plan.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(6)(i)",
+      "control_name": "HIPAA Security - Incident Response Procedures",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement policies and procedures to address security incidents.",
+      "status": "Yes",
+      "risk_level": "Medium",
+      "evidence": "Entire document constitutes IR policies and procedures covering detection, containment, eradication, recovery, and post-incident review.",
+      "finding": "Security incident response policies and procedures are documented with defined phases, roles, and tools.",
+      "gap_description": "Security incident response policies and procedures are documented with defined phases, roles, and tools.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(6)(ii)",
+      "control_name": "Response and Reporting",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Identify and respond to suspected or known security incidents; mitigate harmful effects; document outcomes.",
+      "status": "Yes",
+      "risk_level": "High",
+      "evidence": "Steps 1-4 cover disconnection, supervisor notification, FBI contact, insurance notification, and logging.",
+      "finding": "Document provides response steps and logging direction; FBI and insurance notification are included.",
+      "gap_description": "Document provides response steps and logging direction; FBI and insurance notification are included.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.400",
+      "control_name": "Breach Notification - General Rule",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Covered entities must notify affected individuals, HHS, and media (if applicable) following discovery of a breach of unsecured PHI.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No notification requirements to individuals, HHS Secretary, or media are mentioned. HIPAA breach notification rule is entirely absent.",
+      "gap_description": "No notification requirements to individuals, HHS Secretary, or media are mentioned. HIPAA breach notification rule is entirely absent.",
+      "_sources": [
+        "Data breach response plan.pdf"
+      ]
+    },
+    {
+      "control_id": "164.404",
+      "control_name": "Notification to Individuals",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Notify affected individuals without unreasonable delay and within 60 calendar days of breach discovery.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "The mandatory 60-day individual notification requirement, content requirements, and delivery methods are entirely absent.",
+      "gap_description": "The mandatory 60-day individual notification requirement, content requirements, and delivery methods are entirely absent.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Ransomware.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.408",
+      "control_name": "Notification to HHS Secretary",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Notify HHS Secretary of breaches; immediately for 500+ individuals, annually for smaller breaches.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No HHS Secretary notification requirement, timeline, or reporting portal reference is included in the plan.",
+      "gap_description": "No HHS Secretary notification requirement, timeline, or reporting portal reference is included in the plan.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Ransomware.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.414",
+      "control_name": "Administrative Requirements and Burden of Proof",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Covered entities must document all notifications and retain documentation for 6 years.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No documentation retention requirements, 6-year retention standard, or burden-of-proof procedures are described.",
+      "gap_description": "No documentation retention requirements, 6-year retention standard, or burden-of-proof procedures are described.",
+      "_sources": [
+        "Data breach response plan.pdf"
+      ]
+    },
+    {
+      "control_id": "164.312(b)",
+      "control_name": "Audit Controls",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement hardware, software, and/or procedural mechanisms that record and examine activity in systems containing ePHI.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Section 3 references 'system logs or reports' as evidence of breach confirmation.",
+      "finding": "System logs are referenced for validation but no formal audit control implementation or review procedure is described.",
+      "gap_description": "System logs are referenced for validation but no formal audit control implementation or review procedure is described.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "13402(a)",
+      "control_name": "HITECH Breach Notification for Covered Entities",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Covered entities must notify individuals of breaches of unsecured PHI in accordance with HIPAA breach notification rule.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "HITECH-mandated individual breach notification obligations are entirely absent from the plan.",
+      "gap_description": "HITECH-mandated individual breach notification obligations are entirely absent from the plan.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "13410(d)",
+      "control_name": "HITECH Civil Money Penalties",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Violations subject to tiered CMPs: up to $2,067,813 per violation category per year (2024 inflation-adjusted figures).",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No reference to HITECH penalty tiers, compliance obligations, or risk of CMPs is included to inform response urgency.",
+      "gap_description": "No reference to HITECH penalty tiers, compliance obligations, or risk of CMPs is included to inform response urgency.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "13402(f)",
+      "control_name": "HITECH Notification Content Requirements",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Breach notifications must include description of breach, types of PHI, steps individuals should take, and contact information.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No notification content requirements, template, or prescribed elements for breach notices to individuals are included.",
+      "gap_description": "No notification content requirements, template, or prescribed elements for breach notices to individuals are included.",
+      "_sources": [
+        "Data breach response plan.pdf",
+        "Malware infected system.pdf"
+      ]
+    },
+    {
+      "control_id": "SI-5",
+      "control_name": "Security Alerts and Advisories",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Receive security alerts from external organizations and disseminate to relevant personnel",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No process for receiving or acting on US-CERT, HHS, or vendor security advisories is described.",
+      "gap_description": "No process for receiving or acting on US-CERT, HHS, or vendor security advisories is described.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Ransomware.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "AC-2",
+      "control_name": "Account Management",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Manage system accounts including establishing, activating, modifying, and disabling.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Section 4.3 long-term: 'change credentials' listed; section 9 references 'User account Email compromised' response plan.",
+      "finding": "Credential change during containment mentioned but no formal account management, provisioning, or disabling procedures defined.",
+      "gap_description": "Credential change during containment mentioned but no formal account management, provisioning, or disabling procedures defined.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "PM-12",
+      "control_name": "Insider Threat Program",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Implement an insider threat program including detection, prevention, and response capabilities",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "HR involvement mentioned for employee-related incidents but no insider threat program or procedures defined.",
+      "gap_description": "HR involvement mentioned for employee-related incidents but no insider threat program or procedures defined.",
+      "_sources": [
+        "Incident response contact tree.pdf"
+      ]
+    },
+    {
+      "control_id": "SA-9",
+      "control_name": "External System Services",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Require external service providers to comply with security requirements and employ appropriate controls",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "IT consultant Achyut P. listed but no BAA, security requirements, or oversight of third-party vendors mentioned.",
+      "gap_description": "IT consultant Achyut P. listed but no BAA, security requirements, or oversight of third-party vendors mentioned.",
+      "_sources": [
+        "Incident response contact tree.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(1)(ii)(A)",
+      "control_name": "Risk Analysis",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Conduct accurate and thorough assessment of potential risks to ePHI confidentiality, integrity, and availability",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No risk analysis referenced. Required under HIPAA Security Rule as foundational control.",
+      "gap_description": "No risk analysis referenced. Required under HIPAA Security Rule as foundational control.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(2)",
+      "control_name": "Assigned Security Responsibility",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Identify the security official responsible for developing and implementing security policies and procedures",
+      "status": "Yes",
+      "risk_level": "Medium",
+      "evidence": "Compliance: Keith Larson Ext. 252, 808-843-7252. Designated Liaison includes Compliance: Keith Larson.",
+      "finding": "A named compliance official is identified with contact information and assigned incident liaison responsibilities.",
+      "gap_description": "A named compliance official is identified with contact information and assigned incident liaison responsibilities.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Ransomware.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(5)(ii)(C)",
+      "control_name": "Log-in Monitoring",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement procedures for monitoring log-in attempts and reporting discrepancies (Addressable).",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Check MimeCast for any unusual activities.",
+      "finding": "MimeCast review mentioned for suspicious activity but no formal login monitoring policy, frequency, or discrepancy reporting process defined.",
+      "gap_description": "MimeCast review mentioned for suspicious activity but no formal login monitoring policy, frequency, or discrepancy reporting process defined.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Ransomware.pdf",
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "164.310(d)(2)(iv)",
+      "control_name": "Data Backup and Storage",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Create and maintain retrievable exact copies of ePHI",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No backup, restoration, or data recovery procedures mentioned in the document.",
+      "gap_description": "No backup, restoration, or data recovery procedures mentioned in the document.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf"
+      ]
+    },
+    {
+      "control_id": "164.312(a)(2)(ii)",
+      "control_name": "Emergency Access Procedure",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Establish and implement procedures for obtaining necessary ePHI during an emergency",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No emergency access to ePHI procedures defined. Contact tree does not address clinical continuity.",
+      "gap_description": "No emergency access to ePHI procedures defined. Contact tree does not address clinical continuity.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.314(a)(1)",
+      "control_name": "Business Associate Contracts",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Covered entity must have written contracts with business associates that comply with HIPAA requirements",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "IT consultant listed with no mention of BAA. No vendor contract or BAA requirements referenced.",
+      "gap_description": "IT consultant listed with no mention of BAA. No vendor contract or BAA requirements referenced.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.406",
+      "control_name": "Notification to Media",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Notify prominent media outlets for breaches affecting more than 500 residents of a state or jurisdiction",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Do not talk to the media or anyone claiming to be media.",
+      "finding": "Document prohibits media contact without defining required media notification for large breaches under 164.406.",
+      "gap_description": "Document prohibits media contact without defining required media notification for large breaches under 164.406.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.530(b)",
+      "control_name": "Training",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Train workforce members on policies and procedures as necessary for carrying out their functions",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No workforce training requirements, schedules, or documentation referenced in the document.",
+      "gap_description": "No workforce training requirements, schedules, or documentation referenced in the document.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "13402(e)(4)",
+      "control_name": "HITECH Annual HHS Reporting for Small Breaches",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Report breaches affecting fewer than 500 individuals to HHS annually",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "Annual HHS log reporting for small breaches not referenced. No breach log or tracking mechanism defined.",
+      "gap_description": "Annual HHS log reporting for small breaches not referenced. No breach log or tracking mechanism defined.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "13402(b)",
+      "control_name": "HITECH Business Associate Breach Notification",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Business associates must notify covered entities of breaches without unreasonable delay and within 60 days of discovery",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No BA breach notification requirements or contractual obligations referenced despite listing external IT consultant.",
+      "gap_description": "No BA breach notification requirements or contractual obligations referenced despite listing external IT consultant.",
+      "_sources": [
+        "Incident response contact tree.pdf",
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf"
+      ]
+    },
+    {
+      "control_id": "AU-11",
+      "control_name": "Audit Record Retention",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Retain audit records for defined period to support post-incident investigations.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No retention period specified for Google Docs logs or any other incident records.",
+      "gap_description": "No retention period specified for Google Docs logs or any other incident records.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "CP-9",
+      "control_name": "System Backup",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Conduct backups of user-level, system-level, and security-related documentation.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Section 4.5: 'Restore affected systems and data from secure backups.'",
+      "finding": "Secure backups referenced for recovery but no backup frequency, retention, testing, or offsite storage details provided.",
+      "gap_description": "Secure backups referenced for recovery but no backup frequency, retention, testing, or offsite storage details provided.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "RA-5",
+      "control_name": "Vulnerability Monitoring and Scanning",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Monitor and scan for vulnerabilities in organizational systems.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No vulnerability scanning process, tools, or schedule referenced; Section 4.1 defers entirely to a separate security plan.",
+      "gap_description": "No vulnerability scanning process, tools, or schedule referenced; Section 4.1 defers entirely to a separate security plan.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "SI-3",
+      "control_name": "Malicious Code Protection",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Implement malicious code protection mechanisms at system entry and exit points.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Section 4.3: SentinelOne referenced for immediate isolation; section 4.4: Malware Removal step defined.",
+      "finding": "SentinelOne endpoint protection and malware removal procedures are explicitly referenced and linked to named scenarios.",
+      "gap_description": "SentinelOne endpoint protection and malware removal procedures are explicitly referenced and linked to named scenarios.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "Spam_Phishing emails.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "SI-4",
+      "control_name": "System Monitoring",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Monitor systems to detect attacks, indicators of potential attacks, and unauthorized connections.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Section 4.2: 'Implement monitoring systems to detect suspicious activities'; Allen monitors and receives alerts.",
+      "finding": "Monitoring for suspicious activity is defined with a named responsible individual and alert-handling process.",
+      "gap_description": "Monitoring for suspicious activity is defined with a named responsible individual and alert-handling process.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Spam_Phishing emails.pdf",
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "PM-16",
+      "control_name": "Threat Awareness Program",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Implement a threat awareness program that includes a cross-organization information-sharing capability.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Account found on have i been pwned - checks for work email breaches; Check proofpoint for possible spread.",
+      "finding": "Document references external threat intelligence (HaveIBeenPwned, Proofpoint) for awareness; meets minimum intent of this control.",
+      "gap_description": "Document references external threat intelligence (HaveIBeenPwned, Proofpoint) for awareness; meets minimum intent of this control.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "IR-10",
+      "control_name": "Integrated Information Security Analysis Team",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Establish an integrated team of forensic/malware analysts to support IR.",
+      "status": "Partial",
+      "risk_level": "Low",
+      "evidence": "Section 3 defines IRT with Technical Lead; section 4.2 references escalation to vendor for forensic verification.",
+      "finding": "IRT with Technical Lead and vendor escalation defined but no dedicated forensics analyst or integrated analysis team documented.",
+      "gap_description": "IRT with Technical Lead and vendor escalation defined but no dedicated forensics analyst or integrated analysis team documented.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(1)(ii)(B)",
+      "control_name": "HIPAA Security - Risk Management",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement security measures to reduce risks to ePHI to a reasonable and appropriate level.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No risk management program, risk treatment decisions, or ePHI-specific security measures documented.",
+      "gap_description": "No risk management program, risk treatment decisions, or ePHI-specific security measures documented.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "User account Email compromised.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(5)(ii)(B)",
+      "control_name": "HIPAA Security - Protection from Malicious Software",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Procedures for guarding against, detecting, and reporting malicious software.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "SentinelOne referenced for endpoint protection; malware removal in section 4.4; separate malware response plan referenced in section 9.",
+      "finding": "Malware detection and removal covered but staff reporting procedures and user-level malicious software guidance are absent.",
+      "gap_description": "Malware detection and removal covered but staff reporting procedures and user-level malicious software guidance are absent.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "164.310(a)(2)(i)",
+      "control_name": "HIPAA Security - Contingency Operations",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Establish procedures to allow facility access to support data restoration under a disaster recovery plan.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No facility access contingency procedures or disaster recovery access controls defined.",
+      "gap_description": "No facility access contingency procedures or disaster recovery access controls defined.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "164.314(a)(2)(i)",
+      "control_name": "HIPAA Security - Business Associate Contracts",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Ensure business associate agreements are in place for entities handling ePHI.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "Section 2 covers vendors and third parties in scope but no BAA requirements or BA notification procedures defined.",
+      "gap_description": "Section 2 covers vendors and third parties in scope but no BAA requirements or BA notification procedures defined.",
+      "_sources": [
+        "Incident Response Plan.pdf",
+        "Malware infected system.pdf"
+      ]
+    },
+    {
+      "control_id": "SP800-66r2-4.1",
+      "control_name": "SP 800-66r2 - IR Plan Documentation",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Document IR plan with scope, roles, communication, and integration with contingency plan.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Sections 1-5 cover scope, roles, and communications; section 9 references linked contingency plans.",
+      "finding": "Core IR plan elements present but CP integration, resource requirements, and plan protection are absent.",
+      "gap_description": "Core IR plan elements present but CP integration, resource requirements, and plan protection are absent.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "SP800-66r2-4.2",
+      "control_name": "SP 800-66r2 - ePHI Identification in IR",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "IR procedures must address identification and protection of ePHI during incident response.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No ePHI identification, classification, or specific protection steps during IR phases referenced anywhere in the document.",
+      "gap_description": "No ePHI identification, classification, or specific protection steps during IR phases referenced anywhere in the document.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "SP800-66r2-4.3",
+      "control_name": "SP 800-66r2 - Workforce Sanctions in IR",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Apply appropriate sanctions to workforce members who fail to comply with IR policies.",
+      "status": "No",
+      "risk_level": "Low",
+      "evidence": "Not addressed",
+      "finding": "No sanction policy or disciplinary process for IR non-compliance referenced in the document.",
+      "gap_description": "No sanction policy or disciplinary process for IR non-compliance referenced in the document.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "SP800-66r2-5.1",
+      "control_name": "SP 800-66r2 - Malware and Ransomware IR",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Implement specific procedures for ransomware and malware incident response aligned with HIPAA requirements.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Section 9 references dedicated ransomware and malware response plans; SentinelOne and malware removal steps in sections 4.3-4.4.",
+      "finding": "Ransomware and malware specific response plans referenced with tool-level detail; dedicated playbooks linked.",
+      "gap_description": "Ransomware and malware specific response plans referenced with tool-level detail; dedicated playbooks linked.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "SP800-66r2-5.2",
+      "control_name": "SP 800-66r2 - Post-Incident Analysis",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Conduct post-incident analysis to improve IR capabilities and update the IR plan.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Section 4.6: Lessons Learned, Report, Action Plan, and Post incident admin steps; section 8 includes lessons from past incidents.",
+      "finding": "Robust post-incident review process with lessons learned, reporting, action plans, and plan updates explicitly defined.",
+      "gap_description": "Robust post-incident review process with lessons learned, reporting, action plans, and plan updates explicitly defined.",
+      "_sources": [
+        "Incident Response Plan.pdf"
+      ]
+    },
+    {
+      "control_id": "SI-7",
+      "control_name": "Software, Firmware, and Information Integrity",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Employ integrity verification tools to detect unauthorized changes to software and information.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No integrity checking, file hashing, or change detection beyond SentinelOne EDR signatures is documented.",
+      "gap_description": "No integrity checking, file hashing, or change detection beyond SentinelOne EDR signatures is documented.",
+      "_sources": [
+        "Malware infected system.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.312(a)(1)",
+      "control_name": "Access Control",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement technical policies and procedures to allow only authorized persons access to ePHI.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No access control policy for ePHI systems, role-based access, or minimum necessary standard is documented.",
+      "gap_description": "No access control policy for ePHI systems, role-based access, or minimum necessary standard is documented.",
+      "_sources": [
+        "Malware infected system.pdf"
+      ]
+    },
+    {
+      "control_id": "13402(e)",
+      "control_name": "HITECH Breach Notification - HHS Secretary Notification",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Notify the HHS Secretary of breaches affecting 500 or more individuals immediately; others in annual log.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "FBI notification mentioned for ransomware but no HHS Secretary notification procedure, thresholds, or annual log process exist.",
+      "gap_description": "FBI notification mentioned for ransomware but no HHS Secretary notification procedure, thresholds, or annual log process exist.",
+      "_sources": [
+        "Malware infected system.pdf",
+        "Ransomware.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "CP-4",
+      "control_name": "Contingency Plan Testing",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Test the contingency plan to determine effectiveness and readiness.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No testing schedule, test results, or after-action review process is referenced anywhere in the document.",
+      "gap_description": "No testing schedule, test results, or after-action review process is referenced anywhere in the document.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "CP-8",
+      "control_name": "Telecommunications Services",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Establish alternate telecom services to maintain operations during disruption.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Scripts note phone service impacts at 710 and 915/Austin Lane; Ring device used as alternative alert at 915.",
+      "finding": "Phone service impact is acknowledged but no alternate telecom continuity plan or failover service is defined.",
+      "gap_description": "Phone service impact is acknowledged but no alternate telecom continuity plan or failover service is defined.",
+      "_sources": [
+        "Power outage procedures.pdf"
+      ]
+    },
+    {
+      "control_id": "CP-10",
+      "control_name": "Information System Recovery and Reconstitution",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Provide for recovery and reconstitution of the system to a known state after disruption",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Steps to delete bad files and reimage systems described; recommendation to use outage to wipe old/problematic systems.",
+      "finding": "Recovery steps for the specific scenario exist but no formal reconstitution process, verification, or return-to-operations criteria.",
+      "gap_description": "Recovery steps for the specific scenario exist but no formal reconstitution process, verification, or return-to-operations criteria.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "SI-2",
+      "control_name": "Flaw Remediation",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Identify, report, and correct information system flaws; install security updates.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No patch management or flaw remediation process is referenced. Out of scope for a power alert document but required for overall compliance.",
+      "gap_description": "No patch management or flaw remediation process is referenced. Out of scope for a power alert document but required for overall compliance.",
+      "_sources": [
+        "Power outage procedures.pdf"
+      ]
+    },
+    {
+      "control_id": "PE-11",
+      "control_name": "Emergency Power",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Provide short-term uninterruptible power and long-term alternate power for the system.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "iSocket sensors deployed on both generator circuit (710 Server room) and non-generator circuit (710 3rd FL); HECo outage map referenced.",
+      "finding": "Generator circuit monitoring is in place at the primary server room, demonstrating awareness of emergency power infrastructure.",
+      "gap_description": "Generator circuit monitoring is in place at the primary server room, demonstrating awareness of emergency power infrastructure.",
+      "_sources": [
+        "Power outage procedures.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(7)(i)",
+      "control_name": "Contingency Plan - Required",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Establish and implement policies to respond to emergencies that damage systems containing ePHI.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No HIPAA contingency plan exists. Document addresses operational alerts only with no ePHI protection or recovery procedures.",
+      "gap_description": "No HIPAA contingency plan exists. Document addresses operational alerts only with no ePHI protection or recovery procedures.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(7)(ii)(A)",
+      "control_name": "Data Backup Plan",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Establish and implement procedures to create and maintain retrievable exact copies of ePHI.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No data backup plan or ePHI backup procedures are referenced in this document.",
+      "gap_description": "No data backup plan or ePHI backup procedures are referenced in this document.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(7)(ii)(B)",
+      "control_name": "Disaster Recovery Plan",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Establish procedures to restore loss of data in the event of a fire, vandalism, disaster, or system failure.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "Disaster recovery procedures for ePHI restoration are entirely absent from this document.",
+      "gap_description": "Disaster recovery procedures for ePHI restoration are entirely absent from this document.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(7)(ii)(C)",
+      "control_name": "Emergency Mode Operation Plan",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Establish procedures to enable continuation of critical business processes protecting ePHI during an emergency.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No emergency mode operation plan is documented. No procedures exist for maintaining ePHI access or protection during a power outage.",
+      "gap_description": "No emergency mode operation plan is documented. No procedures exist for maintaining ePHI access or protection during a power outage.",
+      "_sources": [
+        "Power outage procedures.pdf",
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(7)(ii)(D)",
+      "control_name": "Testing and Revision Procedures",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement procedures for periodic testing and revision of contingency plans.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No testing or revision schedule exists for any contingency or alert procedure referenced in this document.",
+      "gap_description": "No testing or revision schedule exists for any contingency or alert procedure referenced in this document.",
+      "_sources": [
+        "Power outage procedures.pdf"
+      ]
+    },
+    {
+      "control_id": "164.310(a)(2)(ii)",
+      "control_name": "Facility Access Controls - Facility Security Plan",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement policies to safeguard the facility and equipment from unauthorized physical access.",
+      "status": "Partial",
+      "risk_level": "Medium",
+      "evidence": "Verkada cameras at H4, Google Home cameras at 710 server room, Kohou, Austin Lane, and 952 provide physical surveillance coverage.",
+      "finding": "Physical surveillance cameras are deployed at multiple sites but no formal facility security plan, access control policy, or visitor management procedure is documented.",
+      "gap_description": "Physical surveillance cameras are deployed at multiple sites but no formal facility security plan, access control policy, or visitor management procedure is documented.",
+      "_sources": [
+        "Power outage procedures.pdf"
+      ]
+    },
+    {
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Monitor and control communications at external and internal boundaries",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Step 1: Disconnect users systems off network - unplug ethernet, disable Wi-Fi, disable VM adapter",
+      "finding": "Document explicitly directs network isolation for affected systems, implementing boundary protection during incident response.",
+      "gap_description": "Document explicitly directs network isolation for affected systems, implementing boundary protection during incident response.",
+      "_sources": [
+        "Ransomware.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "164.312(a)(2)(i)",
+      "control_name": "Unique User Identification",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Assign unique names or numbers for identifying and tracking user identity.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No user identification or credential management procedures are defined in the document.",
+      "gap_description": "No user identification or credential management procedures are defined in the document.",
+      "_sources": [
+        "Ransomware.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "13402(j)",
+      "control_name": "Unsecured PHI Definition and Safe Harbor",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "PHI rendered unusable through encryption or destruction is exempt from breach notification.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No encryption policy, safe harbor strategy, or data classification criteria are mentioned.",
+      "gap_description": "No encryption policy, safe harbor strategy, or data classification criteria are mentioned.",
+      "_sources": [
+        "Ransomware.pdf"
+      ]
+    },
+    {
+      "control_id": "164.530(j)",
+      "control_name": "Documentation Retention",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Retain required documentation for 6 years from date of creation or last effective date.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "Google Docs logging is mentioned but no retention period, ownership, or archive policy is defined.",
+      "gap_description": "Google Docs logging is mentioned but no retention period, ownership, or archive policy is defined.",
+      "_sources": [
+        "Ransomware.pdf"
+      ]
+    },
+    {
+      "control_id": "164.308(a)(7)(ii)(E)",
+      "control_name": "Testing and Revision Procedures",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement procedures for periodic testing and revision of contingency plans.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No testing schedule, revision cycle, or plan update process is referenced in the document.",
+      "gap_description": "No testing schedule, revision cycle, or plan update process is referenced in the document.",
+      "_sources": [
+        "Ransomware.pdf"
+      ]
+    },
+    {
+      "control_id": "CM-3",
+      "control_name": "Configuration Change Control",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Document, approve, and control changes to the information system configuration",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No change management or change control process defined. Updates are blocked reactively with no formal approval workflow.",
+      "gap_description": "No change management or change control process defined. Updates are blocked reactively with no formal approval workflow.",
+      "_sources": [
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "CM-6",
+      "control_name": "Configuration Settings",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Establish and document configuration settings for IT products and enforce them",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No baseline configuration standards referenced. Systems identified as running old Windows versions with no remediation timeline.",
+      "gap_description": "No baseline configuration standards referenced. Systems identified as running old Windows versions with no remediation timeline.",
+      "_sources": [
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "13410(a)",
+      "control_name": "HITECH - Audit and Periodic Reviews",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "HHS may audit covered entities and BAs for HIPAA compliance; organizations must maintain required documentation",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No audit readiness, documentation retention, or policy review process is present. Document would not meet OCR audit protocol requirements.",
+      "gap_description": "No audit readiness, documentation retention, or policy review process is present. Document would not meet OCR audit protocol requirements.",
+      "_sources": [
+        "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf"
+      ]
+    },
+    {
+      "control_id": "SI-8",
+      "control_name": "Spam Protection",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Employ spam protection mechanisms at information system entry and exit points.",
+      "status": "Yes",
+      "risk_level": "Low",
+      "evidence": "Mimecast trace and remediation; add email address or domain to company block list; alert vendor (Proofpoint); Mimecast Recall email feature.",
+      "finding": "Mimecast and Proofpoint are deployed for spam filtering. Blocklisting and email recall procedures are documented.",
+      "gap_description": "Mimecast and Proofpoint are deployed for spam filtering. Blocklisting and email recall procedures are documented.",
+      "_sources": [
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "AU-2",
+      "control_name": "Event Logging",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Identify events to be logged and coordinate the event logging function.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No event logging policy or list of auditable events is defined. SysAid ticket logging is mentioned but is not an audit logging control.",
+      "gap_description": "No event logging policy or list of auditable events is defined. SysAid ticket logging is mentioned but is not an audit logging control.",
+      "_sources": [
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "AC-17",
+      "control_name": "Remote Access",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Establish and document usage restrictions and implementation guidance for remote access.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "Remote access controls are not addressed in this document. No remote access policy or restrictions are defined.",
+      "gap_description": "Remote access controls are not addressed in this document. No remote access policy or restrictions are defined.",
+      "_sources": [
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "AT-2",
+      "control_name": "Literacy Training and Awareness",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Provide security awareness training to all users as part of initial and ongoing training.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No security awareness training program is described. KnowBe4 is used as a reporting button, but no training curriculum or schedule is mentioned.",
+      "gap_description": "No security awareness training program is described. KnowBe4 is used as a reporting button, but no training curriculum or schedule is mentioned.",
+      "_sources": [
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "164.312(a)(2)(iv)",
+      "control_name": "Encryption and Decryption",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement mechanism to encrypt and decrypt ePHI where appropriate.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No encryption controls are referenced for email containing ePHI. The document does not address email encryption at rest or in transit.",
+      "gap_description": "No encryption controls are referenced for email containing ePHI. The document does not address email encryption at rest or in transit.",
+      "_sources": [
+        "Spam_Phishing emails.pdf"
+      ]
+    },
+    {
+      "control_id": "164.402",
+      "control_name": "Breach Notification - Definition",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Define what constitutes a breach of unsecured PHI requiring notification under the Breach Notification Rule.",
+      "status": "No",
+      "risk_level": "Critical",
+      "evidence": "Not addressed",
+      "finding": "No breach definition or notification trigger is present. Document does not address whether email incidents involving PHI constitute a reportable breach.",
+      "gap_description": "No breach definition or notification trigger is present. Document does not address whether email incidents involving PHI constitute a reportable breach.",
+      "_sources": [
+        "Spam_Phishing emails.pdf",
+        "User clicks on suspicious link.pdf"
+      ]
+    },
+    {
+      "control_id": "AC-7",
+      "control_name": "Unsuccessful Logon Attempts",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Enforce limit of consecutive invalid logon attempts; lock account for defined period after limit exceeded.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No lockout policy, thresholds, or automatic account locking mechanism is described in the document.",
+      "gap_description": "No lockout policy, thresholds, or automatic account locking mechanism is described in the document.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "IA-5",
+      "control_name": "Authenticator Management",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Manage system authenticators including password complexity, change frequency, and revocation.",
+      "status": "Partial",
+      "risk_level": "High",
+      "evidence": "Semi-annual email reminders to change passwords and keep them unique; 1 to 1 intervention to make sure account credentials are changed.",
+      "finding": "Password change reminders and uniqueness mentioned but no complexity, minimum length, history, or MFA requirements are defined.",
+      "gap_description": "Password change reminders and uniqueness mentioned but no complexity, minimum length, history, or MFA requirements are defined.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "PL-2",
+      "control_name": "System Security and Privacy Plans",
+      "standards": [
+        "NIST"
+      ],
+      "requirement": "Develop, document, and periodically update a security and privacy plan that describes controls in place.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No system security plan, scope statement, ownership, or review schedule exists in this document.",
+      "gap_description": "No system security plan, scope statement, ownership, or review schedule exists in this document.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "164.312(d)",
+      "control_name": "Person or Entity Authentication",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Implement procedures to verify that a person or entity seeking access to ePHI is the one claimed.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No authentication controls, MFA, or identity verification procedures for ePHI system access are mentioned.",
+      "gap_description": "No authentication controls, MFA, or identity verification procedures for ePHI system access are mentioned.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "13401(a)",
+      "control_name": "HITECH Security Rule Application to Business Associates",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Business associates must comply with HIPAA Security Rule requirements directly under HITECH.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No BA agreements, BA security obligations, or downstream compliance requirements are addressed.",
+      "gap_description": "No BA agreements, BA security obligations, or downstream compliance requirements are addressed.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "13405(c)",
+      "control_name": "HITECH Access to PHI - Restrictions on Sale",
+      "standards": [
+        "HITECH"
+      ],
+      "requirement": "Covered entities and business associates must not sell PHI without valid authorization except in permitted circumstances.",
+      "status": "No",
+      "risk_level": "High",
+      "evidence": "Not addressed",
+      "finding": "No PHI use restrictions, sale prohibitions, or data handling obligations are described in the document.",
+      "gap_description": "No PHI use restrictions, sale prohibitions, or data handling obligations are described in the document.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    },
+    {
+      "control_id": "164.410",
+      "control_name": "Breach Notification to Media",
+      "standards": [
+        "HIPAA"
+      ],
+      "requirement": "Notify prominent media outlets for breaches affecting more than 500 residents of a state or jurisdiction.",
+      "status": "No",
+      "risk_level": "Medium",
+      "evidence": "Not addressed",
+      "finding": "No media notification requirement or threshold assessment is mentioned in the document.",
+      "gap_description": "No media notification requirement or threshold assessment is mentioned in the document.",
+      "_sources": [
+        "User account Email compromised.pdf"
+      ]
+    }
+  ],
+  "counts": {
+    "total": 93,
+    "critical": 17,
+    "high": 35,
+    "medium": 30,
+    "low": 11
+  },
+  "remediation_roadmap": {
+    "phases": [
+      {
+        "name": "Phase 1 - Critical Regulatory Foundations",
+        "color": "critical",
+        "timeframe": "0-30 days",
+        "items": [
+          {
+            "number": 1,
+            "title": "Develop HIPAA-HITECH Breach Notification Policy",
+            "description": "Draft and adopt a breach notification policy covering 60-day individual notice, HHS Secretary reporting via OCR portal, and media notification for breaches over 500 individuals.",
+            "references": [
+              "164.400",
+              "164.404",
+              "164.406",
+              "164.408",
+              "13400",
+              "13402",
+              "13402(a)",
+              "13402(f)"
+            ]
+          },
+          {
+            "number": 2,
+            "title": "Conduct Formal HIPAA Security Risk Analysis",
+            "description": "Engage qualified personnel or a third party to perform a documented risk analysis identifying threats, vulnerabilities, likelihood, and impact to all ePHI systems.",
+            "references": [
+              "164.308(a)(1)(ii)(A)",
+              "RA-3",
+              "SP800-66r2-4.2"
+            ]
+          },
+          {
+            "number": 3,
+            "title": "Establish Risk Management Program",
+            "description": "Implement a written risk management plan documenting security measures selected to reduce ePHI risks to reasonable and appropriate levels, tied to risk analysis findings.",
+            "references": [
+              "164.308(a)(1)(ii)(B)",
+              "SP800-66r2-4.1"
+            ]
+          },
+          {
+            "number": 4,
+            "title": "Execute Business Associate Agreements",
+            "description": "Identify all vendors and contractors handling ePHI including the IT consultant, execute HIPAA-compliant BAAs, and document BA breach notification obligations within 60 days.",
+            "references": [
+              "164.314(a)(1)",
+              "164.314(a)(2)(i)",
+              "13401",
+              "13402(b)",
+              "13407",
+              "SA-9"
+            ]
+          },
+          {
+            "number": 5,
+            "title": "Create Breach Log and Annual HHS Reporting Process",
+            "description": "Establish a breach tracking log for incidents affecting fewer than 500 individuals and define the annual HHS reporting workflow including responsible owner and submission timeline.",
+            "references": [
+              "164.414",
+              "13402(e)(4)",
+              "13402(e)",
+              "164.408"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Phase 2 - Contingency Planning and Access Controls",
+        "color": "high",
+        "timeframe": "31-60 days",
+        "items": [
+          {
+            "number": 6,
+            "title": "Develop HIPAA Contingency Plan Suite",
+            "description": "Create documented data backup plan, disaster recovery plan, emergency mode operation plan, and contingency testing procedures covering all ePHI systems per 164.308(a)(7).",
+            "references": [
+              "164.308(a)(7)(i)",
+              "164.308(a)(7)(ii)(A)",
+              "164.308(a)(7)(ii)(B)",
+              "164.308(a)(7)(ii)(C)",
+              "164.308(a)(7)(ii)(D)",
+              "CP-2"
+            ]
+          },
+          {
+            "number": 7,
+            "title": "Define Backup, Recovery, and Reconstitution Procedures",
+            "description": "Document backup frequency, offsite storage, retention periods, test restoration schedule, and formal return-to-operations criteria for all ePHI systems.",
+            "references": [
+              "CP-9",
+              "CP-10",
+              "164.310(d)(2)(iv)",
+              "164.310(a)(2)(i)"
+            ]
+          },
+          {
+            "number": 8,
+            "title": "Implement ePHI Access Control Policy",
+            "description": "Define role-based access controls, minimum necessary standard, unique user identification, emergency access procedures, and credential lifecycle management for all ePHI systems.",
+            "references": [
+              "164.312(a)(1)",
+              "164.312(a)(2)(i)",
+              "164.312(a)(2)(ii)",
+              "AC-2"
+            ]
+          },
+          {
+            "number": 9,
+            "title": "Establish Formal Audit Control and Log Review Procedures",
+            "description": "Define audit logging requirements for all ePHI systems, establish review frequency and escalation chain, and set minimum 6-year documentation retention policy.",
+            "references": [
+              "164.312(b)",
+              "164.414",
+              "AU-6",
+              "AU-11"
+            ]
+          },
+          {
+            "number": 10,
+            "title": "Update Incident Response Plan with Compliance Requirements",
+            "description": "Revise IRP to add ePHI identification steps, response metrics, plan protection classification, resource requirements, and integration with the contingency plan.",
+            "references": [
+              "IR-8",
+              "SP800-66r2-4.1",
+              "SP800-66r2-4.2",
+              "CP-2"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Phase 3 - Workforce, Training, and Detection Capabilities",
+        "color": "high",
+        "timeframe": "61-90 days",
+        "items": [
+          {
+            "number": 11,
+            "title": "Launch Role-Based HIPAA and IR Training Program",
+            "description": "Develop and deliver HIPAA workforce training and role-specific IR training, document completion, and define recurring frequency and refresher requirements for all staff.",
+            "references": [
+              "164.530(b)",
+              "IR-2",
+              "SP800-66r2-4.3"
+            ]
+          },
+          {
+            "number": 12,
+            "title": "Define Malicious Software and Phishing Reporting Procedures",
+            "description": "Create user-facing procedures for reporting suspicious email, malware, and phishing attempts, integrating with MimeCast and SentinelOne workflows and escalation path.",
+            "references": [
+              "164.308(a)(5)(ii)(B)",
+              "164.308(a)(5)(ii)(C)",
+              "IR-9"
+            ]
+          },
+          {
+            "number": 13,
+            "title": "Establish Vulnerability Management and Patch Program",
+            "description": "Define vulnerability scanning schedule, tooling, remediation SLAs, and patch management process covering all ePHI-adjacent systems and endpoints.",
+            "references": [
+              "RA-5",
+              "SI-2",
+              "SI-7"
+            ]
+          },
+          {
+            "number": 14,
+            "title": "Implement Security Alerts and Advisory Intake Process",
+            "description": "Subscribe to HHS, US-CERT, and vendor security advisories and create a documented process for triaging, disseminating, and acting on external threat intelligence.",
+            "references": [
+              "SI-5",
+              "IR-8"
+            ]
+          },
+          {
+            "number": 15,
+            "title": "Conduct Incident Response and Contingency Tabletop Exercises",
+            "description": "Schedule and execute tabletop exercises for breach, ransomware, and power outage scenarios with defined frequency, success criteria, and after-action documentation requirements.",
+            "references": [
+              "IR-3",
+              "CP-4",
+              "164.308(a)(7)(ii)(D)"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Phase 4 - Program Maturity and Ongoing Compliance",
+        "color": "medium",
+        "timeframe": "91-180 days",
+        "items": [
+          {
+            "number": 16,
+            "title": "Develop OCR Audit Readiness and Documentation Retention Plan",
+            "description": "Compile required HIPAA policy documentation, establish 6-year retention schedule, assign document owner, and create an OCR audit response playbook.",
+            "references": [
+              "13411",
+              "164.414",
+              "AU-11"
+            ]
+          },
+          {
+            "number": 17,
+            "title": "Establish State AG Enforcement Awareness Program",
+            "description": "Brief legal counsel on Hawaii state attorney general HIPAA enforcement authority, document state-specific obligations, and integrate into the legal response section of the IRP.",
+            "references": [
+              "13412",
+              "IR-8"
+            ]
+          },
+          {
+            "number": 18,
+            "title": "Implement Insider Threat Program",
+            "description": "Develop written insider threat policy covering detection indicators, HR integration, monitoring procedures, sanction policy, and incident escalation path for workforce-related threats.",
+            "references": [
+              "PM-12",
+              "SP800-66r2-4.3"
+            ]
+          },
+          {
+            "number": 19,
+            "title": "Formalize BA Notification Protocol and 13407 Compliance",
+            "description": "Define contractual BA notification timelines, designate receiving contact, create intake procedures for vendor-reported breaches, and confirm 60-day notification SLA in all BAAs.",
+            "references": [
+              "13407",
+              "13402(b)",
+              "164.314(a)(1)"
+            ]
+          },
+          {
+            "number": 20,
+            "title": "Define Encryption Policy and PHI Safe Harbor Strategy",
+            "description": "Adopt an encryption standard for ePHI at rest and in transit, document safe harbor eligibility criteria, and integrate data classification into breach risk assessment procedures.",
+            "references": [
+              "13402(j)",
+              "CP-8",
+              "164.312(a)(1)"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "_doc_count": 10,
+  "_doc_names": [
+    "Data breach response plan.pdf",
+    "Incident response contact tree.pdf",
+    "Incident Response Plan.pdf",
+    "Malware infected system.pdf",
+    "Power outage procedures.pdf",
+    "Ransomware.pdf",
+    "Sentinel One (endpoint protection) meltdown protocol; Bad update.pdf",
+    "Spam_Phishing emails.pdf",
+    "User account Email compromised.pdf",
+    "User clicks on suspicious link.pdf"
+  ]
+}

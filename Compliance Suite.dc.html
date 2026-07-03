@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#eef1ef;font-family:'DM Sans',sans-serif;color:#111;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+input,button{font-family:inherit;}
+input:focus{outline:none;border-color:#2d6a4f!important;}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#eef1ef;">
+
+  <div style="border-bottom:1px solid #d7ddd9;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;background:#f8faf9;position:sticky;top:0;z-index:50;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <div style="font-family:'EB Garamond',Georgia,serif;font-size:21px;font-weight:600;color:#1f4e3b;letter-spacing:.02em;">Silhouette<span style="color:#2d6a4f;">.</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;">AI Toolkit</div>
+    </div>
+    <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:#5d5d5d;"><span style="width:7px;height:7px;border-radius:50%;background:#2d6a4f;display:inline-block;"></span>{{ accountName }}</div>
+        <button onClick="{{ signOut }}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:none;color:#888;cursor:pointer;">Sign out</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- SIGN IN -->
+  <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:430px;margin:0 auto;padding:64px 24px;">
+      <div style="background:#fff;border:1px solid #d7ddd9;border-radius:16px;padding:36px 34px;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:fadeUp .3s ease;">
+        <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#111;margin-bottom:6px;">{{ authTitle }}</div>
+        <div style="font-size:13.5px;color:#5d5d5d;line-height:1.55;margin-bottom:24px;">{{ authSubtitle }}</div>
+        <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Organization</div>
+          <input type="text" value="Your organization" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;color:#111;margin-bottom:16px;background:#f8faf9;"/>
+        </sc-if>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Work email</div>
+        <input type="text" value="you@organization.org" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;color:#111;margin-bottom:16px;background:#f8faf9;"/>
+        <button onClick="{{ signIn }}" style="width:100%;padding:13px;background:#2d6a4f;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;">{{ authCta }}</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="flex:1;height:1px;background:#eef1ef;"></div><div style="font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#bbb;">or</div><div style="flex:1;height:1px;background:#eef1ef;"></div></div>
+        <div style="display:flex;gap:8px;">
+          <button onClick="{{ ssoGoogle }}" style="flex:1;padding:10px;background:#fff;border:1px solid #cfd8d3;border-radius:9px;font-size:12.5px;color:#444;cursor:pointer;font-weight:500;">Continue with Google</button>
+          <button onClick="{{ ssoMs }}" style="flex:1;padding:10px;background:#fff;border:1px solid #cfd8d3;border-radius:9px;font-size:12.5px;color:#444;cursor:pointer;font-weight:500;">Continue with Microsoft</button>
+        </div>
+        <button onClick="{{ toggleMode }}" style="width:100%;background:transparent;border:none;color:#2d6a4f;font-size:12.5px;cursor:pointer;margin-top:16px;font-weight:500;">{{ authToggleText }}</button>
+        <div style="text-align:center;margin-top:10px;font-size:12px;color:#888;line-height:1.5;">No patient or client data is collected.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- LAUNCHER -->
+  <sc-if value="{{ isLauncher }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:960px;margin:0 auto;padding:32px 32px 64px;animation:fadeUp .3s ease;">
+      <div style="font-family:'EB Garamond',Georgia,serif;font-size:28px;font-weight:600;color:#111;">Your compliance modules</div>
+      <div style="font-size:14px;color:#5d5d5d;line-height:1.6;margin-top:5px;max-width:620px;margin-bottom:28px;">Each module is purchased independently. Launch an active module, or try any module in demo mode with sample data before you buy.</div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:22px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+            <div style="display:flex;gap:18px;align-items:flex-start;flex:1;min-width:300px;">
+              <div style="{{ m.iconStyle }}">{{ m.icon }}</div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <div style="font-size:17px;font-weight:600;color:#111;">{{ m.name }}</div>
+                  <span style="{{ m.badgeStyle }}">{{ m.badge }}</span>
+                </div>
+                <div style="font-size:13px;color:#5d5d5d;line-height:1.55;margin-top:5px;max-width:520px;">{{ m.desc }}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:11px;color:#999;margin-top:8px;">{{ m.priceNote }}</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:150px;">
+              <sc-if value="{{ m.active }}" hint-placeholder-val="{{ false }}">
+                <a href="{{ m.url }}" style="text-align:center;background:#2d6a4f;color:#fff;border-radius:9px;padding:11px 18px;font-size:13px;font-weight:600;text-decoration:none;">Launch ↗</a>
+              </sc-if>
+              <sc-if value="{{ m.locked }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ m.onPurchase }}" style="background:#2d6a4f;color:#fff;border:none;border-radius:9px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;">Purchase</button>
+                <a href="{{ m.demoUrl }}" style="text-align:center;background:#fff;color:#2d6a4f;border:1px solid #cfd8d3;border-radius:9px;padding:10px 18px;font-size:12.5px;font-weight:600;text-decoration:none;">Try demo</a>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:24px;background:#f3f7f5;border:1px solid #cfe0d8;border-radius:12px;padding:16px 20px;font-size:12.5px;color:#244;line-height:1.6;">
+        <strong style="color:#1f4e3b;">Demo vs. purchased.</strong> Demo mode runs every screen and export with sample data so you can evaluate the full workflow. Purchasing unlocks live runs on your own documents — assessments are billed per organization at the point of use.
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- PURCHASE GATE -->
+  <sc-if value="{{ gate }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(20,30,26,.45);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;">
+      <div style="background:#fff;border-radius:16px;max-width:760px;width:100%;overflow:hidden;display:grid;grid-template-columns:1.2fr 1fr;animation:fadeUp .25s ease;">
+        <div style="padding:28px;">
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:22px;font-weight:600;margin-bottom:3px;">Activate {{ gateName }}</div>
+          <div style="font-size:13px;color:#5d5d5d;margin-bottom:22px;">Payment confirms before any live run. Nothing is charged in this demo.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Card number</div>
+          <input type="text" value="4242 4242 4242 4242" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;margin-bottom:14px;background:#f8faf9;font-family:'DM Mono',monospace;"/>
+          <div style="display:flex;gap:12px;margin-bottom:22px;">
+            <div style="flex:1;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Expiry</div><input type="text" value="04 / 28" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;background:#f8faf9;font-family:'DM Mono',monospace;"/></div>
+            <div style="flex:1;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">CVC</div><input type="text" value="123" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;background:#f8faf9;font-family:'DM Mono',monospace;"/></div>
+          </div>
+          <button onClick="{{ confirmPurchase }}" style="width:100%;padding:13px;background:#2d6a4f;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">{{ gatePayLabel }}</button>
+          <button onClick="{{ closeGate }}" style="width:100%;padding:9px;background:transparent;border:none;color:#888;font-size:12.5px;cursor:pointer;margin-top:6px;">Cancel</button>
+        </div>
+        <div style="background:#1f4e3b;padding:26px;color:#fff;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ec5b4;margin-bottom:14px;">Activation</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">{{ gateName }}</div>
+          <div style="font-size:12.5px;color:#cfe0d8;line-height:1.55;margin-bottom:18px;">{{ gateDesc }}</div>
+          <div style="height:1px;background:rgba(255,255,255,.18);margin-bottom:16px;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:14px;">Activation</span><span style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;">{{ gatePrice }}</span></div>
+          <div style="font-size:11.5px;color:#9ec5b4;line-height:1.5;margin-top:16px;">{{ gateBilling }}</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:400;animation:fadeUp .25s ease;">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:760}}">
+class Component extends DCLogic {
+  state = {
+    signedIn: false,
+    mode: 'signin',       // signin | signup
+    accountName: 'you@organization.org',
+    entitlements: null,   // loaded from localStorage
+    gateKey: null,
+    toast: ''
+  };
+
+  MODULES = [
+    { key:'gap', name:'Incident Response Plan', icon:'◷', url:'Compliance Portal.dc.html', demoUrl:'Compliance Portal.dc.html#demo',
+      desc:'IRP gap analysis: upload incident-response plans and supporting policies; the engine scores them against industry control sets and produces a gap report, deck, and remediation roadmap.',
+      priceNote:'Billed per organization assessed', price:'$250 / org', billing:'Pay-per-assessment at the point of use. Each organization includes one report, all exports, and one refinement.' },
+    { key:'sra', name:'Security Risk Assessment / Pen Test', icon:'◆', url:'SRA Module.dc.html',
+      desc:'Guided risk assessment: scope, asset & sensitive-data inventory, evidence import, AI-drafted findings with risk ratings, and a 30/60/90 remediation roadmap.',
+      priceNote:'Billed per assessment engagement', price:'$1,500 / engagement', billing:'Per-engagement pricing covering the full workflow and a client-ready report. Evidence is stored in a secure repository; source documents are never retained.' },
+    { key:'proposal', name:'Proposals', icon:'▤', url:'uploads/silhouette-proposal-template.html',
+      desc:'Generate or format RFP proposals into your branded template, with pricing, project plan, AI synthesis, and print-ready exports.',
+      priceNote:'Billed per proposal generated', price:'$99 / proposal', billing:'Pay-per-proposal at the point of use, same purchase flow as the other modules. Access to the builder and its AI synthesis. Each purchase covers one generated proposal with all exports.' }
+  ];
+
+  STORE_KEY = 'silhouette_suite_entitlements_v1';
+
+  componentDidMount(){
+    const patch = {};
+    if(this.state.entitlements === null){
+      let ent = {};
+      try { ent = JSON.parse(localStorage.getItem(this.STORE_KEY)) || {}; } catch(e) { ent = {}; }
+      patch.entitlements = ent;
+    }
+    try {
+      const q = (window.location.hash || '') + (window.location.search || '');
+      if(/signup|create/i.test(q)) patch.mode = 'signup';
+    } catch(e){}
+    if(Object.keys(patch).length) this.setState(patch);
+  }
+
+  flash(m){ this.setState({toast:m}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:''}),2800); }
+  ent(){ return this.state.entitlements || {}; }
+  persist(ent){ try { localStorage.setItem(this.STORE_KEY, JSON.stringify(ent)); } catch(e){} }
+
+  renderVals(){
+    const s = this.state, ent = this.ent();
+
+    const modules = this.MODULES.map(m => {
+      const active = !!ent[m.key];
+      return {
+        key:m.key, name:m.name, icon:m.icon, url:m.url, demoUrl:(m.demoUrl||m.url), desc:m.desc, priceNote:m.priceNote,
+        active, locked: !active,
+        iconStyle:'width:50px;height:50px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:#1f4e3b;background:'+(active?'rgba(45,106,79,.12)':'#f1f4f2')+';border:1px solid '+(active?'rgba(45,106,79,.25)':'#e3e8e5')+';',
+        badge: active ? 'Active' : 'Demo available',
+        badgeStyle:'font-family:"DM Mono",monospace;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:20px;color:'+(active?'#166534':'#92400e')+';background:'+(active?'rgba(22,101,52,.12)':'rgba(146,64,14,.12)')+';',
+        onPurchase: () => this.setState({ gateKey: m.key })
+      };
+    });
+
+    const gm = this.MODULES.find(m => m.key === s.gateKey);
+
+    return {
+      signedIn: s.signedIn, isSignin: !s.signedIn, isLauncher: s.signedIn,
+      accountName: s.accountName,
+      isSignup: s.mode === 'signup',
+      authTitle: s.mode === 'signup' ? 'Create your account' : 'Sign in to the suite',
+      authSubtitle: s.mode === 'signup' ? 'One account for every compliance module. No card required to start a demo.' : 'One account for all compliance modules. We never store your uploaded documents.',
+      authCta: s.mode === 'signup' ? 'Create account' : 'Sign In',
+      authToggleText: s.mode === 'signup' ? 'Already have an account? Sign in' : 'New here? Create an account',
+      toggleMode: () => this.setState({ mode: s.mode === 'signup' ? 'signin' : 'signup' }),
+      signIn: () => this.setState({ signedIn:true }),
+      ssoGoogle: () => { this.setState({ signedIn:true, accountName:'you@gmail.com' }); },
+      ssoMs: () => { this.setState({ signedIn:true, accountName:'you@outlook.com' }); },
+      signOut: () => this.setState({ signedIn:false }),
+
+      modules,
+
+      gate: !!gm,
+      gateName: gm ? gm.name : '',
+      gateDesc: gm ? gm.desc : '',
+      gatePrice: gm ? gm.price : '',
+      gateBilling: gm ? gm.billing : '',
+      gatePayLabel: gm ? ('Activate — ' + gm.price) : 'Activate',
+      confirmPurchase: () => {
+        const key = s.gateKey;
+        const ent2 = { ...this.ent(), [key]: true };
+        this.persist(ent2);
+        const nm = (this.MODULES.find(m=>m.key===key)||{}).name || 'Module';
+        this.setState({ entitlements: ent2, gateKey: null });
+        this.flash(nm + ' activated — you can now launch it.');
+      },
+      closeGate: () => this.setState({ gateKey: null }),
+
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

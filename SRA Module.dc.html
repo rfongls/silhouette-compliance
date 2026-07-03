@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#eef1ef;font-family:'DM Sans',sans-serif;color:#111;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+input,button,textarea,select{font-family:inherit;}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#2d6a4f!important;}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#eef1ef;">
+
+  <div style="border-bottom:1px solid #d7ddd9;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;background:#f8faf9;position:sticky;top:0;z-index:50;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <div style="font-family:'EB Garamond',Georgia,serif;font-size:21px;font-weight:600;color:#1f4e3b;letter-spacing:.02em;">Silhouette<span style="color:#2d6a4f;">.</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;">Security Risk Assessment</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#888;">Module</div>
+      <div style="display:flex;gap:3px;background:#fff;padding:3px;border-radius:8px;border:1px solid #d7ddd9;">
+        <a href="Compliance Portal.dc.html" style="font-family:'DM Mono',monospace;font-size:10.5px;padding:6px 12px;border-radius:6px;color:#888;cursor:pointer;text-decoration:none;">Incident Response Plan</a>
+        <div style="font-family:'DM Mono',monospace;font-size:10.5px;padding:6px 12px;border-radius:6px;background:#2d6a4f;color:#fff;">Risk Assessment / Pen Test</div>
+        <a href="uploads/silhouette-proposal-template.html" style="font-family:'DM Mono',monospace;font-size:10.5px;padding:6px 12px;border-radius:6px;color:#888;cursor:pointer;text-decoration:none;">Proposals</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:980px;margin:0 auto;padding:24px 32px 60px;">
+
+    <!-- module tabs -->
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:4px;margin-bottom:26px;background:#fff;padding:4px;border-radius:10px;border:1px solid #d7ddd9;width:fit-content;">
+        <button onClick="{{ goDashboard }}" style="{{ tabDashStyle }}">Dashboard</button>
+        <button onClick="{{ goNew }}" style="{{ tabNewStyle }}">New Assessment</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ DASHBOARD ============ -->
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+      <div style="animation:fadeUp .3s ease;">
+        <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#111;margin-bottom:3px;">Security Risk Assessments</div>
+        <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:22px;">Risk-based assessments: scope, inventory, evidence, findings, and a prioritized remediation roadmap.</div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;">
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Assessments</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#111;">{{ statCount }}</div></div>
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Open high risks</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#b91c1c;">{{ statHigh }}</div></div>
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Avg. posture</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#1f4e3b;">{{ statPosture }}</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888;">Recent assessments</div>
+          <button onClick="{{ goNew }}" style="background:#2d6a4f;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">+ New assessment</button>
+        </div>
+        <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;">
+          <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+            <div onClick="{{ h.onOpen }}" style="display:grid;grid-template-columns:52px 1fr auto;gap:14px;padding:14px 18px;border-bottom:1px solid #eef1ef;align-items:center;cursor:pointer;">
+              <div style="{{ h.postureStyle }}">{{ h.postureShort }}</div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:#111;">{{ h.org }}</div>
+                <div style="font-size:12px;color:#888;margin-top:2px;">{{ h.industryLabel }} · {{ h.date }} · {{ h.findingCount }} findings</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="{{ h.badgeStyle }}">{{ h.highCount }} high</span>
+                <span style="color:#cfd8d3;font-size:18px;">›</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ WORKFLOW ============ -->
+    <sc-if value="{{ isWorkflow }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:0;margin-bottom:26px;flex-wrap:wrap;">
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;">
+            <div onClick="{{ st.onGo }}" style="{{ st.dotStyle }}">{{ st.num }}</div>
+            <div style="{{ st.labelStyle }}">{{ st.label }}</div>
+            <div style="{{ st.barStyle }}"></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- STEP 1: SCOPE -->
+      <sc-if value="{{ stepScope }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:fadeUp .3s ease;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px;flex-wrap:wrap;">
+            <div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Scope &amp; methodology</div>
+              <div style="font-size:13.5px;color:#5d5d5d;margin-top:4px;max-width:560px;">Define the organization, period, and what is in scope. Methodology is standardized — Assess, Analyze, Deliver.</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:5px;">Industry</div>
+              <select onChange="{{ setIndustry }}" value="{{ industry }}" style="font-family:'DM Mono',monospace;font-size:12px;padding:8px 11px;border:1px solid #cfd8d3;border-radius:8px;background:#fff;color:#111;cursor:pointer;">
+                <sc-for list="{{ industries }}" as="ind" hint-placeholder-count="6">
+                  <option value="{{ ind.key }}">{{ ind.label }}</option>
+                </sc-for>
+              </select>
+              <div style="font-size:11px;color:#888;margin-top:6px;max-width:210px;">Sets safeguard frameworks &amp; the sensitive-data model.</div>
+            </div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:22px;margin-bottom:16px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:6px;">Organization</div><input type="text" value="{{ org }}" onInput="{{ setOrg }}" placeholder="Client organization" style="width:100%;padding:9px 11px;border:1px solid #cfd8d3;border-radius:8px;font-size:13.5px;background:#f8faf9;"/></div>
+              <div><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:6px;">Assessment period</div><input type="text" value="{{ period }}" onInput="{{ setPeriod }}" placeholder="e.g. Q3 2026" style="width:100%;padding:9px 11px;border:1px solid #cfd8d3;border-radius:8px;font-size:13.5px;background:#f8faf9;"/></div>
+            </div>
+            <div style="margin-top:16px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:7px;">Frameworks in scope ({{ industryLabel }})</div>
+              <div style="display:flex;flex-wrap:wrap;gap:7px;">
+                <sc-for list="{{ frameworks }}" as="fw" hint-placeholder-count="4">
+                  <span style="font-family:'DM Mono',monospace;font-size:11px;padding:5px 11px;border-radius:20px;background:rgba(45,106,79,.08);color:#1f4e3b;border:1px solid rgba(45,106,79,.25);">{{ fw }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#f3f7f5;border:1px solid #cfe0d8;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#2d6a4f;margin-bottom:10px;">Methodology (standard)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+              <div><div style="font-size:13px;font-weight:600;color:#111;margin-bottom:3px;">1 · Assess</div><div style="font-size:12px;color:#555;line-height:1.5;">Kickoff, interviews, evidence request, sensitive-data inventory, walkthroughs.</div></div>
+              <div><div style="font-size:13px;font-weight:600;color:#111;margin-bottom:3px;">2 · Analyze</div><div style="font-size:12px;color:#555;line-height:1.5;">Policy &amp; safeguard crosswalk, scan/identity/endpoint review, vendor review.</div></div>
+              <div><div style="font-size:13px;font-weight:600;color:#111;margin-bottom:3px;">3 · Deliver</div><div style="font-size:12px;color:#555;line-height:1.5;">Risk matrix, remediation roadmap, evidence appendix, management review.</div></div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;"><button onClick="{{ next }}" style="padding:12px 22px;background:#2d6a4f;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">Continue to inventory →</button></div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 2: INVENTORY -->
+      <sc-if value="{{ stepInventory }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:fadeUp .3s ease;">
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">{{ dataLabel }} &amp; asset inventory</div>
+          <div style="font-size:13.5px;color:#5d5d5d;margin-top:4px;margin-bottom:18px;max-width:600px;">The inventory is the foundation of the risk engine — criticality and {{ dataLabelShort }} exposure weight every finding.</div>
+
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;margin-bottom:18px;">
+            <div style="display:grid;grid-template-columns:1.3fr 1fr .8fr .9fr;gap:12px;padding:11px 16px;background:#f8faf9;border-bottom:1px solid #d7ddd9;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;">
+              <div>System / Application</div><div>{{ dataLabelShort }} type</div><div>Hosting</div><div>Criticality</div>
+            </div>
+            <sc-for list="{{ inventory }}" as="row" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:1.3fr 1fr .8fr .9fr;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1ef;align-items:center;">
+                <div style="font-size:13px;font-weight:500;color:#111;">{{ row.name }}</div>
+                <div style="font-size:12.5px;color:#555;">{{ row.dataType }}</div>
+                <div style="font-size:12px;color:#888;">{{ row.hosting }}</div>
+                <div><span style="{{ row.critStyle }}">{{ row.criticality }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <button onClick="{{ back }}" style="padding:11px 18px;background:transparent;border:1px solid #cfd8d3;border-radius:9px;font-size:13px;color:#5d5d5d;cursor:pointer;">← Scope</button>
+            <button onClick="{{ next }}" style="padding:12px 22px;background:#2d6a4f;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">Continue to evidence →</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 3: EVIDENCE -->
+      <sc-if value="{{ stepEvidence }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:fadeUp .3s ease;">
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Evidence &amp; technical testing</div>
+          <div style="font-size:13.5px;color:#5d5d5d;margin-top:4px;margin-bottom:18px;max-width:620px;">Import authorized tool output (vulnerability scans, identity exports, phishing results) and policy evidence. The app normalizes it — it does not run the scanners.</div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:#f3f7f5;border:1px solid #cfe0d8;border-radius:11px;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap;">
+            <div style="font-size:12.5px;color:#1f4e3b;line-height:1.5;max-width:560px;">Drop scanner exports (Nessus / Greenbone XML, GoPhish CSV, AD/Entra export, M365 Secure Score). Stored in the evidence repository — infrastructure data, never patient/client records.</div>
+            <button onClick="{{ importEvidence }}" style="background:#2d6a4f;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Import evidence</button>
+          </div>
+
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;margin-bottom:18px;">
+            <div style="display:grid;grid-template-columns:1.4fr 1fr .8fr;gap:12px;padding:11px 16px;background:#f8faf9;border-bottom:1px solid #d7ddd9;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;">
+              <div>Evidence artifact</div><div>Source / tool</div><div>Captured</div>
+            </div>
+            <sc-for list="{{ evidence }}" as="ev" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:1.4fr 1fr .8fr;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1ef;align-items:center;">
+                <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:#111;"><span style="font-size:13px;">{{ ev.icon }}</span>{{ ev.name }}</div>
+                <div style="font-size:12px;color:#555;">{{ ev.tool }}</div>
+                <div style="font-size:11.5px;color:#888;font-family:'DM Mono',monospace;">{{ ev.date }}</div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noEvidence }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:28px;text-align:center;font-size:13px;color:#aaa;">No evidence imported yet. Use "Import evidence" to load tool output.</div>
+            </sc-if>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <button onClick="{{ back }}" style="padding:11px 18px;background:transparent;border:1px solid #cfd8d3;border-radius:9px;font-size:13px;color:#5d5d5d;cursor:pointer;">← Inventory</button>
+            <button onClick="{{ draftFindings }}" style="{{ draftBtnStyle }}">{{ draftBtnLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 4: FINDINGS -->
+      <sc-if value="{{ stepFindings }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:fadeUp .3s ease;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Risk matrix &amp; findings</div>
+              <div style="font-size:13.5px;color:#5d5d5d;margin-top:4px;max-width:560px;">AI drafts findings from evidence and suggests a rating; you approve or adjust. Risk = likelihood × impact, weighted by {{ dataLabelShort }} exposure and asset criticality.</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <div style="text-align:center;background:#fff;border:1px solid #e6c2c2;border-radius:9px;padding:8px 14px;"><div style="font-family:'EB Garamond',serif;font-size:22px;font-weight:700;color:#b91c1c;">{{ countHigh }}</div><div style="font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace;">High</div></div>
+              <div style="text-align:center;background:#fff;border:1px solid #ecd9bf;border-radius:9px;padding:8px 14px;"><div style="font-family:'EB Garamond',serif;font-size:22px;font-weight:700;color:#92400e;">{{ countMed }}</div><div style="font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace;">Med</div></div>
+              <div style="text-align:center;background:#fff;border:1px solid #c2d8c9;border-radius:9px;padding:8px 14px;"><div style="font-family:'EB Garamond',serif;font-size:22px;font-weight:700;color:#166534;">{{ countLow }}</div><div style="font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace;">Low</div></div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:11px;margin:18px 0;">
+            <sc-for list="{{ findings }}" as="f" hint-placeholder-count="4">
+              <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:16px 18px;border-left:4px solid {{ f.riskColor }};">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+                  <div style="flex:1;min-width:280px;">
+                    <div style="display:flex;align-items:center;gap:9px;margin-bottom:5px;">
+                      <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:#888;">{{ f.id }}</span>
+                      <span style="font-size:14px;font-weight:600;color:#111;">{{ f.title }}</span>
+                      <sc-if value="{{ f.aiDrafted }}" hint-placeholder-val="{{ false }}"><span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.04em;text-transform:uppercase;background:rgba(45,106,79,.1);color:#2d6a4f;padding:2px 7px;border-radius:10px;">AI draft</span></sc-if>
+                    </div>
+                    <div style="font-size:12.5px;color:#555;line-height:1.55;margin-bottom:6px;">{{ f.desc }}</div>
+                    <div style="font-size:11.5px;color:#888;line-height:1.5;"><strong style="color:#666;">Recommendation:</strong> {{ f.rec }}</div>
+                    <div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;margin-top:6px;">{{ f.area }} · evidence: {{ f.evidence }}</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                    <div style="display:flex;gap:4px;">
+                      <button onClick="{{ f.setHigh }}" style="{{ f.highStyle }}">High</button>
+                      <button onClick="{{ f.setMed }}" style="{{ f.medStyle }}">Med</button>
+                      <button onClick="{{ f.setLow }}" style="{{ f.lowStyle }}">Low</button>
+                    </div>
+                    <div style="font-size:10px;color:#aaa;font-family:'DM Mono',monospace;">AI suggested: {{ f.aiSuggest }}</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <button onClick="{{ back }}" style="padding:11px 18px;background:transparent;border:1px solid #cfd8d3;border-radius:9px;font-size:13px;color:#5d5d5d;cursor:pointer;">← Evidence</button>
+            <button onClick="{{ next }}" style="padding:12px 22px;background:#2d6a4f;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">Build roadmap →</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 5: ROADMAP -->
+      <sc-if value="{{ stepRoadmap }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:fadeUp .3s ease;">
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Remediation roadmap</div>
+          <div style="font-size:13.5px;color:#5d5d5d;margin-top:4px;margin-bottom:18px;max-width:600px;">Findings convert into a prioritized 30 / 60 / 90-day plan with owners and validation evidence.</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+            <sc-for list="{{ roadmap }}" as="ph" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:16px 18px;border-top:3px solid {{ ph.color }};">
+                <div style="font-size:13.5px;font-weight:700;color:#111;margin-bottom:3px;">{{ ph.window }}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:#888;margin-bottom:11px;">{{ ph.owner }}</div>
+                <sc-for list="{{ ph.items }}" as="it" hint-placeholder-count="3">
+                  <div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:8px;padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:{{ ph.color }};">•</span>{{ it }}</div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <button onClick="{{ back }}" style="padding:11px 18px;background:transparent;border:1px solid #cfd8d3;border-radius:9px;font-size:13px;color:#5d5d5d;cursor:pointer;">← Findings</button>
+            <button onClick="{{ next }}" style="padding:12px 22px;background:#2d6a4f;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">Generate report →</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 6: REPORT -->
+      <sc-if value="{{ stepReport }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:fadeUp .3s ease;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span style="width:24px;height:24px;border-radius:50%;background:#166534;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;">✓</span>
+            <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Assessment complete</div>
+          </div>
+          <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:22px;">{{ org }} — {{ industryLabel }}. {{ findingTotal }} findings, {{ countHigh }} high. Export the client-ready report (classic print format) or the structured data.</div>
+
+          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:18px;">
+              <div style="{{ postureRingStyle }}"><div style="width:60px;height:60px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:'EB Garamond',serif;font-size:17px;font-weight:700;color:{{ postureColor }};">{{ postureShort }}</div></div>
+              <div>
+                <div style="font-size:17px;font-weight:600;color:#111;">{{ org }}</div>
+                <div style="font-size:12.5px;color:#5d5d5d;margin-top:2px;">{{ posture }} · {{ period }}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;margin-top:4px;">{{ frameworkCite }}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button onClick="{{ exportReport }}" style="background:#2d6a4f;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Export Report</button>
+              <button onClick="{{ exportJson }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:8px;padding:10px 16px;font-size:12.5px;color:#5d5d5d;cursor:pointer;">Export JSON</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button onClick="{{ goDashboard }}" style="padding:11px 20px;background:transparent;border:1px solid #2d6a4f;border-radius:9px;font-size:13px;color:#2d6a4f;font-weight:600;cursor:pointer;">Go to dashboard →</button>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:200;animation:fadeUp .25s ease;">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:820}}">
+class Component extends DCLogic {
+  state = {
+    nav: 'dashboard',     // dashboard | workflow
+    step: 'scope',
+    industry: 'health-center',
+    org: 'Cedar Valley Health Center',
+    period: 'Q3 2026',
+    evidence: [],
+    findings: [],
+    drafted: false,
+    history: null,
+    toast: ''
+  };
+
+  INDUSTRIES = [
+    { key:'health-center', label:'Health Center / Healthcare', data:'PHI / ePHI', dataShort:'ePHI', frameworks:['HIPAA Administrative','HIPAA Physical','HIPAA Technical','HITECH'] },
+    { key:'financial', label:'Financial Services', data:'Customer Financial Data', dataShort:'NPI', frameworks:['GLBA Safeguards','PCI DSS 4.0.1','SOX ITGC'] },
+    { key:'education', label:'Education', data:'Student Records', dataShort:'FERPA data', frameworks:['FERPA','GLBA Safeguards','NIST 800-171'] },
+    { key:'public-sector', label:'Government / Public Sector', data:'Controlled Unclassified Info', dataShort:'CUI', frameworks:['NIST 800-53','FISMA','NIST 800-171'] },
+    { key:'manufacturing', label:'Manufacturing / Critical Infrastructure', data:'OT / ICS & IP', dataShort:'OT data', frameworks:['IEC 62443','NIST 800-82','NIST CSF 2.0'] },
+    { key:'retail', label:'Retail / E-commerce', data:'Cardholder Data', dataShort:'CHD', frameworks:['PCI DSS 4.0.1','CCPA / CPRA','SOC 2'] }
+  ];
+
+  // Demo inventory per industry
+  INVENTORY = {
+    'health-center':[
+      {name:'Epic / EHR',dataType:'Full patient chart',hosting:'Vendor',criticality:'High'},
+      {name:'M365 / Email',dataType:'Messages w/ PHI',hosting:'Cloud',criticality:'High'},
+      {name:'Telehealth Platform',dataType:'Clinical visit data',hosting:'Cloud',criticality:'Medium'},
+      {name:'Imaging / PACS',dataType:'Diagnostic images',hosting:'On-prem',criticality:'High'}
+    ],
+    'financial':[
+      {name:'Core Banking',dataType:'Account / NPI',hosting:'Vendor',criticality:'High'},
+      {name:'Payment Gateway',dataType:'Cardholder data',hosting:'Cloud',criticality:'High'},
+      {name:'M365 / Email',dataType:'NPI in messages',hosting:'Cloud',criticality:'High'},
+      {name:'Loan Origination',dataType:'Applicant NPI',hosting:'Cloud',criticality:'Medium'}
+    ],
+    'education':[
+      {name:'SIS (Student Info Sys)',dataType:'Student records',hosting:'Vendor',criticality:'High'},
+      {name:'LMS',dataType:'Grades / records',hosting:'Cloud',criticality:'Medium'},
+      {name:'M365 / Google Workspace',dataType:'Records in mail',hosting:'Cloud',criticality:'High'},
+      {name:'Financial Aid Portal',dataType:'GLBA-covered data',hosting:'Cloud',criticality:'High'}
+    ],
+    'public-sector':[
+      {name:'Case Management Sys',dataType:'CUI',hosting:'Gov cloud',criticality:'High'},
+      {name:'M365 GCC',dataType:'CUI in mail',hosting:'Gov cloud',criticality:'High'},
+      {name:'Permitting Portal',dataType:'PII',hosting:'Cloud',criticality:'Medium'},
+      {name:'On-prem File Servers',dataType:'CUI documents',hosting:'On-prem',criticality:'High'}
+    ],
+    'manufacturing':[
+      {name:'SCADA / ICS',dataType:'OT control data',hosting:'On-prem OT',criticality:'High'},
+      {name:'MES',dataType:'Production / IP',hosting:'On-prem',criticality:'High'},
+      {name:'ERP',dataType:'Business data',hosting:'Cloud',criticality:'Medium'},
+      {name:'Engineering Workstations',dataType:'Designs / IP',hosting:'On-prem',criticality:'High'}
+    ],
+    'retail':[
+      {name:'E-commerce Platform',dataType:'Cardholder data',hosting:'Cloud',criticality:'High'},
+      {name:'POS Systems',dataType:'Cardholder data',hosting:'On-prem',criticality:'High'},
+      {name:'M365 / Email',dataType:'Customer PII',hosting:'Cloud',criticality:'Medium'},
+      {name:'Loyalty / CRM',dataType:'Customer PII',hosting:'Cloud',criticality:'Medium'}
+    ]
+  };
+
+  // Evidence catalog imported on demand
+  EVIDENCE_POOL = [
+    {icon:'🛡️',name:'External vulnerability scan',tool:'Greenbone / OpenVAS',date:'Jun 18'},
+    {icon:'🔑',name:'AD / Entra identity export',tool:'PingCastle',date:'Jun 17'},
+    {icon:'🎣',name:'Phishing simulation results',tool:'GoPhish CSV',date:'Jun 15'},
+    {icon:'☁️',name:'M365 Secure Score report',tool:'Microsoft Graph',date:'Jun 16'},
+    {icon:'💻',name:'Endpoint / encryption report',tool:'Intune / EDR',date:'Jun 18'}
+  ];
+
+  // AI-drafted findings per industry (from imported evidence)
+  FINDINGS = {
+    'health-center':[
+      {id:'SRA-001',title:'MFA not enforced for all ePHI systems',area:'Identity & Access',evidence:'PingCastle export',ai:'High',desc:'AD export shows MFA is not enforced for EHR and VPN access; 14 privileged accounts without MFA.',rec:'Enforce MFA for all ePHI systems, remote access, and privileged users; document exceptions.'},
+      {id:'SRA-002',title:'Unencrypted laptops can access ePHI',area:'Endpoint',evidence:'Intune / EDR report',ai:'High',desc:'31% of laptops lack full-disk encryption; a lost device could trigger breach analysis.',rec:'Enable BitLocker/FileVault via MDM or replace unsupported devices.'},
+      {id:'SRA-003',title:'High phish-prone rate',area:'Human Risk',evidence:'GoPhish CSV',ai:'Medium',desc:'22% click rate and 4% credential entry in the phishing simulation; low report rate.',rec:'Add role-based phishing training and a report-phishing button; retest in 60 days.'},
+      {id:'SRA-004',title:'Unsupported OS on imaging workstation',area:'Vulnerability',evidence:'Greenbone scan',ai:'Medium',desc:'Scan found a Windows 10 EOL host on the imaging VLAN with missing patches.',rec:'Segment, replace, or decommission; document risk acceptance if temporary.'}
+    ],
+    'financial':[
+      {id:'SRA-001',title:'No periodic access review for financial systems',area:'SOX ITGC',evidence:'PingCastle export',ai:'High',desc:'No evidence of quarterly access recertification for core banking; segregation-of-duties gaps.',rec:'Implement quarterly access reviews with documented approver evidence.'},
+      {id:'SRA-002',title:'Cardholder data env not fully segmented',area:'PCI DSS',evidence:'Greenbone scan',ai:'High',desc:'Scan shows the payment VLAN reachable from the corporate network; flat network risk.',rec:'Segment the CDE; restrict and log all inbound paths per PCI Req 1.'},
+      {id:'SRA-003',title:'Daily log review not performed',area:'PCI DSS',evidence:'M365 / SIEM',ai:'Medium',desc:'Audit logs collected but not reviewed daily for in-scope systems (Req 10.4).',rec:'Establish daily log review or automated alerting with documented triage.'},
+      {id:'SRA-004',title:'High phish-prone rate',area:'Human Risk',evidence:'GoPhish CSV',ai:'Medium',desc:'19% click rate in the phishing simulation among branch staff.',rec:'Targeted training for high-risk roles; retest in 60 days.'}
+    ],
+    'education':[
+      {id:'SRA-001',title:'No written risk assessment for FA systems',area:'GLBA Safeguards',evidence:'Policy review',ai:'High',desc:'Financial aid systems handle GLBA-covered data with no documented risk assessment.',rec:'Perform and document a GLBA Safeguards risk assessment with a Qualified Individual.'},
+      {id:'SRA-002',title:'Disclosure recordkeeping incomplete',area:'FERPA',evidence:'Records review',ai:'Medium',desc:'Disclosure-without-consent exceptions are used but recordkeeping is incomplete.',rec:'Maintain a complete log of disclosures per 34 CFR 99.32.'},
+      {id:'SRA-003',title:'MFA gaps for staff accounts',area:'Identity & Access',evidence:'Entra export',ai:'High',desc:'MFA not enforced for staff accessing student records remotely.',rec:'Enforce MFA across staff and admin accounts.'},
+      {id:'SRA-004',title:'High phish-prone rate',area:'Human Risk',evidence:'GoPhish CSV',ai:'Medium',desc:'Elevated click rate among faculty in the phishing simulation.',rec:'Role-based awareness training and retest.'}
+    ],
+    'public-sector':[
+      {id:'SRA-001',title:'IR plan not approved by authorizing official',area:'NIST 800-53 IR',evidence:'Policy review',ai:'High',desc:'Incident response plan exists but lacks AO review/approval and defined CISA reporting timelines.',rec:'Have the AO approve the IR plan; define US-CERT/CISA reporting timelines.'},
+      {id:'SRA-002',title:'CUI on unencrypted file servers',area:'NIST 800-171',evidence:'Endpoint report',ai:'High',desc:'On-prem file servers storing CUI lack encryption at rest.',rec:'Encrypt CUI at rest; restrict access per 3.13 controls.'},
+      {id:'SRA-003',title:'Continuous monitoring frequency undefined',area:'FISMA / RMF',evidence:'Policy review',ai:'Medium',desc:'ConMon strategy lacks defined control-reassessment frequency.',rec:'Define and document control reassessment cadence.'},
+      {id:'SRA-004',title:'Stale privileged accounts',area:'Identity & Access',evidence:'PingCastle export',ai:'Medium',desc:'Several privileged accounts inactive >90 days remain enabled.',rec:'Disable stale accounts; implement monthly review.'}
+    ],
+    'manufacturing':[
+      {id:'SRA-001',title:'IT/OT networks not segmented',area:'IEC 62443 FR5',evidence:'Greenbone scan',ai:'High',desc:'Scan shows OT/ICS reachable from the corporate IT network with no DMZ between zones.',rec:'Implement zones and conduits with an IT/OT DMZ per IEC 62443.'},
+      {id:'SRA-002',title:'No OT-aware incident response',area:'NIST 800-82',evidence:'Policy review',ai:'High',desc:'IR procedures do not account for safety instrumented system constraints.',rec:'Develop OT-specific IR procedures accounting for SIS and availability.'},
+      {id:'SRA-003',title:'Unsupported firmware on PLCs',area:'Vulnerability',evidence:'OT scan',ai:'Medium',desc:'Several PLCs run end-of-life firmware with known advisories.',rec:'Plan firmware updates within maintenance windows; compensating controls interim.'},
+      {id:'SRA-004',title:'Engineering workstations lack EDR',area:'Endpoint',evidence:'EDR report',ai:'Medium',desc:'Engineering workstations holding designs/IP have no EDR coverage.',rec:'Deploy EDR or isolate; monitor for malware.'}
+    ],
+    'retail':[
+      {id:'SRA-001',title:'No incident response plan for card compromise',area:'PCI DSS 12.10',evidence:'Policy review',ai:'High',desc:'No documented IR plan covering payment card data compromise.',rec:'Create and test a PCI-aligned incident response plan.'},
+      {id:'SRA-002',title:'POS systems on flat network',area:'PCI DSS',evidence:'Greenbone scan',ai:'High',desc:'POS terminals share the network with corporate devices; no CDE segmentation.',rec:'Segment the cardholder data environment; restrict inbound access.'},
+      {id:'SRA-003',title:'Consumer breach notification timeline undefined',area:'CCPA / CPRA',evidence:'Policy review',ai:'Medium',desc:'Breach notification process lacks defined consumer timelines.',rec:'Define notification timelines and workflow per CCPA.'},
+      {id:'SRA-004',title:'High phish-prone rate',area:'Human Risk',evidence:'GoPhish CSV',ai:'Medium',desc:'Elevated click rate among store staff in the simulation.',rec:'Targeted training and retest.'}
+    ]
+  };
+
+  seedHistory() {
+    const build = (ind, overrides) => (this.FINDINGS[ind]||[]).map((f,i)=>({ ...f, rating: (overrides && overrides[i]) || f.ai }));
+    const rec = (id, org, ind, period, date, overrides) => ({ id, org, industry: ind, period, date, findings: build(ind, overrides) });
+    return [
+      rec('s1','Cedar Valley Health Center','health-center','Q2 2026','May 28, 2026', null),
+      rec('s2','Northside Community Clinic','health-center','Q2 2026','Apr 22, 2026', ['High','Low','Medium','Low']),
+      rec('s3','Summit Credit Union','financial','Q1 2026','Apr 09, 2026', ['High','High','High','Medium'])
+    ];
+  }
+
+  componentDidMount(){ if(!this.state.history) this.setState({ history: this.seedHistory() }); }
+
+  ind(){ return this.INDUSTRIES.find(i=>i.key===this.state.industry) || this.INDUSTRIES[0]; }
+  flash(m){ this.setState({toast:m}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:''}),2600); }
+  riskColor(r){ return r==='High'?'#b91c1c':r==='Medium'?'#92400e':'#166534'; }
+  critColor(c){ return c==='High'?'#b91c1c':c==='Medium'?'#92400e':'#166534'; }
+  critBg(c){ return c==='High'?'rgba(185,28,28,.1)':c==='Medium'?'rgba(146,64,14,.1)':'rgba(22,101,52,.1)'; }
+  postureOf(high,med){ if(high>=2) return {label:'Elevated Risk',short:'High',color:'#b91c1c'}; if(high===1||med>=2) return {label:'Moderate Risk',short:'Med',color:'#92400e'}; return {label:'Low Risk',short:'Low',color:'#166534'}; }
+
+  renderVals(){
+    const s=this.state, ind=this.ind();
+    const STEPS=['scope','inventory','evidence','findings','roadmap','report'];
+    const LABELS={scope:'Scope',inventory:'Inventory',evidence:'Evidence',findings:'Findings',roadmap:'Roadmap',report:'Report'};
+    const curIdx=STEPS.indexOf(s.step);
+
+    const tab=(a)=>"font-family:'DM Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:8px 18px;border-radius:7px;border:none;cursor:pointer;background:"+(a?'#2d6a4f':'transparent')+";color:"+(a?'#fff':'#888')+";";
+
+    const steps=STEPS.map((k,i)=>{
+      const done=i<curIdx, active=i===curIdx;
+      const c=done?'#166534':active?'#2d6a4f':'#cfd8d3';
+      return { num: done?'✓':String(i+1), label:LABELS[k],
+        onGo: ()=>{ if(i<=curIdx) this.setState({step:k}); },
+        dotStyle:'width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;background:'+c+';flex-shrink:0;cursor:'+(i<=curIdx?'pointer':'default')+';',
+        labelStyle:"font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.04em;margin-left:7px;color:"+(active||done?'#111':'#aaa')+';',
+        barStyle: i<STEPS.length-1?'width:30px;height:1px;background:#cfd8d3;margin:0 11px;':'width:0;' };
+    });
+
+    const findings=s.findings.map(f=>{
+      const seg=(r,active)=>'border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid '+(active?this.riskColor(r):'#cfd8d3')+';background:'+(active?this.riskColor(r):'#fff')+';color:'+(active?'#fff':'#888')+';';
+      return { id:f.id, title:f.title, desc:f.desc, rec:f.rec, area:f.area, evidence:f.evidence, aiDrafted:true, aiSuggest:f.ai,
+        riskColor:this.riskColor(f.rating),
+        highStyle:seg('High',f.rating==='High'), medStyle:seg('Medium',f.rating==='Medium'), lowStyle:seg('Low',f.rating==='Low'),
+        setHigh:()=>this.rate(f.id,'High'), setMed:()=>this.rate(f.id,'Medium'), setLow:()=>this.rate(f.id,'Low') };
+    });
+    const countHigh=s.findings.filter(f=>f.rating==='High').length;
+    const countMed=s.findings.filter(f=>f.rating==='Medium').length;
+    const countLow=s.findings.filter(f=>f.rating==='Low').length;
+    const posture=this.postureOf(countHigh,countMed);
+
+    const roadmap=this.buildRoadmap();
+
+    const cnt=(arr,r)=>(arr||[]).filter(f=>f.rating===r).length;
+    const history=(s.history||[]).map(h=>{
+      const high=cnt(h.findings,'High'), med=cnt(h.findings,'Medium'), low=cnt(h.findings,'Low');
+      const p=this.postureOf(high,med); const il=(this.INDUSTRIES.find(i=>i.key===h.industry)||{}).label||'';
+      return { org:h.org, date:h.date, industryLabel:il, findingCount:(h.findings||[]).length, highCount:high,
+        postureShort:p.short,
+        postureStyle:'width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:"EB Garamond",serif;font-size:14px;font-weight:700;color:'+p.color+';background:'+this.critBg(p.short==='High'?'High':p.short==='Med'?'Medium':'Low')+';',
+        badgeStyle:'font-family:"DM Mono",monospace;font-size:10px;padding:3px 9px;border-radius:20px;color:'+(high>0?'#b91c1c':'#166534')+';background:'+(high>0?'rgba(185,28,28,.1)':'rgba(22,101,52,.1)')+';',
+        onOpen:()=>this.setState({ nav:'workflow', step:'report', org:h.org, industry:h.industry, period:h.period, findings:(h.findings||[]).map(f=>({...f})), drafted:true, evidence:this.EVIDENCE_POOL.slice() }) };
+    });
+    const allHigh=(s.history||[]).reduce((a,h)=>a+cnt(h.findings,'High'),0);
+
+    return {
+      showTabs: s.nav==='dashboard'||s.nav==='workflow',
+      tabDashStyle:tab(s.nav==='dashboard'), tabNewStyle:tab(s.nav==='workflow'),
+      goDashboard:()=>this.setState({nav:'dashboard'}),
+      goNew:()=>this.setState({nav:'workflow',step:'scope'}),
+      isDashboard: s.nav==='dashboard', isWorkflow: s.nav==='workflow',
+
+      statCount:(s.history||[]).length, statHigh:allHigh, statPosture: allHigh>4?'Elevated':allHigh>1?'Moderate':'Low',
+      history,
+
+      steps,
+      stepScope:s.step==='scope', stepInventory:s.step==='inventory', stepEvidence:s.step==='evidence', stepFindings:s.step==='findings', stepRoadmap:s.step==='roadmap', stepReport:s.step==='report',
+      industries:this.INDUSTRIES, industry:s.industry, industryLabel:ind.label,
+      dataLabel:ind.data, dataLabelShort:ind.dataShort, frameworks:ind.frameworks,
+      setIndustry:(e)=>this.setState({industry:e.target.value, evidence:[], findings:[], drafted:false}),
+      org:s.org, period:s.period,
+      setOrg:(e)=>this.setState({org:e.target.value}), setPeriod:(e)=>this.setState({period:e.target.value}),
+
+      inventory:(this.INVENTORY[s.industry]||[]).map(r=>({ name:r.name, dataType:r.dataType, hosting:r.hosting, criticality:r.criticality,
+        critStyle:'font-family:"DM Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:20px;color:'+this.critColor(r.criticality)+';background:'+this.critBg(r.criticality)+';' })),
+
+      evidence:s.evidence, noEvidence:s.evidence.length===0,
+      importEvidence:()=>{ this.setState({evidence:this.EVIDENCE_POOL.slice()}); this.flash('Imported '+this.EVIDENCE_POOL.length+' evidence artifacts into the repository.'); },
+      draftBtnLabel: s.evidence.length===0 ? 'Import evidence first' : '✨ Draft findings from evidence →',
+      draftBtnStyle: 'padding:12px 22px;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:'+(s.evidence.length===0?'not-allowed':'pointer')+';background:'+(s.evidence.length===0?'#cfd8d3':'#2d6a4f')+';color:#fff;',
+      draftFindings:()=>{
+        if(s.evidence.length===0){ this.flash('Import evidence before drafting findings.'); return; }
+        const base=(this.FINDINGS[s.industry]||[]).map(f=>({ ...f, rating:f.ai }));
+        this.setState({findings:base, drafted:true, step:'findings'});
+        this.flash('AI drafted '+base.length+' findings — review and approve each rating.');
+      },
+
+      findings, countHigh, countMed, countLow, findingTotal:s.findings.length,
+      roadmap,
+
+      posture:posture.label, postureShort:posture.short, postureColor:posture.color,
+      postureRingStyle:'width:82px;height:82px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient('+posture.color+' '+(countHigh*90)+'deg,#eef1ef 0);flex-shrink:0;',
+      frameworkCite: ind.frameworks.join(' · ')+' · rev 2026-06',
+
+      next:()=>this.setState({step:STEPS[Math.min(curIdx+1,STEPS.length-1)]}),
+      back:()=>this.setState({step:STEPS[Math.max(curIdx-1,0)]}),
+
+      exportReport:()=>this.exportReport(),
+      exportJson:()=>this.exportJson(),
+      toast:s.toast
+    };
+  }
+
+  rate(id,r){ this.setState(st=>({ findings: st.findings.map(f=>f.id===id?{...f,rating:r}:f) })); }
+
+  buildRoadmap(){
+    const f=this.state.findings;
+    const high=f.filter(x=>x.rating==='High'), med=f.filter(x=>x.rating==='Medium'), low=f.filter(x=>x.rating==='Low');
+    const take=(arr,fb)=> arr.length? arr.map(x=>x.rec) : fb;
+    return [
+      { window:'0–30 days', owner:'IT / Security', color:'#b91c1c', items: take(high,['Close urgent items','Disable stale accounts','Confirm backups']) },
+      { window:'31–60 days', owner:'IT / Compliance', color:'#92400e', items: take(med,['Update policies and procedures','Document vendor risk','Targeted training']) },
+      { window:'61–90 days', owner:'Leadership / IT', color:'#166534', items: take(low,['Follow-up scans','Tabletop exercise','Access recertification']).concat(['Update risk register status']) }
+    ];
+  }
+
+  _slug(s){ return (s||'report').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  _clean(){
+    const s=this.state, ind=this.ind();
+    return { organization:s.org, period:s.period, industry:ind.label, frameworks:ind.frameworks,
+      findings:s.findings.map(f=>({id:f.id,title:f.title,area:f.area,risk:f.rating,evidence:f.evidence,description:f.desc,recommendation:f.rec})),
+      remediation_roadmap:this.buildRoadmap().map(p=>({window:p.window,owner:p.owner,actions:p.items})) };
+  }
+  _deliver(name,content,mime){
+    try{ const b=new Blob([content],{type:mime}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; a.style.display='none'; document.body.appendChild(a); a.click(); setTimeout(()=>{try{document.body.removeChild(a);}catch(e){} URL.revokeObjectURL(u);},1500); this.flash('Downloaded '+name); }
+    catch(e){ try{ const w=window.open('','_blank'); if(w){ w.document.write(mime.indexOf('json')>=0?'<pre>'+this._esc(content)+'</pre>':content); w.document.close(); this.flash('Opened '+name); } else this.flash('Allow pop-ups to export.'); }catch(e2){ this.flash('Export blocked by sandbox.'); } }
+  }
+  exportJson(){ this._deliver(this._slug(this.state.org)+'-sra.json', JSON.stringify(this._clean(),null,2), 'application/json'); }
+  exportReport(){ this._deliver(this._slug(this.state.org)+'-sra-report.html', this._reportHtml(), 'text/html;charset=utf-8'); }
+
+  _reportHtml(){
+    const s=this.state, ind=this.ind();
+    const ch=s.findings.filter(f=>f.rating==='High').length, cm=s.findings.filter(f=>f.rating==='Medium').length;
+    const posture=this.postureOf(ch,cm);
+    const order={High:0,Medium:1,Low:2};
+    const sorted=s.findings.slice().sort((a,b)=>order[a.rating]-order[b.rating]);
+    const rows=sorted.map(f=>{ const rc=this.riskColor(f.rating);
+      return '<tr style="border-bottom:1px solid #e8e2d6;"><td style="padding:10px 8px;font-family:Georgia,serif;font-size:12px;white-space:nowrap;vertical-align:top;">'+this._esc(f.id)+'</td><td style="padding:10px 8px;vertical-align:top;"><span style="font-weight:700;color:'+rc+';text-transform:uppercase;font-size:11px;letter-spacing:.04em;">'+this._esc(f.rating)+'</span></td><td style="padding:10px 8px;font-size:13px;vertical-align:top;"><strong>'+this._esc(f.title)+'</strong><div style="color:#555;font-size:12.5px;margin-top:3px;line-height:1.5;">'+this._esc(f.desc)+'</div><div style="color:#1f4e3b;font-size:12px;margin-top:4px;"><em>Recommendation:</em> '+this._esc(f.rec)+'</div></td><td style="padding:10px 8px;font-size:12px;color:#666;vertical-align:top;white-space:nowrap;">'+this._esc(f.area)+'</td></tr>'; }).join('');
+    const road=this.buildRoadmap().map(p=>'<div style="border-top:3px solid '+p.color+';padding:14px 16px;border:1px solid #e8e2d6;border-top:3px solid '+p.color+';"><div style="font-weight:700;font-size:14px;margin-bottom:8px;font-family:Georgia,serif;">'+this._esc(p.window)+'</div>'+p.items.map(i=>'<div style="font-size:12.5px;color:#444;margin-bottom:6px;padding-left:13px;position:relative;line-height:1.45;"><span style="position:absolute;left:0;color:'+p.color+';">•</span>'+this._esc(i)+'</div>').join('')+'</div>').join('');
+    const invRows=(this.INVENTORY[s.industry]||[]).map(r=>'<tr style="border-bottom:1px solid #e8e2d6;"><td style="padding:8px;font-size:12.5px;">'+this._esc(r.name)+'</td><td style="padding:8px;font-size:12.5px;color:#555;">'+this._esc(r.dataType)+'</td><td style="padding:8px;font-size:12px;color:#777;">'+this._esc(r.hosting)+'</td><td style="padding:8px;font-size:12px;font-weight:600;color:'+this.critColor(r.criticality)+';">'+this._esc(r.criticality)+'</td></tr>').join('');
+    return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>'+this._esc(s.org)+' — Security Risk Assessment</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Georgia,"Times New Roman",serif;color:#1a1a1a;background:#fff;line-height:1.5;}h2{font-size:19px;color:#1f4e3b;margin:30px 0 10px;padding-bottom:5px;border-bottom:1px solid #d8cfbb;}@media print{@page{margin:0.7in;}}</style></head><body><div style="max-width:780px;margin:0 auto;padding:54px 44px;"><div style="border-left:9px solid '+posture.color+';padding-left:20px;margin-bottom:36px;"><div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#2d6a4f;margin-bottom:8px;">Silhouette Compliance · Confidential</div><div style="font-size:32px;font-weight:700;line-height:1.15;">Security Risk Assessment</div><div style="font-size:18px;color:#555;margin-top:8px;">'+this._esc(s.org)+'</div><div style="font-family:Arial,sans-serif;font-size:12px;color:#888;margin-top:8px;">'+this._esc(ind.label)+' · '+this._esc(s.period)+' · '+this._esc(ind.frameworks.join(', '))+'</div></div><h2>1. Executive Summary</h2><p style="font-size:13.5px;margin-bottom:10px;">This Security Risk Assessment evaluates risks to the confidentiality, integrity, and availability of '+this._esc(ind.data)+' at '+this._esc(s.org)+'. It follows a standard Assess / Analyze / Deliver methodology: stakeholder interviews and evidence collection, safeguard and technical review, and a prioritized remediation roadmap. Overall posture: <strong style="color:'+posture.color+';">'+this._esc(posture.label)+'</strong> — '+ch+' high, '+cm+' medium findings requiring leadership attention.</p><h2>2. Sensitive System Inventory</h2><table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr style="border-bottom:2px solid #1a1a1a;text-align:left;"><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">System</th><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">Data Type</th><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">Hosting</th><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">Criticality</th></tr></thead><tbody>'+invRows+'</tbody></table><h2>3. Risk Matrix &amp; Findings</h2><table style="width:100%;border-collapse:collapse;margin-top:6px;"><thead><tr style="border-bottom:2px solid #1a1a1a;text-align:left;"><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">ID</th><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">Risk</th><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">Finding &amp; Recommendation</th><th style="padding:8px;font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;">Area</th></tr></thead><tbody>'+rows+'</tbody></table><h2>4. Remediation Roadmap</h2><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;">'+road+'</div><div style="margin-top:40px;padding-top:14px;border-top:1px solid #d8cfbb;font-family:Arial,sans-serif;font-size:11px;color:#999;">Confidential — prepared for '+this._esc(s.org)+'. This report is a point-in-time risk management document. Detailed evidence and raw tool output are retained in the secure evidence repository.</div></div></body></html>';
+  }
+}
+</script>
+</body>
+</html>

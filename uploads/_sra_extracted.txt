@@ -1,0 +1,2878 @@
+
+
+SECURITY RISK ASSESSMENTREPORT TEMPLATE
+Healthcare / HIPAA-Focused SRA Layout
+
+ROW> | 
+Field | 
+Value
+ROW> | 
+Organization | 
+[Organization Name]
+ROW> | 
+Assessment Period | 
+[Start Date] to [End Date]
+ROW> | 
+Prepared By | 
+[Assessor / Team / Company]
+ROW> | 
+Primary Contact | 
+[Security Official / Compliance Officer]
+ROW> | 
+Version | 
+[Version Number]
+ROW> | 
+Report Date | 
+[Date]
+ROW> | 
+Confidentiality NoticeThis report may contain sensitive security information, vulnerability details, infrastructure information, and protected health information references. Limit distribution to authorized personnel with a business need to know.
+Template note: Replace bracketed fields with client-specific content. Keep evidence, screenshots, raw scans, and sensitive technical detail in controlled appendices when possible.
+
+Document Control
+ROW> | 
+Version | 
+Date | 
+Author | 
+Summary of Changes | 
+Reviewer / Approval
+ROW> | 
+0.1 | 
+[Date] | 
+[Name] | 
+Initial draft | 
+[Name]
+ROW> | 
+1.0 | 
+[Date] | 
+[Name] | 
+Final approved version | 
+[Name]
+Distribution List
+ROW> | 
+Name | 
+Role | 
+Organization | 
+Access Level | 
+Delivery Method
+ROW> | 
+[Name] | 
+[Security Official] | 
+[Organization] | 
+Full report | 
+[Secure portal/email]
+ROW> | 
+[Name] | 
+[Executive Sponsor] | 
+[Organization] | 
+Executive summary only | 
+[Secure portal/email]
+How to Use This Template
+Use Sections 1-5 to orient leadership: purpose, scope, methodology, PHI/ePHI inventory, and overall risk posture.
+Use Sections 6-15 for the body of the assessment: criticality, threat model, risk matrix, safeguards review, vulnerability evidence, phishing, identity, endpoint, network, incident response, vendor risk, and site observations.
+Use Sections 16-18 to convert findings into action: remediation roadmap, management response, risk acceptance, and evidence appendices.
+Use the Penetration Testing Readiness Addendum only when the client has a written, authorized testing scope. A standard SRA can include vulnerability scanning and control review without being a penetration test.
+Use Appendix H for internal app build-out: it maps each report section to tools, evidence, manual inputs, automation opportunities, and data model objects.
+ROW> | 
+Recommended report principleThe SRA should be a risk management document, not a raw scanner dump. Keep leadership sections concise and move detailed tool output, screenshots, and raw vulnerability data to appendices.
+Table of Contents
+1. Executive Summary
+2. Scope, Assumptions, and Methodology
+3. Organization and Environment Overview
+4. PHI / ePHI Inventory
+5. Application Criticality Matrix
+6. Threat Matrix
+7. Risk Rating Methodology
+8. Risk Matrix and Findings
+9. Administrative Safeguards Review
+10. Physical Safeguards Review
+11. Technical Safeguards Review
+12. Technical Testing Summaries
+13. Identity, Endpoint, Network, and Cloud Review
+14. Incident Response, Backup, and Disaster Recovery
+15. Business Associate and Vendor Risk Review
+16. Site Walkthroughs and Physical Observations
+17. Remediation Roadmap
+18. Management Response and Risk Acceptance
+19. Penetration Testing Readiness Addendum
+Appendices
+Appendix G: Free Tool Options for SRA Evidence Collection (REMOVE SECTION ON FINAL)
+Appendix G.1: Tool Link Directory (REMOVE SECTION ON FINAL)
+Appendix H: UI Automation and Tool-to-Section Mapping (REMOVE SECTION ON FINAL)
+Update page numbers manually or insert an automatic Word Table of Contents after finalizing headings.
+
+1. Executive Summary
+Audience: Board, executive leadership, compliance, IT leadership. Keep this section short, business-focused, and action-oriented.
+Organization overview: [Fill in]
+[Fill in]
+Assessment period and business context: [Fill in]
+Overall security posture: [Fill in]
+[Fill in]
+1.1 Current State Highlights
+ROW> | 
+Area | 
+Positive Control / Improvement | 
+Evidence Reviewed | 
+Notes
+ROW> | 
+Identity &amp; Access | 
+[Example: MFA enabled for remote access] | 
+[Config screenshot / admin report] | 
+[Limitations]
+ROW> | 
+Endpoint Security | 
+[Example: EDR deployed] | 
+[EDR console / asset inventory] | 
+[Coverage %]
+ROW> | 
+Email Security | 
+[Example: DKIM/DMARC/Proofpoint/Defender controls] | 
+[M365/Proofpoint report] | 
+[Gaps]
+ROW> | 
+Backup / DR | 
+[Example: backup encryption enabled] | 
+[Backup console / restore test] | 
+[Last test date]
+1.2 Top Risks Requiring Leadership Attention
+ROW> | 
+Priority | 
+Risk Area | 
+Finding | 
+Business Impact | 
+Recommended Decision
+ROW> | 
+1 | 
+[Identity] | 
+[MFA not enforced for ePHI systems] | 
+[Credential compromise could expose ePHI] | 
+[Approve MFA project]
+ROW> | 
+2 | 
+[Endpoint] | 
+[Unencrypted devices] | 
+[Lost device could trigger breach analysis] | 
+[Fund BitLocker/MDM remediation]
+ROW> | 
+3 | 
+[Resilience] | 
+[DR testing not current] | 
+[Ransomware recovery uncertainty] | 
+[Approve tabletop and restore test]
+ROW> | 
+4 | 
+[Vendor Risk] | 
+[Business associate review incomplete] | 
+[Third-party ePHI exposure] | 
+[Assign owner and annual review process]
+1.3 30 / 60 / 90-Day Action Summary
+ROW> | 
+Timeframe | 
+Recommended Actions | 
+Owner | 
+Success Criteria
+ROW> | 
+0-30 days | 
+Close urgent/high-risk items; disable stale accounts; patch unsupported/high-risk systems; confirm backups. | 
+[IT / Compliance] | 
+[Evidence captured]
+ROW> | 
+31-60 days | 
+Implement MFA gaps; encrypt devices; update policies/procedures; document vendor risk process. | 
+[IT / Compliance] | 
+[Policy + technical evidence]
+ROW> | 
+61-90 days | 
+Run follow-up scans; conduct tabletop; complete role-based access reviews; update risk register status. | 
+[Leadership / IT] | 
+[Validated remediation]
+2. Scope, Assumptions, and Methodology
+Define exactly what was assessed, what was not assessed, what evidence was available, and what limitations apply.
+2.1 Assessment Objectives
+Identify risks and vulnerabilities to the confidentiality, integrity, and availability of ePHI.
+Inventory PHI/ePHI systems, data flows, and major third parties.
+Evaluate administrative, physical, and technical safeguards.
+Summarize vulnerability scan, phishing simulation, identity/access, and policy/procedure review results.
+Prioritize remediation actions with owners, target dates, and evidence requirements.
+2.2 Assessment Scope
+ROW> | 
+Scope Element | 
+Included? | 
+Details / Boundaries | 
+Evidence Source
+ROW> | 
+Legal entity / business unit | 
+Yes | 
+[Covered entity / business associate / clinics] | 
+[Org chart / interviews]
+ROW> | 
+Locations | 
+Yes | 
+[Sites included; remote or onsite walkthroughs] | 
+[Walkthrough notes]
+ROW> | 
+ePHI systems | 
+Yes | 
+[EHR, dental, imaging, telehealth, M365, claims, labs] | 
+[System inventory]
+ROW> | 
+Network vulnerability scan | 
+Yes / No | 
+[Internal / external scope; dates; targets] | 
+[Scanner report]
+ROW> | 
+Phishing simulation | 
+Yes / No | 
+[Campaign date; users tested; template used] | 
+[Phishing platform report]
+ROW> | 
+Penetration testing | 
+No / Separate SOW | 
+[Only include if separately authorized] | 
+[Rules of engagement]
+2.3 Methodology Overview
+ROW> | 
+Phase | 
+Activities | 
+Outputs
+ROW> | 
+Assess | 
+Kickoff, stakeholder interviews, questionnaires, document request, PHI/ePHI inventory, virtual/onsite walkthroughs. | 
+Scope confirmation, evidence inventory, initial observations.
+ROW> | 
+Analyze | 
+Policy review, HIPAA safeguard crosswalk, vulnerability scanning, phishing simulation, identity review, endpoint/network/cloud review, vendor review. | 
+Findings, risk ratings, control gaps, validation notes.
+ROW> | 
+Deliver | 
+Executive summary, risk matrix, remediation roadmap, evidence appendices, management review. | 
+Final SRA report and action plan.
+2.4 Assessment Data Sources
+ROW> | 
+Evidence Type | 
+Examples | 
+Owner / Source | 
+Date Received | 
+Notes
+ROW> | 
+Interviews | 
+IT, Compliance, HR, Operations, Clinical, Billing, Facilities | 
+[Name] | 
+[Date] | 
+[Limitations]
+ROW> | 
+Policies / Procedures | 
+HIPAA Security, IR, DR, access control, device/media, training, vendor risk | 
+[Name] | 
+[Date] | 
+[Version/date]
+ROW> | 
+Technical exports | 
+AD/Entra users, endpoint inventory, EDR, MDM, firewall, M365, vulnerability scans | 
+[Name] | 
+[Date] | 
+[Coverage]
+ROW> | 
+Business records | 
+BA inventory, BAA sample, incident log, training completion, termination list | 
+[Name] | 
+[Date] | 
+[Completeness]
+2.5 Limitations and Assumptions
+This report represents a point-in-time assessment based on evidence provided during the assessment period.
+A vulnerability scan identifies known weaknesses but does not prove exploitability unless a separate authorized penetration test validates the attack path.
+Scanner output may include false positives or items requiring business context before remediation.
+Systems, vendors, applications, and PHI flows can change after the assessment; update the PHI inventory and risk register at least annually and after major changes.
+3. Organization and Environment Overview
+Mission / business profile: [Fill in]
+[Fill in]
+ROW> | 
+Category | 
+Details
+ROW> | 
+Locations / sites | 
+[List clinics, admin locations, remote work model]
+ROW> | 
+Workforce size | 
+[Employees, contractors, volunteers, providers]
+ROW> | 
+IT model | 
+[Internal IT, managed service provider, co-managed model]
+ROW> | 
+Major cloud platforms | 
+[M365, EHR, telehealth, hosted data center, SaaS]
+ROW> | 
+Major recent changes | 
+[EHR migration, M365 migration, new EDR, firewall, MDM, SSO, etc.]
+3.1 High-Level Technology Environment
+ROW> | 
+Area | 
+Current State | 
+Known Constraints / Risks | 
+Evidence
+ROW> | 
+Network | 
+[WAN, SD-WAN, VPN, guest Wi-Fi, segmentation] | 
+[Legacy systems, open ports, firewall review gaps] | 
+[Network diagram / interview]
+ROW> | 
+Identity | 
+[AD/Entra/Okta/SSO/MFA] | 
+[Stale users, privileged accounts, MFA gaps] | 
+[User export]
+ROW> | 
+Endpoint | 
+[Workstations/laptops/mobile/VDI] | 
+[Encryption gaps, unsupported OS, unmanaged devices] | 
+[Inventory / EDR / MDM]
+ROW> | 
+Applications | 
+[EHR, dental, imaging, telehealth, labs, claims] | 
+[Criticality, vendor access, audit controls] | 
+[Application list]
+ROW> | 
+Cloud / email | 
+[M365/Google/etc.] | 
+[DLP, phishing, retention, audit logs] | 
+[Admin center reports]
+4. PHI / ePHI Inventory
+The PHI inventory is the foundation of the SRA. Capture where PHI is created, received, maintained, transmitted, stored, archived, and destroyed.
+4.1 Common PHI Categories
+ROW> | 
+PHI Category | 
+Format | 
+Where Used / Stored | 
+Owner | 
+Safeguards / Notes
+ROW> | 
+Registration and demographics | 
+Electronic / paper | 
+[EHR, intake forms] | 
+[Front desk / HIM] | 
+[Scanning, access controls]
+ROW> | 
+Insurance / eligibility | 
+Electronic / paper | 
+[Eligibility portals, EHR] | 
+[Billing] | 
+[Portal access review]
+ROW> | 
+Clinical documentation | 
+Electronic | 
+[EHR, telehealth, referrals] | 
+[Clinical] | 
+[Audit logs, MFA]
+ROW> | 
+Labs / diagnostic results | 
+Electronic / paper | 
+[Lab interfaces, device workstations] | 
+[Clinical / lab] | 
+[Device review]
+ROW> | 
+Claims / billing / remittance | 
+Electronic | 
+[Clearinghouse, EHR, accounting] | 
+[Billing] | 
+[BAA / access review]
+ROW> | 
+Voice, fax, messaging, texting | 
+Electronic | 
+[VOIP, eFax, patient reminder apps] | 
+[Operations] | 
+[Encryption, access, retention]
+4.2 Primary ePHI Systems Inventory
+ROW> | 
+System / Application | 
+Purpose | 
+ePHI Type | 
+Hosting Model | 
+Owner | 
+BAA / Contract | 
+Notes
+ROW> | 
+[EHR] | 
+[Clinical record / PM] | 
+[Full patient chart] | 
+[Vendor hosted / on-prem] | 
+[Owner] | 
+[Yes/No] | 
+[MFA, audit logs]
+ROW> | 
+[Dental EHR / Imaging] | 
+[Dental chart / images] | 
+[Dental PHI / images] | 
+[Vendor hosted / local] | 
+[Owner] | 
+[Yes/No] | 
+[Device controls]
+ROW> | 
+[M365 / Email / SharePoint] | 
+[Email, files, collaboration] | 
+[Various PHI] | 
+[Cloud] | 
+[IT] | 
+[Yes/No] | 
+[DLP, retention, MFA]
+ROW> | 
+[Telehealth] | 
+[Virtual visits] | 
+[Clinical PHI] | 
+[Cloud] | 
+[Clinical] | 
+[Yes/No] | 
+[BAA, recording settings]
+ROW> | 
+[Claims / Clearinghouse] | 
+[Claims submission] | 
+[Billing PHI] | 
+[Cloud] | 
+[Billing] | 
+[Yes/No] | 
+[User access]
+4.3 PHI Data Flow Summary
+ROW> | 
+Flow ID | 
+Source | 
+Destination | 
+Transport Method | 
+PHI Type | 
+Safeguards | 
+Risk Notes
+ROW> | 
+DF-01 | 
+[Patient intake] | 
+[EHR] | 
+[Portal / paper scan] | 
+[Demographics] | 
+[TLS / role-based access] | 
+[Paper handling]
+ROW> | 
+DF-02 | 
+[EHR] | 
+[Lab vendor] | 
+[Interface / portal] | 
+[Orders/results] | 
+[BAA / access controls] | 
+[Vendor access]
+ROW> | 
+DF-03 | 
+[EHR] | 
+[Clearinghouse/payor] | 
+[Secure claim submission] | 
+[Billing PHI] | 
+[BAA / user access] | 
+[Eligibility portals]
+ROW> | 
+DF-04 | 
+[Staff] | 
+[Patient] | 
+[Text/email/phone] | 
+[Appointment/clinical info] | 
+[Approved platform] | 
+[Texting policy]
+5. Application Criticality Matrix
+Rate criticality based on patient care impact, business impact, legal/compliance impact, and downtime tolerance. The sample reports used High/Medium/Low criticality and considered outages longer than roughly two hours during a day as meaningful for patient care/business impact.
+ROW> | 
+Application / System | 
+Criticality | 
+Downtime Tolerance | 
+Data Type | 
+Primary Owner | 
+Notes
+ROW> | 
+[EHR / PM] | 
+High | 
+[&lt;2 hours] | 
+[Full ePHI] | 
+[Clinical/IT] | 
+[Primary clinical system]
+ROW> | 
+[M365 Email / Files] | 
+High | 
+[&lt;4 hours] | 
+[Messages/files with PHI] | 
+[IT] | 
+[DLP/MFA/logging]
+ROW> | 
+[Dental / Imaging] | 
+High | 
+[&lt;4 hours] | 
+[Dental chart/images] | 
+[Dental/IT] | 
+[Device controls]
+ROW> | 
+[Telehealth] | 
+Medium | 
+[Same day] | 
+[Clinical visit data] | 
+[Clinical] | 
+[BAA/settings]
+ROW> | 
+[Accounting] | 
+Low / Medium | 
+[1-3 days] | 
+[Patient refunds / limited PHI] | 
+[Finance] | 
+[Access review]
+6. Threat Matrix
+Include natural, human-caused, malicious, accidental, technical, and third-party threats. Tie threats to existing controls and residual risk.
+ROW> | 
+Threat Type | 
+Specific Threat | 
+Probability | 
+Existing Measures | 
+Residual Risk / Notes
+ROW> | 
+Natural | 
+Hurricane / flooding / wildfire / earthquake / power loss | 
+High / Medium / Low | 
+[Cloud hosting, backup power, DR plan] | 
+[Gaps / local context]
+ROW> | 
+Man-made / facility | 
+Fire, loss of AC, loss of water, loss of telecom | 
+High / Medium / Low | 
+[Facility controls, redundant internet] | 
+[Contingency gap]
+ROW> | 
+Malicious | 
+Phishing, ransomware, malware, spyware | 
+High | 
+[Email security, EDR, MFA, backups] | 
+[Residual user risk]
+ROW> | 
+Insider / access | 
+Unauthorized employee access, ex-employee access, shared accounts | 
+High / Medium | 
+[Access reviews, termination checklist] | 
+[Audit gaps]
+ROW> | 
+Accidental | 
+Misdirected PHI, lost device, paper PHI visible, improper disposal | 
+Medium / Low | 
+[Training, encryption, shred bins] | 
+[Observed gaps]
+ROW> | 
+Third party | 
+Vendor breach, SaaS outage, missing BAA, subcontractor risk | 
+Medium / High | 
+[BAA, vendor review, incident notification] | 
+[Review cadence]
+7. Risk Rating Methodology
+Use the simple High/Medium/Low model for consistency with the sample SRAs. A numeric method can be added if leadership wants more precision.
+7.1 Qualitative Rating Definitions
+ROW> | 
+Rating | 
+Definition | 
+Typical Response
+ROW> | 
+High | 
+Likely or high-impact risk to ePHI, patient care, operations, or compliance. Requires leadership visibility. | 
+Remediate urgently; track weekly/monthly until closed.
+ROW> | 
+Medium | 
+Meaningful risk that should be remediated through the risk management plan. | 
+Assign owner and target date; track regularly.
+ROW> | 
+Low | 
+Lower likelihood or lower impact risk; still document and review. | 
+Fix opportunistically or accept with rationale.
+7.2 Optional Numeric Scoring
+ROW> | 
+Dimension | 
+1 | 
+2 | 
+3 | 
+4 | 
+5
+ROW> | 
+Likelihood | 
+Rare | 
+Unlikely | 
+Possible | 
+Likely | 
+Almost certain
+ROW> | 
+Impact | 
+Minimal | 
+Low | 
+Moderate | 
+Major | 
+Severe
+ROW> | 
+Control Effectiveness | 
+Strong | 
+Mostly effective | 
+Partial | 
+Weak | 
+Absent
+Optional score example: Likelihood x Impact, adjusted by control effectiveness. Convert to High/Medium/Low for the final report.
+8. Risk Matrix and Findings
+Every finding should include: finding/gap, evidence, risk, affected asset, best practice, recommendation, owner, target date, and status. Avoid vague recommendations such as “review security.”
+8.1 High Risks
+ROW> | 
+ID | 
+Risk Area | 
+Finding / Gap | 
+Evidence | 
+Recommendation / Best Practice | 
+Owner | 
+Target Date
+ROW> | 
+SRA-H-001 | 
+Identity &amp; Access | 
+[Example: MFA not enforced for all ePHI systems] | 
+[Admin settings / interview] | 
+Enforce MFA for ePHI systems, remote access, privileged users, and cloud services. | 
+[IT] | 
+[Date]
+ROW> | 
+SRA-H-002 | 
+Endpoint Security | 
+[Example: BitLocker not enabled on all laptops/workstations] | 
+[Inventory export] | 
+Enable encryption or replace unsupported devices. | 
+[IT] | 
+[Date]
+ROW> | 
+SRA-H-003 | 
+Policy / Procedure | 
+[Example: policies exist but procedures are missing or outdated] | 
+[Policy review] | 
+Update policies with actual operating procedures, owners, evidence, and review cycle. | 
+[Compliance] | 
+[Date]
+ROW> | 
+SRA-H-004 | 
+Resilience | 
+[Example: DR tabletop not current] | 
+[DR plan / interview] | 
+Perform ransomware and internet outage tabletop; document results and corrective actions. | 
+[Leadership/IT] | 
+[Date]
+8.2 Medium Risks
+ROW> | 
+ID | 
+Risk Area | 
+Finding / Gap | 
+Evidence | 
+Recommendation / Best Practice | 
+Owner | 
+Target Date
+ROW> | 
+SRA-M-001 | 
+Network | 
+[Firewall rules not reviewed on a documented schedule] | 
+[Interview / firewall export] | 
+Review firewall rules quarterly and document evidence. | 
+[IT] | 
+[Date]
+ROW> | 
+SRA-M-002 | 
+Training | 
+[Security awareness lacks role-specific content] | 
+[Training materials] | 
+Add phishing, incident reporting, remote work, and PHI handling modules. | 
+[Compliance] | 
+[Date]
+ROW> | 
+SRA-M-003 | 
+Physical | 
+[Paper PHI visible or temporary shred bins unmanaged] | 
+[Walkthrough] | 
+Secure paper PHI, define shred bin emptying protocol, retrain staff. | 
+[Operations] | 
+[Date]
+8.3 Low Risks
+ROW> | 
+ID | 
+Risk Area | 
+Finding / Gap | 
+Evidence | 
+Recommendation / Best Practice | 
+Owner | 
+Target Date
+ROW> | 
+SRA-L-001 | 
+IoT / Assistive Tech | 
+[Smart TVs, voice assistants, or IoT devices not addressed by policy] | 
+[Walkthrough / interview] | 
+Document acceptable use and place IoT on guest/segmented network. | 
+[IT/Facilities] | 
+[Date]
+ROW> | 
+SRA-L-002 | 
+Diagnostic Devices | 
+[Diagnostic equipment review not documented] | 
+[Interview / inventory] | 
+Treat diagnostic devices as workstations where possible; review vendor access and patching. | 
+[Clinical/IT] | 
+[Date]
+8.4 Detailed Finding Template
+ROW> | 
+Field | 
+Content to Complete
+ROW> | 
+Finding ID | 
+[SRA-H-001]
+ROW> | 
+Title | 
+[Short finding title]
+ROW> | 
+Risk Rating | 
+[High / Medium / Low]
+ROW> | 
+Affected Asset(s) | 
+[Systems, locations, users, PHI types]
+ROW> | 
+Observation / Evidence | 
+[What was observed; screenshots or scan IDs in appendix]
+ROW> | 
+Risk / Business Impact | 
+[How confidentiality, integrity, availability, operations, or compliance could be affected]
+ROW> | 
+Best Practice / Requirement | 
+[HIPAA safeguard, policy, NIST, vendor guidance, or internal standard]
+ROW> | 
+Recommendation | 
+[Specific remediation steps, not generic wording]
+ROW> | 
+Remediation Owner | 
+[Name / role]
+ROW> | 
+Target Date | 
+[Date]
+ROW> | 
+Validation Evidence | 
+[What evidence will prove closure]
+ROW> | 
+Management Response | 
+[Accept / remediate / transfer / defer with rationale]
+9. Administrative Safeguards Review
+Map policy and operational evidence to HIPAA administrative safeguard areas. Focus on whether procedures exist and are actually performed.
+ROW> | 
+Safeguard Area | 
+Evidence Requested | 
+Assessment Questions | 
+Status | 
+Findings / Notes
+ROW> | 
+Risk analysis / risk management | 
+Prior SRA, risk register, remediation tracker | 
+Is risk analysis current? Are risks tracked to closure? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Assigned security responsibility | 
+Security Official appointment, job description | 
+Is the role documented with responsibilities and authority? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Workforce security | 
+Onboarding/offboarding checklist, HR termination list | 
+Are access changes timely and auditable? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Information access management | 
+Access request/approval records | 
+Is access role-based and periodically reviewed? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Security awareness and training | 
+Training content, completion report, reminders | 
+Is training timely, role-specific, and documented? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Security incident procedures | 
+IR plan, incident log, escalation tree | 
+Are incidents identified, reported, mitigated, and documented? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Contingency planning | 
+Backup plan, DR plan, test reports | 
+Are backups and emergency operations tested? | 
+[Meets / Gap] | 
+[Notes]
+ROW> | 
+Business associate management | 
+BA inventory, BAAs, review process | 
+Are BAs risk-vetted, reviewed, and terminated properly? | 
+[Meets / Gap] | 
+[Notes]
+10. Physical Safeguards Review
+ROW> | 
+Safeguard Area | 
+What to Look For | 
+Evidence / Observations | 
+Finding?
+ROW> | 
+Facility access controls | 
+Visitor/vendor sign-in, badges, escorted access, locked server/network rooms. | 
+[Walkthrough notes] | 
+[Yes/No]
+ROW> | 
+Workstation use | 
+Screen positioning, privacy screens, unattended sessions, lock behavior, shared workstations. | 
+[Walkthrough photos/notes] | 
+[Yes/No]
+ROW> | 
+Workstation security | 
+Public area devices, exam room devices, laptops, telehealth rooms, thin clients. | 
+[Walkthrough notes] | 
+[Yes/No]
+ROW> | 
+Device and media controls | 
+Asset tracking, disposal, media reuse, USB/removable media restrictions, shred bins. | 
+[Policy / inventory] | 
+[Yes/No]
+ROW> | 
+Paper PHI | 
+Lab logs, sign-in sheets, referral forms, to-be-shred bins, unlocked files. | 
+[Walkthrough notes] | 
+[Yes/No]
+11. Technical Safeguards Review
+ROW> | 
+Safeguard Area | 
+Review Focus | 
+Evidence | 
+Common Gaps
+ROW> | 
+Access control | 
+Unique IDs, role-based access, emergency access, automatic logoff, encryption. | 
+[AD/EHR/M365 exports] | 
+Shared accounts, MFA gaps, weak session timeout.
+ROW> | 
+Audit controls | 
+Logging, EHR audit reports, SIEM/EDR logs, review cadence. | 
+[SIEM/EDR/EHR logs] | 
+Logs collected but not reviewed; retention gaps.
+ROW> | 
+Integrity | 
+Protection from unauthorized modification/destruction. | 
+[Backup/EDR/application controls] | 
+Insufficient monitoring, no file integrity controls.
+ROW> | 
+Person/entity authentication | 
+Password rules, MFA, SSO, privileged account controls. | 
+[Policy/config exports] | 
+Short passwords, no MFA, stale accounts.
+ROW> | 
+Transmission security | 
+TLS, VPN, email encryption, secure fax/texting/telehealth. | 
+[SSL reports, M365 settings] | 
+Weak TLS, unsecured texting, email DLP gaps.
+12. Technical Testing Summaries
+Summaries should explain what was tested, when, with what tool category, what was found, what was validated, and what remains unresolved. Put raw results in appendices.
+12.1 Vulnerability Scan Summary
+ROW> | 
+Item | 
+Details
+ROW> | 
+Scan type | 
+[External / internal / credentialed / unauthenticated]
+ROW> | 
+Dates | 
+[Scan start/end]
+ROW> | 
+Targets | 
+[IP ranges, domains, hostnames, exclusions]
+ROW> | 
+Tool category / tool | 
+[Vulnerability scanner; version if available]
+ROW> | 
+Validation method | 
+[Manual review, false positive review, asset owner confirmation]
+ROW> | 
+Limitations | 
+[Network reachability, credentials, excluded hosts]
+ROW> | 
+Severity | 
+Count | 
+Representative Issues | 
+Remediation Priority
+ROW> | 
+Critical / Urgent | 
+[#] | 
+[Example: unauthenticated RCE / unsupported exposed service] | 
+Immediate
+ROW> | 
+High / Serious | 
+[#] | 
+[Example: unsupported OS, exposed admin portal] | 
+30 days
+ROW> | 
+Medium | 
+[#] | 
+[Example: weak TLS, missing patches] | 
+60-90 days
+ROW> | 
+Low / Informational | 
+[#] | 
+[Example: banner disclosure] | 
+As resources allow
+12.2 SSL/TLS and Public Web Exposure Review
+ROW> | 
+Domain / Host | 
+Certificate Status | 
+TLS / Cipher Findings | 
+Security Rating | 
+Recommendation
+ROW> | 
+[domain.org] | 
+[Valid / expiring / chain issue] | 
+[TLS 1.0/1.1, weak ciphers, renegotiation] | 
+[A-F / High-Med-Low] | 
+[Disable obsolete protocols; fix chain; renew cert]
+ROW> | 
+[vpn.domain.org] | 
+[Fill in] | 
+[Fill in] | 
+[Fill in] | 
+[Fill in]
+12.3 Phishing Simulation Summary
+ROW> | 
+Metric | 
+Value | 
+Notes
+ROW> | 
+Users targeted | 
+[#] | 
+[Population tested]
+ROW> | 
+Emails delivered | 
+[#] | 
+[Delivery failures excluded?]
+ROW> | 
+Opened | 
+[# / %] | 
+[Interpret cautiously; tracking limitations]
+ROW> | 
+Clicked | 
+[# / %] | 
+[Unsafe action]
+ROW> | 
+Data entered | 
+[# / %] | 
+[Highest-risk user behavior]
+ROW> | 
+Reported phishing | 
+[# / %] | 
+[Positive behavior]
+ROW> | 
+Phish-prone percentage | 
+[%] | 
+[Define formula used]
+Phishing interpretation and recommended training actions: [Fill in]
+[Fill in]
+12.4 Tooling and Evidence Map
+ROW> | 
+Assessment Area | 
+Tool Category / Examples | 
+Evidence to Capture | 
+What to Look For
+ROW> | 
+Network vulnerability scanning | 
+Qualys, Nessus, RapidFire, OpenVAS/Greenbone | 
+Host list, scan date, severities, CVEs, ports, remediations | 
+Unsupported OS, exposed services, missing patches, weak protocols.
+ROW> | 
+External attack surface / SSL | 
+SSL/TLS scanner, DNS/WHOIS, certificate inventory | 
+Domains, cert grades, TLS/cipher findings | 
+Expired certs, TLS 1.0/1.1, exposed admin portals.
+ROW> | 
+Identity / AD / Entra | 
+AD/Entra reports, PingCastle, Purple Knight, identity exports | 
+Users, groups, stale accounts, privileged users, MFA status | 
+Stale accounts, weak password policy, no MFA, shared accounts.
+ROW> | 
+Endpoint / EDR / MDM | 
+SentinelOne, Defender, CrowdStrike, KACE, Intune | 
+Coverage, encryption, malware status, OS versions | 
+Missing EDR, disabled encryption, unsupported OS, unmanaged devices.
+ROW> | 
+Email / cloud security | 
+M365 Secure Score, Defender, Proofpoint, Purview DLP | 
+MFA, DLP, DKIM/SPF/DMARC, phishing controls | 
+DLP gaps, weak anti-phishing policy, audit log gaps.
+ROW> | 
+Phishing simulation | 
+KnowBe4, Microsoft Attack Simulation, GoPhish in lab only | 
+Campaign metrics, remedial training, report rate | 
+Repeat failures, low report rate, lack of escalation.
+ROW> | 
+Web app learning labs | 
+OWASP ZAP, Burp Suite Community, Juice Shop/PortSwigger labs | 
+Lab-only notes and findings | 
+Input validation, auth, session, access control weaknesses.
+13. Identity, Endpoint, Network, and Cloud Review
+13.1 Identity and Access Management
+ROW> | 
+Control | 
+Current State | 
+Risk Indicator | 
+Recommendation
+ROW> | 
+MFA coverage | 
+[Remote / M365 / EHR / VPN / on-prem] | 
+MFA absent for ePHI or privileged accounts | 
+Enforce MFA for all ePHI systems, remote access, and privileged roles.
+ROW> | 
+Password policy | 
+[Length, complexity, lockout, history] | 
+Short passwords, no complexity, weak lockout | 
+Use strong password length, lockout, and password vaulting for privileged accounts.
+ROW> | 
+Stale accounts | 
+[Inactive users/computers] | 
+Users not logged in &gt;30/60/90 days | 
+Review, disable, and document ownership.
+ROW> | 
+Terminated users | 
+[HR/IT/EHR comparison] | 
+Terminated users still active | 
+Monthly terminated user audit including cloud and web apps.
+ROW> | 
+Privileged accounts | 
+[Admins, service accounts] | 
+Shared admin, no vault, no MFA | 
+Vault credentials; review quarterly; use least privilege.
+13.2 Endpoint, Patch, and Encryption Review
+ROW> | 
+Control | 
+Evidence | 
+Threshold / Best Practice | 
+Finding Notes
+ROW> | 
+Endpoint inventory | 
+[EDR/MDM/asset export] | 
+Complete inventory with owner and status | 
+[Notes]
+ROW> | 
+Full-disk encryption | 
+[BitLocker/FileVault/MDM report] | 
+All laptops/workstations that may access ePHI encrypted | 
+[Notes]
+ROW> | 
+EDR / malware status | 
+[EDR console] | 
+EDR active and up to date on all endpoints | 
+[Notes]
+ROW> | 
+Patch status | 
+[Patch report] | 
+Supported OS and applications patched on cadence | 
+[Notes]
+ROW> | 
+Unsupported OS / applications | 
+[Scanner/inventory] | 
+Segment, replace, or decommission | 
+[Notes]
+ROW> | 
+Removable media | 
+[Policy/config] | 
+Restricted or monitored where ePHI risk exists | 
+[Notes]
+13.3 Network, Firewall, VPN, and Wireless Review
+ROW> | 
+Control Area | 
+Review Questions | 
+Evidence | 
+Recommendation Notes
+ROW> | 
+Firewall rules | 
+Are rules reviewed quarterly? Are open ports justified? | 
+[Firewall export / review log] | 
+[Notes]
+ROW> | 
+VPN / remote access | 
+Are old protocols disabled? Is MFA required? | 
+[VPN config] | 
+[Notes]
+ROW> | 
+Network segmentation | 
+Are guest, IoT, diagnostic, server, and user networks separated? | 
+[Network diagram] | 
+[Notes]
+ROW> | 
+Wireless | 
+Are encryption, segmentation, firmware, and guest access appropriate? | 
+[Wi-Fi controller config] | 
+[Notes]
+ROW> | 
+VOIP / fax / messaging | 
+Could voicemail/fax/text messages contain PHI? Is access controlled? | 
+[Vendor/config] | 
+[Notes]
+13.4 Cloud / M365 / Email Security Review
+ROW> | 
+Area | 
+Evidence | 
+What to Check | 
+Finding Notes
+ROW> | 
+MFA / Conditional Access | 
+[Entra export] | 
+Coverage for users/admins, legacy auth disabled | 
+[Notes]
+ROW> | 
+Email authentication | 
+[DNS / admin center] | 
+SPF, DKIM, DMARC alignment | 
+[Notes]
+ROW> | 
+Anti-phishing / anti-malware | 
+[Defender/Proofpoint] | 
+Policy enabled, impersonation protection, safe links/attachments | 
+[Notes]
+ROW> | 
+DLP / encryption | 
+[Purview/Proofpoint] | 
+PHI patterns, encryption workflow, exceptions | 
+[Notes]
+ROW> | 
+Audit logging / retention | 
+[Audit settings] | 
+Audit log enabled and retained for investigations | 
+[Notes]
+ROW> | 
+SharePoint / OneDrive | 
+[Site permissions] | 
+External sharing, sensitive data locations, owner reviews | 
+[Notes]
+14. Incident Response, Backup, and Disaster Recovery
+14.1 Incident Response Review
+ROW> | 
+Component | 
+Evidence | 
+Assessment Questions | 
+Status / Gap
+ROW> | 
+IR plan | 
+[Document version/date] | 
+Does it define incident categories, escalation, roles, evidence handling? | 
+[Notes]
+ROW> | 
+Breach response | 
+[Breach policy / log] | 
+Does it address HIPAA breach assessment and notification workflow? | 
+[Notes]
+ROW> | 
+Tabletop exercises | 
+[Test report] | 
+Was ransomware/phishing/business email compromise tested recently? | 
+[Notes]
+ROW> | 
+Alert triage | 
+[EDR/SIEM process] | 
+Who reviews alerts, how often, and how are incidents documented? | 
+[Notes]
+ROW> | 
+Communications | 
+[Contact list] | 
+Are legal, privacy, IT, leadership, vendors, and cyber insurance contacts current? | 
+[Notes]
+14.2 Backup and Disaster Recovery Review
+ROW> | 
+System / Data Set | 
+Backup Method | 
+Encryption | 
+Restore Test Date | 
+RTO/RPO | 
+Notes / Gaps
+ROW> | 
+[EHR] | 
+[Vendor hosted] | 
+[Vendor] | 
+[Date/NA] | 
+[RTO/RPO] | 
+[Notes]
+ROW> | 
+[File shares / SharePoint] | 
+[Backup solution] | 
+[Yes/No] | 
+[Date] | 
+[RTO/RPO] | 
+[Notes]
+ROW> | 
+[Servers / VMs] | 
+[Backup solution] | 
+[Yes/No] | 
+[Date] | 
+[RTO/RPO] | 
+[Notes]
+ROW> | 
+[Network configs] | 
+[Config backup] | 
+[Yes/No] | 
+[Date] | 
+[RTO/RPO] | 
+[Notes]
+ROW> | 
+Scenario | 
+Last Tested | 
+Result | 
+Gaps Found | 
+Next Test Date
+ROW> | 
+Ransomware / malware incident | 
+[Date] | 
+[Pass/Fail/Partial] | 
+[Notes] | 
+[Date]
+ROW> | 
+Loss of internet / telecom | 
+[Date] | 
+[Pass/Fail/Partial] | 
+[Notes] | 
+[Date]
+ROW> | 
+EHR outage | 
+[Date] | 
+[Pass/Fail/Partial] | 
+[Notes] | 
+[Date]
+ROW> | 
+Power outage / facility outage | 
+[Date] | 
+[Pass/Fail/Partial] | 
+[Notes] | 
+[Date]
+15. Business Associate and Vendor Risk Review
+Review both the contract/BAA status and the operational process for onboarding, risk vetting, periodic reviews, incident notification, and termination/offboarding.
+ROW> | 
+Vendor / BA | 
+Service | 
+PHI Access | 
+BAA Status | 
+Risk Review Date | 
+Owner | 
+Termination / Offboarding Notes
+ROW> | 
+[Vendor] | 
+[EHR / telehealth / IT / claims / lab] | 
+[Create/receive/maintain/transmit] | 
+[Signed / missing / vendor form] | 
+[Date] | 
+[Owner] | 
+[Return/destroy PHI, access disabled]
+ROW> | 
+[Vendor] | 
+[Cloud / M365 / backup] | 
+[Limited/full] | 
+[Signed / missing] | 
+[Date] | 
+[Owner] | 
+[Notes]
+15.1 Vendor Risk Checklist
+ROW> | 
+Control | 
+Question | 
+Status | 
+Evidence / Notes
+ROW> | 
+Inventory | 
+Is the BA/vendor inventory current and complete? | 
+[Yes/No] | 
+[Evidence]
+ROW> | 
+BAA | 
+Is a signed BAA in place before PHI is shared? | 
+[Yes/No] | 
+[Evidence]
+ROW> | 
+Risk vetting | 
+Is security risk reviewed before onboarding? | 
+[Yes/No] | 
+[Evidence]
+ROW> | 
+Periodic review | 
+Are vendors reviewed annually or based on risk? | 
+[Yes/No] | 
+[Evidence]
+ROW> | 
+Incident notification | 
+Does the agreement specify notification requirements? | 
+[Yes/No] | 
+[Evidence]
+ROW> | 
+Termination | 
+Is there a procedure to disable access and return/destroy PHI? | 
+[Yes/No] | 
+[Evidence]
+16. Site Walkthroughs and Physical Observations
+ROW> | 
+Location | 
+Date | 
+Participants | 
+Areas Reviewed | 
+Notes
+ROW> | 
+[Clinic/Admin site] | 
+[Date] | 
+[Names] | 
+[Front desk, lab, server closet, exam rooms, records, shred bins] | 
+[Notes]
+16.1 Site Walkthrough Checklist
+ROW> | 
+Area | 
+Questions / Observations | 
+Finding? | 
+Evidence Reference
+ROW> | 
+Front desk / waiting area | 
+Can patients see screens, paper PHI, sign-in logs, schedules, or labels? | 
+[Yes/No] | 
+[Photo/note ID]
+ROW> | 
+Clinical areas | 
+Are workstations locked, screens positioned securely, paper PHI controlled? | 
+[Yes/No] | 
+[Photo/note ID]
+ROW> | 
+Lab / diagnostic areas | 
+Are logs/results secured? Are diagnostic devices patched and access-controlled? | 
+[Yes/No] | 
+[Photo/note ID]
+ROW> | 
+Server/network equipment | 
+Is equipment locked, cooled, and access-controlled? | 
+[Yes/No] | 
+[Photo/note ID]
+ROW> | 
+Shredding / records | 
+Are temporary bins locked? Is shredding frequency documented? | 
+[Yes/No] | 
+[Photo/note ID]
+ROW> | 
+Visitor/vendor access | 
+Are vendors signed in, escorted, and authorized? | 
+[Yes/No] | 
+[Photo/note ID]
+17. Remediation Roadmap
+This converts the report into a project plan. Include owners, due dates, validation evidence, and dependencies.
+ROW> | 
+Priority | 
+Action | 
+Related Finding(s) | 
+Owner | 
+Target Date | 
+Validation Evidence | 
+Status
+ROW> | 
+Immediate | 
+[Disable terminated/stale accounts; patch exposed critical issues] | 
+[SRA-H-###] | 
+[IT] | 
+[Date] | 
+[Export / screenshot / ticket] | 
+[Open]
+ROW> | 
+30 days | 
+[MFA plan, encryption rollout, unsupported system isolation] | 
+[SRA-H-###] | 
+[IT] | 
+[Date] | 
+[Config report] | 
+[Open]
+ROW> | 
+60 days | 
+[Policy/procedure updates, vendor review, phishing training] | 
+[SRA-M-###] | 
+[Compliance] | 
+[Date] | 
+[Policy/version/evidence] | 
+[Open]
+ROW> | 
+90 days | 
+[Follow-up scans, tabletop, access recertification] | 
+[SRA-H/M-###] | 
+[Leadership/IT] | 
+[Date] | 
+[Test report / scan report] | 
+[Open]
+ROW> | 
+Strategic | 
+[Budgeted projects: SIEM, segmentation, backup modernization] | 
+[Multiple] | 
+[Leadership] | 
+[Date] | 
+[Project plan] | 
+[Open]
+17.1 Remediation Evidence Standards
+ROW> | 
+Remediation Type | 
+Evidence That Proves Closure
+ROW> | 
+MFA / identity control | 
+Configuration export showing policy enabled, population covered, exceptions approved.
+ROW> | 
+Encryption | 
+MDM/BitLocker/FileVault report showing device coverage and exceptions.
+ROW> | 
+Patch/vulnerability | 
+Follow-up scan or patch report showing vulnerability resolved or risk accepted.
+ROW> | 
+Policy/procedure | 
+Approved policy version with date, owner, review cycle, and staff communication/training evidence.
+ROW> | 
+Training/phishing | 
+Completion report, remedial training report, repeat simulation trend.
+ROW> | 
+Vendor risk | 
+Updated inventory, signed BAA, risk review form, offboarding checklist where applicable.
+ROW> | 
+DR/IR testing | 
+Tabletop or restore test record with participants, scenario, results, gaps, and corrective actions.
+18. Management Response and Risk Acceptance
+ROW> | 
+Finding ID | 
+Management Decision | 
+Rationale | 
+Compensating Controls | 
+Approver | 
+Review Date
+ROW> | 
+[SRA-H-001] | 
+[Remediate / Accept / Transfer / Defer] | 
+[Business rationale] | 
+[Controls] | 
+[Name/title] | 
+[Date]
+ROW> | 
+Risk acceptance ruleRisk acceptance should be explicit, time-bound, approved by appropriate leadership, and reviewed at least annually or when the environment changes.
+19. Penetration Testing Readiness Addendum
+Use this section to prepare for a separate authorized penetration test or to understand how pen testing differs from an SRA. Do not perform testing outside written scope and authorization.
+19.1 SRA vs Vulnerability Assessment vs Penetration Test
+ROW> | 
+Activity | 
+Primary Question | 
+Typical Output | 
+Included in Standard SRA?
+ROW> | 
+Security Risk Assessment | 
+Where are the risks to ePHI and what should be fixed first? | 
+Risk analysis report, risk matrix, remediation roadmap. | 
+Yes
+ROW> | 
+Vulnerability Assessment | 
+What known technical weaknesses are visible on systems? | 
+Scanner report, severity summary, remediation list. | 
+Often included
+ROW> | 
+Penetration Test | 
+Can an authorized tester exploit weaknesses to prove business impact? | 
+Pen test report with attack paths, evidence, and prioritized fixes. | 
+Only if separately authorized
+19.2 Rules of Engagement Template
+ROW> | 
+Item | 
+Required Detail
+ROW> | 
+Testing type | 
+[External / internal / web application / wireless / social engineering]
+ROW> | 
+Authorized targets | 
+[IP addresses, domains, applications, user groups]
+ROW> | 
+Excluded targets | 
+[Systems, vendors, production windows, fragile systems]
+ROW> | 
+Testing window | 
+[Dates, hours, change-freeze periods]
+ROW> | 
+Third-party permissions | 
+[Cloud/SaaS/hosting permissions obtained?]
+ROW> | 
+Emergency contacts | 
+[Name, phone, email, escalation path]
+ROW> | 
+Allowed actions | 
+[Scanning, validation, exploitation limits, credential use]
+ROW> | 
+Prohibited actions | 
+[DoS, destructive testing, credential phishing unless explicitly authorized, data exfiltration]
+ROW> | 
+Evidence handling | 
+[Screenshots, sample data minimization, secure transfer, retention/destruction]
+ROW> | 
+Retesting | 
+[Included / separate scope / dates]
+19.3 Pen Test Learning Path
+ROW> | 
+Stage | 
+Learn | 
+Safe Practice Environment | 
+Outcome
+ROW> | 
+1. Foundations | 
+Networking, Linux, Windows, DNS, HTTP, TLS, identity, cloud basics. | 
+Home lab, virtual machines, vendor docs. | 
+You can read scan output and explain services/ports.
+ROW> | 
+2. Vulnerability assessment | 
+Scanning, CVEs, CVSS, false positive validation, remediation language. | 
+Nessus/OpenVAS in a lab; intentionally vulnerable VMs. | 
+You can separate real risk from scanner noise.
+ROW> | 
+3. Web security | 
+OWASP Top 10 concepts, authentication, access control, input validation. | 
+PortSwigger Web Security Academy, OWASP Juice Shop, DVWA. | 
+You can test web apps ethically in labs.
+ROW> | 
+4. Active Directory security | 
+Users, groups, Kerberos, delegation, privilege paths, hardening. | 
+Intentionally vulnerable AD labs only. | 
+You can understand identity attack paths and hardening.
+ROW> | 
+5. Reporting | 
+Executive summary, evidence, risk, remediation, retest criteria. | 
+Write reports for lab findings. | 
+You can communicate business impact clearly.
+ROW> | 
+Authorization reminderNever scan, enumerate, exploit, or test any real IP, domain, clinic, cloud tenant, vendor system, or application without written authorization, target scope, timing, and emergency contacts.
+Appendix A: Document Request List
+ROW> | 
+Document / Evidence Requested | 
+Owner | 
+Received? | 
+Notes
+ROW> | 
+Network diagram and public IP/domain inventory | 
+[IT] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+Asset inventory: servers, workstations, laptops, mobile devices, diagnostic devices | 
+[IT] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+AD/Entra/SSO user list, group list, privileged users, stale accounts | 
+[IT] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+HR termination list for comparison to IT/EHR access | 
+[HR] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+EHR user list and terminated user report | 
+[EHR admin] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+HIPAA Security and Breach policies/procedures | 
+[Compliance] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+Incident response plan, breach log, incident log | 
+[Compliance/IT] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+Backup/DR plan and most recent restore/tabletop test evidence | 
+[IT] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+BA/vendor inventory and sample BAAs | 
+[Compliance/Legal] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+Training completion reports and phishing simulation results | 
+[Compliance/IT] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+Firewall/VPN/Wi-Fi configuration review evidence | 
+[IT/MSP] | 
+[Yes/No] | 
+[Notes]
+ROW> | 
+EDR/MDM/encryption/patch reports | 
+[IT] | 
+[Yes/No] | 
+[Notes]
+Appendix B: Interview Guide
+ROW> | 
+Role | 
+Sample Questions
+ROW> | 
+Executive sponsor | 
+What are the biggest business risks? What constraints affect remediation? What changes occurred since the last SRA?
+ROW> | 
+Security Official / Compliance | 
+How are policies reviewed? How are incidents handled? How are BAs tracked? How is training documented?
+ROW> | 
+IT / MSP | 
+How are MFA, patching, EDR, backups, firewall rules, logs, and user terminations managed?
+ROW> | 
+HR | 
+How are new hires, role changes, and terminations communicated to IT and application owners?
+ROW> | 
+Clinical / Operations | 
+Where does PHI appear in workflows? Where are paper forms, faxes, images, messages, and logs used?
+ROW> | 
+Facilities | 
+How are visitors, vendors, server rooms, telecom closets, physical keys, and environmental controls managed?
+Appendix C: Evidence Index
+ROW> | 
+Evidence ID | 
+Section / Finding | 
+Evidence Description | 
+File / Location | 
+Collected By | 
+Date
+ROW> | 
+EV-001 | 
+[SRA-H-001] | 
+[Screenshot of MFA policy] | 
+[Secure folder path] | 
+[Name] | 
+[Date]
+ROW> | 
+EV-002 | 
+[SRA-H-002] | 
+[BitLocker coverage export] | 
+[Secure folder path] | 
+[Name] | 
+[Date]
+Appendix D: Common Healthcare SRA Finding Library
+ROW> | 
+Risk Area | 
+Common Finding | 
+Why It Matters | 
+Typical Recommendation
+ROW> | 
+Identity | 
+MFA not enforced for EHR, VPN, M365, on-prem access, or privileged users. | 
+Credentials are a primary attack path into ePHI systems. | 
+Enforce MFA broadly; document exceptions and compensating controls.
+ROW> | 
+Identity | 
+Weak password length, weak lockout, passwords set to never expire, dark-web credentials. | 
+Brute force and credential reuse risks increase. | 
+Strengthen policy, enable lockout, train users, rotate exposed credentials.
+ROW> | 
+Endpoint | 
+Devices lack full-disk encryption. | 
+Lost/stolen devices can create reportable breach risk. | 
+Enable BitLocker/FileVault or replace unsupported devices.
+ROW> | 
+Endpoint | 
+Unsupported OS or applications remain in use. | 
+Unsupported systems do not receive security patches. | 
+Replace, segment, or decommission; document risk acceptance if temporary.
+ROW> | 
+Vulnerability management | 
+Internal/external vulnerability scans are not run regularly or not remediated. | 
+Known issues persist and can be exploited. | 
+Run recurring scans, validate findings, track remediation.
+ROW> | 
+Policy | 
+Policies exist but procedures are missing or do not match operations. | 
+Controls cannot be consistently performed or audited. | 
+Add step-by-step procedures, owners, frequency, and evidence requirements.
+ROW> | 
+DR/IR | 
+Disaster recovery testing does not include ransomware or internet outage scenarios. | 
+Recovery capability is unproven during common events. | 
+Conduct annual tabletop and restore tests with documented lessons learned.
+ROW> | 
+Vendor risk | 
+BA inventory, annual review, and termination/offboarding processes are incomplete. | 
+Vendors may mishandle PHI or keep access after relationship ends. | 
+Maintain BA inventory, risk reviews, BAAs, and offboarding checklist.
+ROW> | 
+Physical | 
+Paper PHI visible, screens visible, temporary shred bins not controlled. | 
+Unauthorized viewing or improper disposal can expose PHI. | 
+Use privacy screens, secure paper logs, locked bins, and documented shredding cadence.
+ROW> | 
+Cloud/email | 
+DLP, email encryption, anti-phishing, or audit logging not reviewed. | 
+Email and cloud files frequently contain PHI. | 
+Review M365/email security settings and monitor exceptions.
+ROW> | 
+Website/privacy | 
+Websites may use online trackers where patient data could be captured. | 
+Potential privacy and vendor/BAA concern. | 
+Audit trackers, remove them, or ensure appropriate agreements and controls.
+Appendix E: Glossary
+ROW> | 
+Term | 
+Meaning
+ROW> | 
+SRA | 
+Security Risk Assessment / Security Risk Analysis.
+ROW> | 
+PHI / ePHI | 
+Protected Health Information / electronic Protected Health Information.
+ROW> | 
+BA / BAA | 
+Business Associate / Business Associate Agreement.
+ROW> | 
+MFA | 
+Multi-factor authentication.
+ROW> | 
+EDR | 
+Endpoint detection and response.
+ROW> | 
+SIEM | 
+Security information and event management.
+ROW> | 
+Vulnerability assessment | 
+Process of identifying known technical weaknesses; not the same as exploitation-based penetration testing.
+ROW> | 
+Penetration test | 
+Authorized security test that may validate exploitability and business impact within a written scope.
+ROW> | 
+RTO / RPO | 
+Recovery Time Objective / Recovery Point Objective.
+Appendix F: Final Report QA Checklist
+ROW> | 
+Check | 
+Complete?
+ROW> | 
+All bracketed placeholders are filled or removed. | 
+[ ]
+ROW> | 
+Executive summary matches detailed findings. | 
+[ ]
+ROW> | 
+Risk ratings are consistent with methodology. | 
+[ ]
+ROW> | 
+All findings have owners, target dates, and validation evidence. | 
+[ ]
+ROW> | 
+Sensitive screenshots and raw scans are stored securely in appendices. | 
+[ ]
+ROW> | 
+No unsupported claims are included; evidence references are complete. | 
+[ ]
+ROW> | 
+Management response and risk acceptance decisions are documented. | 
+[ ]
+ROW> | 
+Distribution list is limited to authorized recipients. | 
+[ ]
+
+Appendix G: Free Tool Options for SRA Evidence Collection (REMOVE SECTION ON FINAL)
+ROW> | 
+REMOVE THIS SECTION ON FINAL: This appendix is for internal planning, assessor training, and tool selection only. Do not include it in the client-facing final report unless the client specifically requests a tooling appendix. Tool names are examples, not endorsements. Verify current licensing, commercial-use restrictions, data handling, and HIPAA/BAA requirements before use. Never run scanning, phishing, wireless, OSINT, exploitation, or penetration-testing activity against any system without written authorization, approved scope, approved testing window, and emergency contacts.
+Purpose. The SRA template requires evidence from interviews, policy review, PHI/ePHI inventory, vulnerability scanning, phishing simulation, identity review, endpoint review, cloud/email review, incident response, disaster recovery, business associate review, and physical site walkthroughs. The tools below can help collect or validate evidence, but they do not replace professional judgment, HIPAA analysis, client interviews, or remediation planning.
+Use rules. Treat raw findings as sensitive and confidential. Confirm scope before every scan. Prefer read-only, passive, or authenticated assessment methods where available. Manually validate scanner results before assigning risk ratings. Store raw outputs in the Evidence Index or appendices, and summarize only the business-relevant findings in the report body.
+Governance, Inventory, PHI/ePHI, Policy, and Vendor Risk
+ROW> | 
+SRA task / evidence need | 
+Free or free-tier tools | 
+How to use / what to capture
+ROW> | 
+HIPAA SRA workflow and control self-assessment | 
+HHS/ONC Security Risk Assessment Tool; CISA CSET; CIS Controls Self Assessment Tool (CSAT) | 
+Use to structure questions, asset/vendor inventories, control gaps, risk treatment, and reportable remediation items. Good for small-to-medium healthcare organizations, but still requires analyst review.
+ROW> | 
+Asset inventory, IP inventory, and system ownership | 
+Nmap/Zenmap; NetBox Community; Snipe-IT Open Source; OCS Inventory NG; GLPI Community | 
+Build a list of devices, IP ranges, applications, operating systems, owners, sites, and lifecycle status. Reconcile scan data with the client inventory and interview notes.
+ROW> | 
+PHI/ePHI and PII discovery support | 
+Microsoft Presidio; PIICatcher; ripgrep; PowerShell; manual PHI inventory worksheet | 
+Use cautiously to help identify sensitive data locations in files, databases, and text. Automated tools can miss PHI or create false positives; privacy approval is required before scanning repositories that may contain PHI.
+ROW> | 
+Policy and procedure crosswalk | 
+HHS SRA Tool; CISA CSET; CIS CSAT; manual HIPAA Security Rule checklist | 
+Map policies and procedures to administrative, physical, and technical safeguards. Capture whether the policy exists, whether a procedure exists, owner, last review date, and evidence that the procedure is operational.
+ROW> | 
+Business associate and vendor risk inventory | 
+Spreadsheet template; Snipe-IT or GLPI vendor records; HHS SRA Tool asset/vendor sections | 
+Track vendor name, service, PHI/ePHI access, BAA status, risk review date, termination/offboarding process, breach notification obligations, and evidence received.
+Vulnerability, External Perimeter, Web, and SSL/TLS Review
+ROW> | 
+SRA task / evidence need | 
+Free or free-tier tools | 
+How to use / what to capture
+ROW> | 
+Network discovery and open-port review | 
+Nmap/Zenmap; arp-scan; Netdiscover; Wireshark | 
+Capture live hosts, open ports, service banners, protocols, network ranges, and unexpected services. Confirm scan permissions and avoid aggressive scan options in production unless approved.
+ROW> | 
+External vulnerability scanning | 
+Greenbone Community Edition / OpenVAS; OPENVAS FREE; Nuclei; CISA no-cost vulnerability scanning if eligible; Nessus Essentials if license terms fit | 
+Capture CVE, severity, affected host, port/service, exploitability, business context, and remediation. Validate false positives before placing findings into the risk matrix.
+ROW> | 
+Internal vulnerability scanning | 
+Greenbone Community Edition / OpenVAS; Nuclei; Wazuh vulnerability detection; Lynis for Linux; authenticated OS/package reports | 
+Use authenticated scans when approved to detect missing patches, EOL software, insecure protocols, weak local configuration, and exposed internal services.
+ROW> | 
+Web application and API assessment support | 
+OWASP ZAP; Burp Suite Community Edition; Nikto; Wapiti | 
+Use for passive proxying, manual request testing, baseline scanning, headers, outdated components, session/cookie issues, and OWASP Top 10 indicators. Dedicated web app pen testing is separate from a normal SRA unless authorized.
+ROW> | 
+SSL/TLS and public web exposure | 
+Qualys SSL Labs Server Test; testssl.sh; SSLyze; Mozilla Observatory; SecurityHeaders.com | 
+Capture certificate chain, expiration, TLS versions, weak ciphers, HSTS, cookie flags, server headers, public grade/rating, and remediation items.
+ROW> | 
+OSINT and external attack surface inventory | 
+OWASP Amass; theHarvester; crt.sh; DNSDumpster; Censys/Shodan free tiers | 
+Use passive OSINT to identify domains, subdomains, public IPs, exposed services, certificates, and forgotten assets. Active probing still requires explicit authorization.
+Identity, Endpoint, Cloud, Network Device, and Wireless Review
+ROW> | 
+SRA task / evidence need | 
+Free or free-tier tools | 
+How to use / what to capture
+ROW> | 
+Active Directory and identity hygiene | 
+PingCastle; BloodHound Community Edition; ADRecon; DSInternals; PowerShell AD module | 
+Capture stale users/computers, privileged groups, weak password policy, service accounts, delegation risks, local admin paths, inactive accounts, and terminated-user audit evidence. Treat outputs as highly sensitive.
+ROW> | 
+M365, Entra ID, and email security posture | 
+Microsoft Secure Score; CISA ScubaGear; Maester; Microsoft admin/security portal reports; MXToolbox or dmarcian free checks | 
+Capture MFA/Conditional Access status, legacy authentication, admin roles, audit logging, mail authentication (SPF/DKIM/DMARC), DLP/security policies, and risky sign-in evidence.
+ROW> | 
+Endpoint, OS, encryption, and software status | 
+Wazuh; osquery/Fleet; Velociraptor; Windows PowerShell; Get-BitLockerVolume; manage-bde; OCS Inventory NG | 
+Capture OS versions, unsupported systems, local admins, EDR/AV status, encryption status, installed software, USB controls, listening ports, and unmanaged devices.
+ROW> | 
+Patch management and end-of-life review | 
+Wazuh; OCS Inventory NG; WSUS reports; PowerShell; Lynis; Greenbone/OpenVAS authenticated scan data | 
+Capture missing security updates, unsupported operating systems, obsolete applications, unsupported server roles, and remediation owner/due date.
+ROW> | 
+Firewall, VPN, and router configuration review | 
+Vendor configuration exports; Nmap; Wireshark; OpenWrt/OPNsense reports where applicable; manual rule review worksheet | 
+Capture exposed management interfaces, old VPN protocols, broad firewall rules, insecure ports, remote access paths, firmware age, log retention, and review cadence.
+ROW> | 
+Wireless security review | 
+Kismet; Wireshark; wireless controller reports; Aircrack-ng only for authorized lab or approved wireless testing | 
+Capture SSIDs, WPA version, guest separation, rogue APs, weak encryption, default credentials, firmware levels, and whether clinical and guest networks are segmented.
+Human Risk, Monitoring, Incident Response, Backup, and Reporting
+ROW> | 
+SRA task / evidence need | 
+Free or free-tier tools | 
+How to use / what to capture
+ROW> | 
+Phishing simulation and security awareness measurement | 
+GoPhish; CISA awareness materials; internal help-desk reporting mailbox/process | 
+Capture target count, delivered/opened/clicked/data-entry/reported metrics, report rate, remedial training completion, and repeat-failure policy. Do not collect real passwords.
+ROW> | 
+SIEM, logging, and monitoring review | 
+Wazuh; Security Onion; Graylog Open; OpenSearch; Elastic Basic/Free where license terms fit | 
+Capture log sources, retention period, alert rules, EDR/identity/firewall integration, alert ownership, review frequency, and evidence of incident triage.
+ROW> | 
+Incident response and DFIR readiness | 
+Velociraptor; TheHive Community; CISA incident response playbooks and tabletop resources; CyberChef | 
+Capture IR plan, escalation tree, tabletop exercise evidence, ransomware scenario, evidence handling, post-incident review, and ability to collect endpoint artifacts.
+ROW> | 
+Backup and disaster recovery evidence | 
+Backup-console reports; Veeam Community Edition if applicable; UrBackup; restic; Duplicati | 
+Capture backup coverage, encryption, offsite/immutable/offline status, last successful backup, last restore test, RTO/RPO expectations, and ransomware restore scenario.
+ROW> | 
+Finding management and report production | 
+This SRA template; Dradis Community Edition; Faraday Community; spreadsheets; Jira/Trello free tiers | 
+Track finding ID, risk rating, affected asset, evidence, recommendation, owner, due date, status, management response, and proof of remediation.
+Suggested Free Learning Path for Pen Testing
+This learning path is for authorized lab work only. Do not practice on client systems, public IPs, healthcare systems, cloud tenants, EHR portals, or vendor assets unless a signed rules-of-engagement document explicitly authorizes testing.
+Learning area
+ROW> | 
+Stage | 
+Free resources / lab ideas | 
+Goal
+ROW> | 
+Foundations | 
+Networking, Linux, Windows administration, HTTP/TLS, DNS, basic scripting, identity fundamentals | 
+Use local VMs and home labs. Goal: understand what scan results mean before trying exploitation.
+ROW> | 
+Web security | 
+PortSwigger Web Security Academy; OWASP Web Security Testing Guide; OWASP Juice Shop; DVWA | 
+Practice HTTP proxying, authentication flaws, injection concepts, access control, and reporting in intentionally vulnerable labs.
+ROW> | 
+Network and vulnerability analysis | 
+Nmap labs; Greenbone/OpenVAS lab scans; Metasploitable; intentionally vulnerable Docker images | 
+Practice scanning, service identification, CVE research, false-positive validation, and safe remediation writeups.
+ROW> | 
+Active Directory concepts | 
+BloodHound CE in a lab domain; GOAD or other intentionally vulnerable AD labs; Microsoft documentation | 
+Practice identity relationships, privilege paths, stale accounts, Kerberoasting concepts, and defensive remediation in a contained lab.
+ROW> | 
+Blue-team validation | 
+Wazuh; Security Onion; Velociraptor; CyberDefenders-style labs | 
+Learn what evidence defenders need: logs, endpoint artifacts, alerts, timelines, and detection coverage.
+ROW> | 
+Reporting | 
+This template; Dradis CE; Faraday Community; sample public pentest reports | 
+Write executive summaries, evidence, business impact, reproduction-safe summaries, remediation steps, and risk acceptance notes.
+Minimum Evidence to Capture When Using Any Tool
+Tool name and version; date/time; operator; system used to run the tool.
+Written scope and target list; approved scan window; exclusions; emergency contact.
+Raw output file location; screenshots if helpful; export format; hash of evidence file if needed.
+Summary of findings mapped to assets, business impact, risk rating, recommendation, and owner.
+False positives, assumptions, limitations, and items not tested.
+Remediation evidence and retest evidence, if retesting is authorized.
+Tools That Are Helpful but Not a Substitute for a Pen Test
+A vulnerability scan tells you what known weaknesses may exist. A penetration test validates whether an authorized tester can exploit weaknesses to create impact. For an SRA, these tools help gather evidence and prioritize risk; they do not prove exploitability unless the engagement has a separate, written penetration-testing scope.
+Final Report Cleanup Instruction
+Delete Appendix G before issuing the client-facing SRA report unless the client requested this appendix.
+Remove any tool setup notes, commands, raw IP lists, credentials, screenshots with usernames, and internal training notes from the final report body.
+Move validated, client-relevant findings into the applicable SRA sections: Technical Testing Summaries, Identity/Endpoint/Network/Cloud Review, Risk Matrix, Remediation Roadmap, and Evidence Index.
+
+Appendix G.1: Tool Link Directory (REMOVE SECTION ON FINAL)
+Appendix H: UI Automation and Tool-to-Section Mapping (REMOVE SECTION ON FINAL)
+REMOVE THIS SECTION ON FINAL: This hyperlink directory is for assessor training and internal planning. Tool links are examples, not endorsements. Verify license terms, commercial-use restrictions, data handling, HIPAA/BAA requirements, and current versions before use. Do not run scans, phishing, OSINT, wireless testing, exploitation, or penetration-testing activity without written authorization, approved scope, approved testing window, and emergency contacts.
+Instructions: Use Ctrl+Click in Word to open linked tool names. Keep links internal unless the client specifically asks for this appendix.
+ROW> | 
+Category | 
+Tool / Resource | 
+Primary Use | 
+Notes
+ROW> | 
+Governance / SRA workflow | 
+HHS/ONC Security Risk Assessment Tool | 
+See linked tool/resource. | 
+HIPAA SRA workflow and structured risk assessment support.
+ROW> | 
+Governance / SRA workflow | 
+CISA CSET | 
+See linked tool/resource. | 
+Control self-assessment and cybersecurity evaluation.
+ROW> | 
+Governance / SRA workflow | 
+CIS Controls Self Assessment Tool (CSAT) | 
+See linked tool/resource. | 
+CIS Controls implementation tracking.
+ROW> | 
+Governance / SRA workflow | 
+CIS Controls | 
+See linked tool/resource. | 
+Baseline control framework and checklist reference.
+ROW> | 
+Governance / SRA workflow | 
+HIPAA Security Rule | 
+See linked tool/resource. | 
+Regulatory crosswalk reference.
+ROW> | 
+Asset / IP / system inventory | 
+Nmap | 
+See linked tool/resource. | 
+Network discovery and service enumeration.
+ROW> | 
+Asset / IP / system inventory | 
+Zenmap | 
+See linked tool/resource. | 
+Nmap GUI; useful for learning and small inventories.
+ROW> | 
+Asset / IP / system inventory | 
+NetBox Community | 
+See linked tool/resource. | 
+IPAM/DCIM and source-of-truth inventory.
+ROW> | 
+Asset / IP / system inventory | 
+Snipe-IT Open Source | 
+See linked tool/resource. | 
+Asset management and ownership tracking.
+ROW> | 
+Asset / IP / system inventory | 
+OCS Inventory NG | 
+See linked tool/resource. | 
+Endpoint inventory and software inventory.
+ROW> | 
+Asset / IP / system inventory | 
+GLPI Community | 
+See linked tool/resource. | 
+ITSM, asset, vendor, and ticketing records.
+ROW> | 
+PHI / PII discovery support | 
+Microsoft Presidio | 
+See linked tool/resource. | 
+PII detection and de-identification support.
+ROW> | 
+PHI / PII discovery support | 
+PIICatcher | 
+See linked tool/resource. | 
+PII scanning for databases and data warehouses.
+ROW> | 
+PHI / PII discovery support | 
+ripgrep | 
+See linked tool/resource. | 
+Fast text search for approved repositories/files.
+ROW> | 
+PHI / PII discovery support | 
+PowerShell | 
+See linked tool/resource. | 
+Windows/M365/AD evidence collection and automation.
+ROW> | 
+Network discovery / packet analysis | 
+arp-scan | 
+See linked tool/resource. | 
+Local network ARP discovery.
+ROW> | 
+Network discovery / packet analysis | 
+Netdiscover | 
+See linked tool/resource. | 
+ARP-based local network discovery.
+ROW> | 
+Network discovery / packet analysis | 
+Wireshark | 
+See linked tool/resource. | 
+Packet capture and protocol analysis.
+ROW> | 
+Vulnerability scanning | 
+Greenbone Community Edition | 
+See linked tool/resource. | 
+Open-source vulnerability management stack.
+ROW> | 
+Vulnerability scanning | 
+OpenVAS | 
+See linked tool/resource. | 
+Vulnerability scanner component by Greenbone.
+ROW> | 
+Vulnerability scanning | 
+Nuclei | 
+See linked tool/resource. | 
+Template-based vulnerability scanner.
+ROW> | 
+Vulnerability scanning | 
+CISA Cyber Hygiene Services | 
+See linked tool/resource. | 
+No-cost vulnerability scanning for eligible organizations.
+ROW> | 
+Vulnerability scanning | 
+Nessus Essentials | 
+See linked tool/resource. | 
+Free-tier vulnerability scanner subject to license limits.
+ROW> | 
+Vulnerability scanning | 
+Wazuh | 
+See linked tool/resource. | 
+Vulnerability detection, SIEM/XDR, endpoint monitoring.
+ROW> | 
+Vulnerability scanning | 
+Lynis | 
+See linked tool/resource. | 
+Linux/macOS/Unix configuration auditing.
+ROW> | 
+Web / API assessment | 
+OWASP ZAP | 
+See linked tool/resource. | 
+Web app/API proxy and baseline testing.
+ROW> | 
+Web / API assessment | 
+Burp Suite Community Edition | 
+See linked tool/resource. | 
+Manual web app testing proxy.
+ROW> | 
+Web / API assessment | 
+Nikto | 
+See linked tool/resource. | 
+Web server scanner.
+ROW> | 
+Web / API assessment | 
+Wapiti | 
+See linked tool/resource. | 
+Black-box web application vulnerability scanner.
+ROW> | 
+SSL/TLS / headers | 
+Qualys SSL Labs Server Test | 
+See linked tool/resource. | 
+Public SSL/TLS server configuration grading.
+ROW> | 
+SSL/TLS / headers | 
+testssl.sh | 
+See linked tool/resource. | 
+Command-line SSL/TLS scanner.
+ROW> | 
+SSL/TLS / headers | 
+SSLyze | 
+See linked tool/resource. | 
+SSL/TLS scanning library and CLI.
+ROW> | 
+SSL/TLS / headers | 
+Mozilla Observatory | 
+See linked tool/resource. | 
+HTTP security header checks.
+ROW> | 
+SSL/TLS / headers | 
+SecurityHeaders.com | 
+See linked tool/resource. | 
+HTTP response header analysis.
+ROW> | 
+OSINT / external attack surface | 
+OWASP Amass | 
+See linked tool/resource. | 
+Subdomain and attack-surface enumeration.
+ROW> | 
+OSINT / external attack surface | 
+theHarvester | 
+See linked tool/resource. | 
+OSINT collection for domains, emails, and hosts.
+ROW> | 
+OSINT / external attack surface | 
+crt.sh | 
+See linked tool/resource. | 
+Certificate transparency search.
+ROW> | 
+OSINT / external attack surface | 
+DNSDumpster | 
+See linked tool/resource. | 
+DNS and external host discovery.
+ROW> | 
+OSINT / external attack surface | 
+Censys Search | 
+See linked tool/resource. | 
+Internet-exposed asset intelligence.
+ROW> | 
+OSINT / external attack surface | 
+Shodan | 
+See linked tool/resource. | 
+Internet-connected device and service search.
+ROW> | 
+AD / identity review | 
+PingCastle | 
+See linked tool/resource. | 
+Active Directory security maturity review.
+ROW> | 
+AD / identity review | 
+BloodHound Community Edition | 
+See linked tool/resource. | 
+Attack path mapping for AD/identity environments.
+ROW> | 
+AD / identity review | 
+ADRecon | 
+See linked tool/resource. | 
+Active Directory reporting and inventory.
+ROW> | 
+AD / identity review | 
+DSInternals | 
+See linked tool/resource. | 
+AD internals and credential/audit analysis support.
+ROW> | 
+AD / identity review | 
+PowerShell ActiveDirectory Module | 
+See linked tool/resource. | 
+Native AD cmdlets for account and policy review.
+ROW> | 
+AD / identity review | 
+Purple Knight | 
+See linked tool/resource. | 
+AD security assessment and reporting.
+ROW> | 
+M365 / cloud posture | 
+Microsoft Secure Score | 
+See linked tool/resource. | 
+M365 security posture measurement.
+ROW> | 
+M365 / cloud posture | 
+CISA ScubaGear | 
+See linked tool/resource. | 
+M365 tenant baseline assessment.
+ROW> | 
+M365 / cloud posture | 
+Maester | 
+See linked tool/resource. | 
+Microsoft 365/Entra security testing.
+ROW> | 
+M365 / cloud posture | 
+Prowler | 
+See linked tool/resource. | 
+Cloud security posture and compliance checks.
+ROW> | 
+M365 / email authentication | 
+MXToolbox | 
+See linked tool/resource. | 
+DNS/MX/SPF/DKIM/DMARC lookups.
+ROW> | 
+M365 / email authentication | 
+dmarcian | 
+See linked tool/resource. | 
+DMARC checking and education.
+ROW> | 
+Endpoint / OS / encryption | 
+osquery | 
+See linked tool/resource. | 
+Endpoint state queries.
+ROW> | 
+Endpoint / OS / encryption | 
+Fleet | 
+See linked tool/resource. | 
+osquery management, MDM, patch, and vuln management.
+ROW> | 
+Endpoint / OS / encryption | 
+Velociraptor | 
+See linked tool/resource. | 
+Endpoint visibility, DFIR collection, and hunting.
+ROW> | 
+Endpoint / OS / encryption | 
+Get-BitLockerVolume | 
+See linked tool/resource. | 
+Windows encryption status evidence.
+ROW> | 
+Endpoint / OS / encryption | 
+manage-bde | 
+See linked tool/resource. | 
+BitLocker command-line management.
+ROW> | 
+Patch / EOL review | 
+WSUS | 
+See linked tool/resource. | 
+Microsoft update management reports.
+ROW> | 
+Firewall / VPN / router | 
+OpenWrt | 
+See linked tool/resource. | 
+Open-source router/firewall platform.
+ROW> | 
+Firewall / VPN / router | 
+OPNsense | 
+See linked tool/resource. | 
+Open-source firewall and routing platform.
+ROW> | 
+Wireless review | 
+Kismet | 
+See linked tool/resource. | 
+Wireless discovery and monitoring.
+ROW> | 
+Wireless review | 
+Aircrack-ng | 
+See linked tool/resource. | 
+Authorized wireless lab/security testing suite.
+ROW> | 
+Phishing / awareness | 
+GoPhish | 
+See linked tool/resource. | 
+Open-source phishing simulation framework.
+ROW> | 
+Phishing / awareness | 
+CISA Secure Our World | 
+See linked tool/resource. | 
+Security awareness campaign resources.
+ROW> | 
+SIEM / monitoring | 
+Security Onion | 
+See linked tool/resource. | 
+Network security monitoring, threat hunting, and logs.
+ROW> | 
+SIEM / monitoring | 
+Graylog Open | 
+See linked tool/resource. | 
+Centralized log management.
+ROW> | 
+SIEM / monitoring | 
+OpenSearch | 
+See linked tool/resource. | 
+Search, analytics, and log storage stack.
+ROW> | 
+SIEM / monitoring | 
+Elastic Basic/Free | 
+See linked tool/resource. | 
+Elastic Stack free/basic license reference.
+ROW> | 
+Incident response / DFIR | 
+TheHive Community | 
+See linked tool/resource. | 
+Case management and incident response workflow.
+ROW> | 
+Incident response / DFIR | 
+CISA Incident Response Playbooks | 
+See linked tool/resource. | 
+Incident/vulnerability response playbook reference.
+ROW> | 
+Incident response / DFIR | 
+CISA Tabletop Exercise Packages | 
+See linked tool/resource. | 
+Tabletop exercise planning resources.
+ROW> | 
+Incident response / DFIR | 
+CyberChef | 
+See linked tool/resource. | 
+Encoding, decoding, artifact transformation, and analysis.
+ROW> | 
+Backup / DR | 
+Veeam Community / Free Editions | 
+See linked tool/resource. | 
+Free endpoint/server backup options; verify license fit.
+ROW> | 
+Backup / DR | 
+UrBackup | 
+See linked tool/resource. | 
+Open-source client/server backups.
+ROW> | 
+Backup / DR | 
+restic | 
+See linked tool/resource. | 
+Encrypted backup tool.
+ROW> | 
+Backup / DR | 
+Duplicati | 
+See linked tool/resource. | 
+Encrypted backups to local/cloud destinations.
+ROW> | 
+Finding management / reporting | 
+Dradis Community Edition | 
+See linked tool/resource. | 
+Security assessment reporting.
+ROW> | 
+Finding management / reporting | 
+Faraday Community | 
+See linked tool/resource. | 
+Vulnerability management and collaboration.
+ROW> | 
+Finding management / reporting | 
+Jira Free | 
+See linked tool/resource. | 
+Issue tracking for remediation workflows.
+ROW> | 
+Finding management / reporting | 
+Trello Free | 
+See linked tool/resource. | 
+Simple remediation task tracking.
+ROW> | 
+Pen-test learning labs | 
+PortSwigger Web Security Academy | 
+See linked tool/resource. | 
+Free, legal web security labs.
+ROW> | 
+Pen-test learning labs | 
+OWASP Web Security Testing Guide | 
+See linked tool/resource. | 
+Web testing methodology.
+ROW> | 
+Pen-test learning labs | 
+OWASP Juice Shop | 
+See linked tool/resource. | 
+Intentionally vulnerable web app lab.
+ROW> | 
+Pen-test learning labs | 
+DVWA | 
+See linked tool/resource. | 
+Damn Vulnerable Web Application lab.
+ROW> | 
+Pen-test learning labs | 
+Metasploitable 2 | 
+See linked tool/resource. | 
+Intentionally vulnerable VM lab.
+ROW> | 
+Pen-test learning labs | 
+Vulhub | 
+See linked tool/resource. | 
+Docker-based vulnerable environments.
+ROW> | 
+Pen-test learning labs | 
+GOAD | 
+See linked tool/resource. | 
+Game of Active Directory lab.
+ROW> | 
+Pen-test learning labs | 
+CyberDefenders | 
+See linked tool/resource. | 
+Blue-team and DFIR training labs.
+Final cleanup reminder: Delete Appendix G and Appendix G.1 before issuing a final client-facing SRA unless the client requested a tool appendix.
+
+Appendix H: UI Automation and Tool-to-Section Mapping (REMOVE SECTION ON FINAL)
+REMOVE THIS SECTION ON FINAL: This appendix is for internal product design and assessment workflow build-out. Keep it in working templates, demos, and implementation planning. Delete it from the client-facing SRA report unless the client explicitly asks for an automation appendix.
+Purpose: This appendix maps each SRA and penetration-testing readiness section to the tools, integrations, evidence objects, manual inputs, and automation opportunities needed to drive the assessment from a single application UI.
+Product concept: Treat the UI as the system of record and workflow orchestrator. External tools collect evidence; the UI normalizes that evidence, attaches it to assets and controls, creates draft findings, drives human review, and produces the SRA, vulnerability, phishing, SSL/TLS, remediation, and pen-test-readiness outputs.
+Control gate: Do not allow scans, phishing simulations, or penetration-testing actions to run unless the UI has recorded scope, authorization, targets, exclusions, test window, emergency contacts, and approval status.
+H.1 Automation Maturity Levels
+ROW> | 
+Level | 
+Meaning | 
+Examples | 
+App design implication
+ROW> | 
+A0 - Manual narrative | 
+Unstructured human entry. | 
+Executive context, organizational mission, local business constraints. | 
+Provide a required text box with owner, reviewer, date, and evidence reference.
+ROW> | 
+A1 - Structured manual input | 
+Human answers a controlled form. | 
+Data center location, self-hosting status, physical access, policy ownership, vendor notes. | 
+Use dropdowns, required fields, validation, and attachments so data can be reused later.
+ROW> | 
+A2 - File import | 
+CSV, JSON, XML, PDF, screenshot, or spreadsheet imported by assessor. | 
+Vulnerability scanner exports, phishing result CSV, AD export, HR termination list, policy PDFs. | 
+Build parsers, dedupe logic, evidence hashes, source timestamps, and import mappings.
+ROW> | 
+A3 - API connector | 
+App calls a tool or platform API. | 
+M365/Graph, GoPhish, Wazuh, scanner APIs, ticketing, IR app, RMM/MDM, asset inventory. | 
+Use scoped service accounts, read-only access by default, least privilege, and connector health checks.
+ROW> | 
+A4 - Scheduled monitoring | 
+Recurring evidence collection and control monitoring. | 
+MFA coverage, stale accounts, endpoint encryption, vulnerability trend, phishing trend, backup test status. | 
+Store trends and evidence freshness; flag stale evidence before the next annual SRA.
+ROW> | 
+A5 - Draft finding engine | 
+Rules map evidence to draft risks and recommendations. | 
+No MFA on ePHI app, unsupported OS, unencrypted endpoint, high phish-prone rate, missing BAA. | 
+Require reviewer approval before findings become final; preserve confidence, false-positive, and exception states.
+H.2 UI Workflow Modules
+ROW> | 
+UI module | 
+Workflow purpose | 
+Core data captured | 
+Generated output
+ROW> | 
+1. Client / Scope Setup | 
+Create organization, sites, contacts, assessment year, SRA scope, pen-test scope if separate, out-of-scope items, legal approval. | 
+Org profile, locations, engagement dates, authorization, scope boundaries, evidence request list. | 
+Scope package, kickoff checklist, target authorization record.
+ROW> | 
+2. Evidence Request Tracker | 
+Drive collection of policies, procedures, BA inventory, HR lists, network diagrams, app inventory, scan permissions, phishing target list. | 
+Requested item, owner, due date, status, file upload, evidence freshness, reviewer notes. | 
+Evidence index and missing-evidence exceptions.
+ROW> | 
+3. Asset / PHI Inventory Builder | 
+Normalize assets, applications, ePHI systems, PHI data stores, vendors, sites, hosting model, and data flows. | 
+Applications, endpoints, servers, cloud services, self-hosted data center details, PHI types, owners. | 
+PHI inventory, criticality matrix, data-flow map.
+ROW> | 
+4. Technical Collection Orchestrator | 
+Launch or import authorized evidence from scanners, identity tools, cloud posture tools, endpoint tools, phishing platform, and SSL/TLS tools. | 
+Tool run, version, target set, raw output, normalized findings, scope match, false-positive notes. | 
+Technical testing summary and draft technical findings.
+ROW> | 
+5. Manual Review Workbench | 
+Guide assessor through policy review, physical walkthrough, business associate review, incident response review, and risk judgment. | 
+Control question, answer, supporting artifact, exception, assessor note, reviewer approval. | 
+Administrative, physical, vendor, and IR/DR findings.
+ROW> | 
+6. Risk Engine | 
+Combine asset criticality, PHI exposure, vulnerability severity, exploitability, likelihood, impact, control maturity, and evidence freshness. | 
+Likelihood, impact, confidence, severity, business context, compensating control, acceptance status. | 
+High/medium/low risk matrix and prioritized recommendations.
+ROW> | 
+7. Report / Remediation Manager | 
+Generate SRA report, vulnerability overview, phishing overview, SSL/TLS overview, remediation roadmap, and risk acceptance register. | 
+Approved findings, evidence links, owner, target date, remediation status, validation evidence. | 
+Client-ready report and project plan.
+H.3 SRA Report Section to Tool / Integration Mapping
+Use this table as the build blueprint. The tool list is intentionally vendor-neutral: the application should support both API connectors and file imports, because many clinics will have different tooling and maturity levels.
+ROW> | 
+Report section / UI module | 
+Primary tools or integrations | 
+Automated evidence captured | 
+Manual fields to document | 
+App output / automation rule
+ROW> | 
+1. Executive Summary | 
+All modules; risk engine; remediation manager. | 
+Overall risk posture, top risks, trend, open remediation count, overdue items, evidence freshness. | 
+Business context, leadership priorities, budget constraints, accepted risks. | 
+Auto-draft summary from approved risks; human edits final language. A2-A5.
+ROW> | 
+2. Scope, Assumptions, Methodology | 
+Project module; authorization module; document request tracker. | 
+Assessment dates, in-scope sites, systems, data sources, limitations, exclusions. | 
+Approver names, rules of engagement, exclusions, client constraints. | 
+Scope cannot be inferred; force approvals before collection. A1-A3.
+ROW> | 
+3. Organization / Environment Overview | 
+Asset inventory; NetBox/Snipe-IT/CMDB; AD/Entra/Okta; M365/Graph; firewall exports; interviews. | 
+Locations, users, applications, cloud services, network zones, hosting model, vendors. | 
+Self-hosted data center location, racks/cages, power/cooling, ISP, clinical/business context. | 
+Build environment profile and dependency graph. A1-A4.
+ROW> | 
+4. PHI / ePHI Inventory | 
+Questionnaire; M365/DLP exports; file scan outputs; EHR/app inventory; vendor inventory; optional PHI discovery tools. | 
+PHI types, systems, departments, data stores, storage/transmission method, retention, vendor handling. | 
+Department confirmation, data owner, paper PHI locations, clinical workflow details. | 
+Generate PHI inventory and flag missing owner/BAA/encryption. A1-A4.
+ROW> | 
+5. Application Criticality Matrix | 
+Application inventory; ticketing; CMDB; dependency map; stakeholder questionnaire. | 
+Application, owner, ePHI status, downtime tolerance, backup status, vendor, hosting model. | 
+Patient-care impact, business impact, RTO/RPO, downtime workaround. | 
+Use criticality as impact multiplier in risk engine. A1-A4.
+ROW> | 
+6. Threat Matrix | 
+Threat library; incident history; local hazard profile; IR app; backup/DR module. | 
+Threat category, likelihood, current controls, prior incidents, applicable sites/assets. | 
+Local hazard assumptions, natural disaster exposure, compensating controls. | 
+Pre-populate threat library and tailor by site. A1-A4.
+ROW> | 
+7. Risk Rating Methodology | 
+Risk engine configuration; control library; scoring rules. | 
+Likelihood, impact, confidence, evidence age, asset criticality, PHI exposure, exploitability. | 
+Risk appetite, exceptions, acceptable risk thresholds. | 
+Keep scoring configurable; lock final methodology per assessment. A1-A5.
+ROW> | 
+8. Risk Matrix and Findings | 
+Risk engine; evidence repository; remediation tracker; ticketing. | 
+Finding title, affected asset, evidence, risk rating, recommendation, owner, target date. | 
+False-positive validation, business impact, compensating control, management response. | 
+Auto-create draft findings; require reviewer approval. A2-A5.
+ROW> | 
+9. Administrative Safeguards | 
+Policy parser; HRIS/LMS; IR app; BAA tracker; incident records; training platform. | 
+Training completion, sanctions policy, security official, incident history, BA inventory, risk process. | 
+Policy adequacy, procedure specificity, governance maturity. | 
+Crosswalk policy/procedure evidence to HIPAA safeguards. A1-A4.
+ROW> | 
+10. Physical Safeguards | 
+Mobile walkthrough form; photo capture; site inventory; visitor logs; badge/access exports if available. | 
+Workstation visibility, paper PHI, shred bins, server/network rooms, visitor/vendor controls. | 
+Data center/site notes, physical access exceptions, local observation narrative. | 
+Structured checklist converts walkthrough into findings. A1-A3.
+ROW> | 
+11. Technical Safeguards | 
+AD/Entra/Okta; M365/Graph; PingCastle; Purple Knight; ADRecon; BloodHound CE; EHR user exports. | 
+MFA status, password policy, stale users, privileged groups, service/shared accounts, audit settings. | 
+Validate business-critical exceptions, legacy account purpose, ePHI app access logic. | 
+Map identity/access evidence to access-control and audit-control findings. A2-A5.
+ROW> | 
+12. Technical Testing Summaries | 
+Nmap XML; Greenbone/OpenVAS; Nessus imports; Nuclei JSON; Wazuh vulnerability data; scanner exports. | 
+Hosts, ports, services, CVEs/QIDs, severity, exposed services, scan date, scan scope. | 
+False positives, accepted risk, maintenance windows, remediation feasibility. | 
+Normalize scanner output into vulnerability overview and risk findings. A2-A5.
+ROW> | 
+12a. SSL/TLS and Web Exposure | 
+SSL Labs/testssl.sh/SSLyze; SecurityHeaders; Mozilla Observatory; ZAP; tracker scan; DNS/DMARC checks. | 
+Certificates, protocols, cipher issues, headers, trackers, exposed forms, public app inventory. | 
+Determine if trackers receive PHI; validate BAAs; confirm owner of public systems. | 
+Generate SSL/TLS and website exposure findings. A2-A5.
+ROW> | 
+12b. Phishing Simulation | 
+GoPhish, KnowBe4 export, Microsoft Attack Simulation Training, LMS/training platform. | 
+Delivered/opened/clicked/data-entered/reported counts, phish-prone percentage, repeat failures. | 
+Campaign approval, training exceptions, remedial training decisions. | 
+Trend human-risk metrics and create training findings. A2-A5.
+ROW> | 
+13. Identity / Endpoint / Network / Cloud Review | 
+RMM/MDM, EDR, osquery/Fleet, Wazuh, M365 Secure Score, ScubaGear, Maester, Prowler, firewall/VPN exports. | 
+Encryption, OS/EOL, malware status, endpoint coverage, cloud posture, DLP/MFA, VPN settings, firewall rules. | 
+Legacy device exceptions, role-based firewall need, cloud business exceptions. | 
+Dashboards show coverage gaps and draft findings by control family. A2-A5.
+ROW> | 
+14. Incident Response, Backup, and DR | 
+Your incident response app; SIEM; EDR; ticketing; backup console; tabletop records; policy docs. | 
+IR plan status, incidents, tabletop tests, backup success, restore tests, RTO/RPO, emergency contacts. | 
+Scenario quality, executive participation, data center/self-hosted recovery details. | 
+Make IR app the source of truth; SRA imports readiness metrics and evidence. A2-A5.
+ROW> | 
+15. Business Associate / Vendor Risk | 
+Vendor/BA module; contract repository; procurement system; security questionnaires; ticketing. | 
+Vendor, PHI handled, BAA date, renewal, risk tier, review date, termination/offboarding status. | 
+Legal review of terms, adequacy of BAA, vendor-specific safeguards. | 
+Create vendor risk register and missing/expired BAA findings. A1-A5.
+ROW> | 
+16. Site Walkthroughs | 
+Mobile checklist; photo attachments; asset/site inventory; QR/barcode labels. | 
+Observed paper PHI, screen visibility, shred process, network closet status, public areas. | 
+Narrative observations, photo redaction, clinical workflow constraints. | 
+Convert walkthrough questions to physical-safeguard evidence. A1-A3.
+ROW> | 
+17. Remediation Roadmap | 
+Ticketing/Jira/Trello; risk register; evidence repository; change-management module. | 
+Owner, due date, priority, status, remediation evidence, validation date. | 
+Budget, dependencies, risk acceptance, sequencing. | 
+Auto-create tasks from approved findings. A3-A5.
+ROW> | 
+18. Management Response / Risk Acceptance | 
+Approval workflow; e-signature; risk register. | 
+Acceptance statement, approver, duration, compensating controls, review date. | 
+Executive decision and final wording. | 
+Do not auto-accept risk; require named approval. A1-A3.
+ROW> | 
+19. Pen Test Readiness Addendum | 
+Scope/ROE module; target list; authorization; Nmap/Greenbone/ZAP imports when authorized; pen-test report import. | 
+Targets, exclusions, test window, emergency contact, third-party approval, tool output, findings. | 
+Authorization, exploitation limits, out-of-scope systems, credential phishing restrictions. | 
+Separate from SRA; no exploitation workflow without explicit written scope. A1-A4.
+H.4 Data Model Needed to Drive the UI
+ROW> | 
+Entity | 
+Purpose | 
+Key fields | 
+Used by
+ROW> | 
+Organization | 
+Assessment owner and client master record. | 
+Name, type, HIPAA role, assessment year, contacts, security official, executive approver. | 
+All sections.
+ROW> | 
+Location / Site | 
+Physical and service delivery footprint. | 
+Address, departments, site type, walk-through date, data center flag, physical access controls. | 
+Scope, physical safeguards, threat matrix.
+ROW> | 
+Asset | 
+Server, workstation, network device, cloud resource, diagnostic device, mobile device. | 
+Hostname, IP, OS, owner, site, criticality, encryption, EDR, patch status, scan IDs. | 
+Technical safeguards, vulnerability, endpoint review.
+ROW> | 
+Application | 
+Business or clinical application that may create, receive, maintain, or transmit PHI. | 
+Name, owner, vendor, hosting model, ePHI flag, authentication, MFA, downtime tolerance. | 
+PHI inventory, criticality, identity, DR.
+ROW> | 
+PHI / ePHI Data Store | 
+Where PHI exists. | 
+Data type, storage location, system, department, retention, encryption, backup, vendor. | 
+PHI inventory, risk scoring.
+ROW> | 
+Data Flow | 
+How PHI moves between users, systems, vendors, and patients. | 
+Source, destination, transport, encryption, frequency, PHI type, interface owner. | 
+Threat matrix, vendor risk, transmission security.
+ROW> | 
+User / Account | 
+Human, privileged, shared, service, or vendor account. | 
+Username, system, role, MFA, last login, termination status, owner, privileged flag. | 
+Identity review, termination audit, audit controls.
+ROW> | 
+Business Associate / Vendor | 
+Third party handling PHI or supporting ePHI systems. | 
+Vendor, service, PHI handled, BAA status, risk tier, review date, offboarding status. | 
+Vendor risk, PHI inventory.
+ROW> | 
+Control | 
+Requirement or best-practice expectation. | 
+Framework reference, control statement, required evidence, test method, maturity level. | 
+Policy review, safeguards, risk engine.
+ROW> | 
+Evidence Artifact | 
+Every proof item collected. | 
+Type, source tool, version, timestamp, collector, file path/hash, related asset/control/finding. | 
+Auditability and report support.
+ROW> | 
+Finding / Risk | 
+Validated gap or vulnerability. | 
+Title, affected asset/control, evidence, likelihood, impact, rating, recommendation, confidence, status. | 
+Risk matrix, executive summary, roadmap.
+ROW> | 
+Remediation Task | 
+Action to close a finding. | 
+Owner, due date, priority, cost/effort, status, dependency, validation evidence, retest date. | 
+Roadmap, status reporting.
+ROW> | 
+Test Run / Authorization | 
+Record for scans, phishing, and pen test activity. | 
+Tool, version, operator, scope, target list, exclusions, window, approval, emergency contact. | 
+Methodology, technical evidence, legal defensibility.
+H.5 Manual Inputs That Should Be Structured for Future Automation
+ROW> | 
+Manual area | 
+Fields to capture in the UI | 
+Automation path
+ROW> | 
+Hosting / data center profile | 
+Hosting model, self-hosted vs vendor-hosted, data center address/region, rack/cage/closet, power/UPS/generator, cooling, physical access, ISP, backup connectivity, environmental monitoring, provider SOC/attestation/BAA. | 
+Manual at first; later integrate with CMDB, cloud inventory, vendor attestations, badge system, UPS/environment monitors.
+ROW> | 
+Policy and procedure review | 
+Policy name, owner, last approved date, mapped HIPAA requirement, procedure exists yes/no, procedure is operational yes/no, evidence of use, gaps, update plan. | 
+Document parser can extract dates/headings; assessor still decides adequacy and operational fit.
+ROW> | 
+Physical walkthrough | 
+Site, room/area, observation category, PHI visible yes/no, locked storage, privacy screens, visitor/vendor process, network closet state, photo/evidence, risk note. | 
+Mobile form and photo capture automate structure; human observation remains required.
+ROW> | 
+Application criticality | 
+Application owner, PHI status, downtime tolerance, patient-care impact, workaround, RTO/RPO, dependency, integration owner. | 
+Pre-fill from app inventory; stakeholder must confirm business impact.
+ROW> | 
+Business associate review | 
+Vendor service, PHI handled, BAA status/date, subcontractors, breach notification term, security review, termination/offboarding process. | 
+Contract AI can extract clauses; legal/compliance still approves adequacy.
+ROW> | 
+Incident response and DR readiness | 
+IR plan status, tabletop date, scenarios, participants, lessons learned, backup restore test date, RTO/RPO met yes/no, open actions. | 
+Your IR app should be the source of truth; SRA pulls metrics and artifacts.
+ROW> | 
+Risk acceptance | 
+Finding, reason for acceptance, compensating control, approver, expiration date, review cadence, residual risk. | 
+Must remain explicit management approval, not automated.
+ROW> | 
+Pen-test authorization | 
+Test type, targets, exclusions, third-party permission, time window, emergency stop process, rules of engagement, exploitation limits. | 
+App can enforce gates and create ROE; testing activity still requires human authorization.
+H.6 Integration Backlog for Product Build
+ROW> | 
+Priority | 
+Connector / module | 
+Why it matters | 
+Minimum fields | 
+Implementation notes
+ROW> | 
+P0 | 
+Evidence repository and document upload | 
+Core system of record for policies, scans, screenshots, contracts, exports, and report evidence. | 
+File, type, owner, date, source, hash, related control/asset/finding. | 
+Must support redaction and role-based access.
+ROW> | 
+P0 | 
+Questionnaire and workflow engine | 
+Drives manual sections consistently across clients. | 
+Question, answer type, required evidence, reviewer, status, comment. | 
+Use reusable question banks by HIPAA safeguard and SRA report section.
+ROW> | 
+P0 | 
+Risk register and finding engine | 
+Turns evidence into repeatable findings and remediation tasks. | 
+Control, evidence, affected asset, rating, recommendation, owner, due date. | 
+Draft only until assessor approves.
+ROW> | 
+P0 | 
+Incident response app connector | 
+You already have an IR app; use it as the source for incident, tabletop, breach, and response readiness evidence. | 
+Incident count, scenario test, plan version, open actions, backup/restore evidence. | 
+Expose as read-only evidence feed into SRA where possible.
+ROW> | 
+P1 | 
+Identity connector: AD / Entra / Okta | 
+Automates stale account, privileged account, MFA, password, and termination review. | 
+Users, groups, last login, MFA, password policy, privileged role, termination status. | 
+Start with CSV/import; move to read-only API.
+ROW> | 
+P1 | 
+Asset / endpoint connector: RMM, MDM, EDR, Wazuh, osquery/Fleet | 
+Automates encryption, EDR coverage, OS/EOL, patch, and device inventory findings. | 
+Device, OS, encryption, EDR, last seen, patch state, owner, site. | 
+Normalize across vendors.
+ROW> | 
+P1 | 
+Vulnerability scanner import | 
+Converts Nmap, Greenbone/OpenVAS, Nessus, Nuclei, and scanner CSV/XML/JSON into findings. | 
+Host, port, service, CVE/QID, severity, evidence, remediation, scan date. | 
+Require scope match and false-positive workflow.
+ROW> | 
+P1 | 
+Phishing platform import | 
+Automates human-risk metrics and remedial training tracking. | 
+Recipients, delivered, opened, clicked, data entered, reported, training completed. | 
+Support GoPhish/KnowBe4/other CSV exports initially.
+ROW> | 
+P1 | 
+M365 / cloud posture connector | 
+Automates MFA, secure score, DLP, email security, conditional access, and cloud findings. | 
+Secure score, policies, users, MFA, alerts, DLP, email auth, admin roles. | 
+Use least-privilege Graph/API permissions.
+ROW> | 
+P2 | 
+Firewall / VPN / wireless config import | 
+Supports perimeter, segmentation, remote access, SSID, firmware, and rules review. | 
+Rules, objects, VPN settings, MFA, firmware, SSIDs, encryption, guest segmentation. | 
+Manual validation needed for business justification.
+ROW> | 
+P2 | 
+Business associate / contract module | 
+Tracks BAAs, vendor risk, renewals, offboarding, and security reviews. | 
+Vendor, PHI, BAA, review status, owner, contract evidence, termination process. | 
+Eventually add contract parsing.
+ROW> | 
+P2 | 
+Backup / DR connector | 
+Pulls restore success, backup coverage, retention, immutability, and failed jobs. | 
+System, last backup, last restore test, status, retention, RTO/RPO, open failures. | 
+Link to IR/DR module and criticality matrix.
+ROW> | 
+P3 | 
+Pen-test readiness and report import | 
+Separates SRA from authorized testing and records ROE, targets, findings, and retest evidence. | 
+Targets, approvals, exclusions, tests, findings, severity, proof, retest status. | 
+No automated exploitation without explicit scope.
+H.7 Scoring Hooks for the Risk Engine
+ROW> | 
+Scoring input | 
+How it affects risk | 
+Evidence source | 
+Human review requirement
+ROW> | 
+Asset criticality | 
+High criticality applications/systems increase impact. | 
+Application criticality matrix, PHI inventory, business owner confirmation. | 
+Owner confirms criticality and downtime tolerance.
+ROW> | 
+PHI exposure | 
+Systems storing/transmitting PHI have higher regulatory and patient-impact weighting. | 
+PHI/ePHI inventory, DLP/PHI discovery, vendor/app inventory. | 
+Human confirms PHI type and workflow.
+ROW> | 
+Internet exposure | 
+Externally reachable services increase likelihood. | 
+External scan, DNS, firewall/NAT, public web inventory. | 
+Validate ownership and business need.
+ROW> | 
+Known vulnerability severity | 
+Scanner severity/CVSS/QID/CVE influences base technical severity. | 
+Vulnerability scan output. | 
+Validate false positives and compensating controls.
+ROW> | 
+Exploitability / validation | 
+Pen-test validation or known exploitation raises confidence and urgency. | 
+Authorized pen-test report, exploitability fields, CISA KEV list if integrated. | 
+No exploitation assumptions without evidence.
+ROW> | 
+Control maturity | 
+Missing policy/procedure or non-operational control increases likelihood. | 
+Policy review, interviews, logs, artifacts. | 
+Assessor judges adequacy.
+ROW> | 
+Evidence freshness | 
+Stale evidence lowers confidence and may create a separate finding. | 
+Evidence timestamp, last scan date, last tabletop/restore date. | 
+Define freshness rules by evidence type.
+ROW> | 
+Compensating control | 
+Segmentation, MFA, EDR, backup immutability, monitoring, or vendor hosting may reduce likelihood/impact. | 
+Configuration evidence, tool output, policy/procedure, attestations. | 
+Assessor approves reduction.
+ROW> | 
+Remediation status | 
+Closed and validated items can be reduced or marked remediated; unvalidated closures stay open. | 
+Ticket status, validation evidence, retest output. | 
+Require evidence before closure.
+H.8 Pen-Test Workflow Guardrails
+ROW> | 
+Workflow step | 
+UI behavior | 
+Evidence captured | 
+Guardrail
+ROW> | 
+Pre-test intake | 
+Collect scope, signed authorization, targets, exclusions, third-party approvals, time windows, emergency contacts, and stop conditions. | 
+Authorization record; ROE; target list; change-control approval. | 
+Must be approved before any tool is launched.
+ROW> | 
+Recon and discovery | 
+Import or run authorized discovery against approved targets only. | 
+Nmap XML, DNS, scanner output, target ownership validation. | 
+Flag target drift or out-of-scope assets.
+ROW> | 
+Vulnerability validation | 
+Map known weaknesses to affected services and business impact. | 
+Scanner outputs, manual validation notes, screenshots, exploitability evidence if authorized. | 
+Manual validation by authorized tester.
+ROW> | 
+Exploitation / proof of impact | 
+Allowed only if explicitly in scope and safe for production. | 
+Tester notes, proof screenshots, impacted assets, cleanup notes. | 
+Never automate by default; require explicit ROE flag.
+ROW> | 
+Reporting | 
+Generate separate pen-test report or import third-party pen-test report into risk register. | 
+Executive summary, attack path, findings, prioritized recommendations, evidence. | 
+Keep pen-test findings distinct from SRA-only vulnerability findings.
+ROW> | 
+Retest / remediation validation | 
+Only run if included in scope or separately authorized. | 
+Retest output, closure evidence, residual risk. | 
+Track whether retest was in scope.
+H.9 Final Cleanup Instruction
+Delete Appendix H before issuing a standard client-facing SRA unless the client requested an automation appendix.
+Move only validated client-relevant findings into the main report sections: Risk Matrix, Technical Testing Summaries, Administrative/Physical/Technical Safeguards, Business Associate Review, and Remediation Roadmap.
+Remove internal implementation notes, connector names that are not used for the client, raw target lists, credentials, tokens, tool commands, and screenshots that expose usernames or sensitive infrastructure.
+Keep authorization records, raw evidence, and imports in the internal evidence repository rather than the final report body unless required as an appendix.

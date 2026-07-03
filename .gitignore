@@ -1,0 +1,14 @@
+# Secrets — never commit
+.env
+.env.local
+.env.production
+
+# Dependencies / build output (produced by the coding agent's Next.js build)
+node_modules/
+.next/
+dist/
+build/
+
+# OS / editor
+.DS_Store
+Thumbs.db

@@ -37,32 +37,39 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Package build artifacts
+      - name: Prepare SFTP upload manifest
         run: |
-          tar \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='.next/cache' \
-            --exclude='.env' \
-            --exclude='HOSTINGER_SILHOUETTE_RUNBOOK.md' \
-            -czf release.tgz \
-            .env.example \
-            .htaccess \
-            app \
-            auth.ts \
-            components \
-            instrumentation.ts \
-            lib \
-            next.config.js \
-            package.json \
-            package-lock.json \
-            prisma \
-            scripts \
-            server.js \
-            tsconfig.json \
-            types.d.ts \
-            uploads/silhouette-proposal-template.html \
-            .next
+          printf 'restart %s\n' "$(date -u +%FT%TZ)" > restart.txt
+          {
+            echo "cd $DEPLOY_PATH"
+            echo "-mkdir tmp"
+            find app components lib prisma scripts .next -type d \
+              ! -path ".next/cache" \
+              ! -path ".next/cache/*" \
+              | sort \
+              | sed 's#.*#-mkdir "&"#'
+            for file in \
+              .env.example \
+              .htaccess \
+              auth.ts \
+              instrumentation.ts \
+              next.config.js \
+              package.json \
+              package-lock.json \
+              server.js \
+              tsconfig.json \
+              types.d.ts \
+              uploads/silhouette-proposal-template.html
+            do
+              printf 'put "%s" "%s"\n' "$file" "$file"
+            done
+            find app components lib prisma scripts .next -type f \
+              ! -path ".next/cache/*" \
+              | sort \
+              | sed 's#.*#put "&" "&"#'
+            echo 'put "restart.txt" "tmp/restart.txt"'
+            echo "bye"
+          } > sftp.batch
 
       - name: Configure SSH
         run: |
@@ -74,23 +81,11 @@ jobs:
             echo "[82.112.248.74]:65002 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGGEVjMoRmxDq+/BttPSglzYLWsgVh95ne2JSplp/xa3G5UySsfb4CxZP7Tmjb0YlFEJnYqxnaOKyuCyNuwM9sk="
           } >> ~/.ssh/known_hosts
 
-      - name: Upload release
+      - name: Upload build over SFTP
         run: |
-          scp -i ~/.ssh/hostinger_deploy_key -P "$SSH_PORT" release.tgz "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/release.tgz"
-
-      - name: Activate release
-        run: |
-          ssh -i ~/.ssh/hostinger_deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
-            "set -e
-             cd '$DEPLOY_PATH'
-             tar -xzf release.tgz
-             export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin
-             npm ci
-             npx prisma migrate deploy
-             npx prisma generate
-             mkdir -p tmp
-             touch tmp/restart.txt"
+          sftp -b sftp.batch -oBatchMode=yes -i ~/.ssh/hostinger_deploy_key -P "$SSH_PORT" "$SSH_USER@$SSH_HOST"
 
       - name: Smoke test
         run: |
+          sleep 10
           curl --fail --location --max-redirs 4 https://complianceapp.silhouettellc.com/app

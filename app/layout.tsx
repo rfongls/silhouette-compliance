@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = { title: "Silhouette Compliance", description: "AI-assisted compliance, risk, and proposal tooling" };
+export const metadata: Metadata = { title: "Silhouette.", description: "AI-assisted compliance, risk, and proposal tooling" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="en"><body>{children}</body></html>;

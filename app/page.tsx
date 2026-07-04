@@ -1,6 +1,11 @@
-import Link from "next/link";
 import { Nav } from "@/components/Nav";
+import { LandingSections } from "@/components/LandingSections";
 
 export default function LandingPage() {
-  return <main className="shell"><Nav/><section className="hero"><div className="wrap"><div className="mono" style={{color:"#9ec5b4",marginBottom:14}}>Stateless by Design</div><h1>Silhouette Compliance</h1><p>AI-assisted incident response gap analysis, security risk assessments, and proposal tooling for regulated organizations. Source documents stay in memory for a single request; results, billing, and evidence workflows stay auditable.</p><div style={{display:"flex",gap:12,marginTop:28,flexWrap:"wrap"}}><Link className="btn" href="/signin">Start assessment</Link><Link className="btn secondary" href="/app?demo=1">Try demo</Link></div></div></section><section className="wrap"><div className="grid"><div className="card"><div className="mono">IRP Gap Analysis</div><h2>$250 / org</h2><p className="muted">Policy upload, control-board scoring, one refinement, report/deck/JSON exports.</p></div><div className="card"><div className="mono">Security Risk Assessment</div><h2>$1,500 / engagement</h2><p className="muted">Resumable scope, inventory, encrypted evidence imports, human-approved findings, roadmap.</p></div><div className="card"><div className="mono">Proposals</div><h2>$99 / proposal</h2><p className="muted">Print-first proposal builder with pricing forms, checklist, references, and exports.</p></div></div></section></main>;
+  return (
+    <main className="shell">
+      <Nav />
+      <LandingSections />
+    </main>
+  );
 }

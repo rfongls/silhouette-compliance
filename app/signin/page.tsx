@@ -31,27 +31,47 @@ function ProviderIcon({ provider }: { provider: "google" | "github" | "microsoft
   );
 }
 
-function ProviderButton({ provider, label, primary = false }: { provider: "google" | "github" | "microsoft"; label: string; primary?: boolean }) {
+function ProviderButton({ provider, label, primary = false, enabled = true }: { provider: "google" | "github" | "microsoft"; label: string; primary?: boolean; enabled?: boolean }) {
   const providerId = provider === "microsoft" ? "microsoft-entra-id" : provider;
+  const button = (
+    <button
+      className={`btn${primary ? "" : " secondary"}`}
+      aria-label={enabled ? `Sign in with ${label}` : `${label} sign-in setup pending`}
+      disabled={!enabled}
+      style={{
+        width: "100%",
+        minHeight: 48,
+        justifyContent: "flex-start",
+        padding: "12px 16px",
+        opacity: enabled ? 1 : 0.62,
+        cursor: enabled ? "pointer" : "not-allowed"
+      }}
+    >
+      <ProviderIcon provider={provider} />
+      <span>{label}</span>
+      {!enabled ? <span className="mono" style={{ marginLeft: "auto", fontSize: 10 }}>Setup pending</span> : null}
+    </button>
+  );
+
+  if (!enabled) return button;
 
   return (
     <form action={async () => {
       "use server";
       await signIn(providerId, { redirectTo: "/app" });
     }}>
-      <button
-        className={`btn${primary ? "" : " secondary"}`}
-        aria-label={`Sign in with ${label}`}
-        style={{ width: "100%", minHeight: 48, justifyContent: "flex-start", padding: "12px 16px" }}
-      >
-        <ProviderIcon provider={provider} />
-        <span>{label}</span>
-      </button>
+      {button}
     </form>
   );
 }
 
 export default function SignInPage() {
+  const hasGoogleAuth = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  const hasGitHubAuth = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+  const hasMicrosoftAuth = Boolean(
+    process.env.MICROSOFT_ENTRA_ID_CLIENT_ID && process.env.MICROSOFT_ENTRA_ID_CLIENT_SECRET
+  );
+
   return (
     <main>
       <Nav />
@@ -61,9 +81,9 @@ export default function SignInPage() {
           <h1 style={{ fontFamily: "EB Garamond", fontSize: 42, margin: "10px 0" }}>Access Silhouette</h1>
           <p className="muted">Use Google, GitHub, or Microsoft Entra ID. Accounts are scoped to a billing account and server-side role.</p>
           <div style={{ display: "grid", gap: 12, marginTop: 22 }}>
-            <ProviderButton provider="google" label="Google" primary />
-            <ProviderButton provider="github" label="GitHub" />
-            <ProviderButton provider="microsoft" label="Microsoft" />
+            <ProviderButton provider="google" label="Google" primary enabled={hasGoogleAuth} />
+            <ProviderButton provider="github" label="GitHub" enabled={hasGitHubAuth} />
+            <ProviderButton provider="microsoft" label="Microsoft" enabled={hasMicrosoftAuth} />
           </div>
         </div>
       </section>

@@ -69,7 +69,10 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}" > ~/.ssh/hostinger_deploy_key
           chmod 600 ~/.ssh/hostinger_deploy_key
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+          {
+            echo "[82.112.248.74]:65002 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGoS6GX5xC1+1FcbLiTqzf4IaBr+7QLPDAGi7JoPYRLG"
+            echo "[82.112.248.74]:65002 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGGEVjMoRmxDq+/BttPSglzYLWsgVh95ne2JSplp/xa3G5UySsfb4CxZP7Tmjb0YlFEJnYqxnaOKyuCyNuwM9sk="
+          } >> ~/.ssh/known_hosts
 
       - name: Upload release
         run: |

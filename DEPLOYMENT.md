@@ -72,5 +72,8 @@ acceptance checks in AGENTS.md §9 and §13.
 ## Ongoing
 
 - Work in feature branches; merging to `main` auto-deploys via Hostinger's GitHub integration.
+- Keep Silhouette Orchestrator deployments pointed at the orchestrator domain/path only. Do not
+  deploy orchestrator artifacts, build output, or release archives into this compliance app's
+  Hostinger `public_html` directory.
 - Dependency vulnerabilities: review hPanel → Security → Vulnerabilities; auto-fix PRs land on the
   GitHub repo.

@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -12,6 +13,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || "placeholder",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder"
+    }),
+    GitHub({
+      clientId: process.env.GITHUB_CLIENT_ID || "placeholder",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "placeholder"
     }),
     MicrosoftEntraID({
       clientId: process.env.MICROSOFT_ENTRA_ID_CLIENT_ID || "placeholder",

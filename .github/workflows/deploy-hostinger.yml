@@ -83,7 +83,22 @@ jobs:
 
       - name: Upload build over SFTP
         run: |
-          sftp -b sftp.batch -oBatchMode=yes -i ~/.ssh/hostinger_deploy_key -P "$SSH_PORT" "$SSH_USER@$SSH_HOST"
+          for attempt in 1 2 3 4 5; do
+            echo "SFTP upload attempt ${attempt}/5"
+            if sftp \
+              -b sftp.batch \
+              -oBatchMode=yes \
+              -oConnectTimeout=30 \
+              -oServerAliveInterval=15 \
+              -oServerAliveCountMax=4 \
+              -i ~/.ssh/hostinger_deploy_key \
+              -P "$SSH_PORT" \
+              "$SSH_USER@$SSH_HOST"; then
+              exit 0
+            fi
+            sleep $((attempt * 20))
+          done
+          exit 1
 
       - name: Smoke test
         run: |

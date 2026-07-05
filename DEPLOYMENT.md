@@ -72,6 +72,17 @@ acceptance checks in AGENTS.md §9 and §13.
 ## Ongoing
 
 - Work in feature branches; merging to `main` auto-deploys via Hostinger's GitHub integration.
+- Hostinger must run the repo build on every deployment:
+  - Build command: `npm run build`
+  - Startup file: `server.js`
+  - App root/webroot: `public_html` for this Hostinger site
+  - Node version: `22.x`
+- The `npm run build` command also runs `postbuild`, which writes `tmp/restart.txt`. Passenger uses
+  that marker to restart the Node app after the new `.next` build is created. If Hostinger shows a
+  new commit but the live site still shows old UI, the build command did not run or the app did not
+  restart.
+- Do not use the old SFTP GitHub Action path for normal deploys. Hostinger's native GitHub
+  integration is the deployment source of truth.
 - Keep Silhouette Orchestrator deployments pointed at the orchestrator domain/path only. Do not
   deploy orchestrator artifacts, build output, or release archives into this compliance app's
   Hostinger `public_html` directory.

@@ -10,6 +10,16 @@ import Link from "next/link";
 const serif = "'EB Garamond', Georgia, serif";
 const mono = "'DM Mono', monospace";
 const N = 6;
+const accent = "var(--accent)";
+const accentDark = "var(--accent-dark)";
+const accentLight = "var(--accent-light)";
+const accentSoft = "var(--accent-soft)";
+const accentWash = "var(--accent-wash)";
+const accentBorder = "var(--accent-border)";
+const accentShadow = "var(--accent-shadow)";
+const accentHero = "var(--accent-hero)";
+const accentPanel = "var(--accent-panel)";
+const accentFooter = "var(--accent-footer)";
 
 const modules = [
   {
@@ -59,7 +69,7 @@ const steps = [
 
 function Icon({ paths }: { paths: string[] }) {
   return (
-    <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#1f4e3b" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+    <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={accentDark} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
       {paths.map((d, i) => (<path key={i} d={d} />))}
     </svg>
   );
@@ -146,11 +156,11 @@ export function LandingSections() {
 
   const check = (label: string) => (
     <div key={label} style={{ display: "flex", alignItems: "center", gap: 7, whiteSpace: "nowrap" }}>
-      <span style={{ color: "#9ec5b4", fontSize: 15 }}>✓</span>{label}
+      <span style={{ color: accentLight, fontSize: 15 }}>✓</span>{label}
     </div>
   );
 
-  const sectionEyebrow = (text: string, color = "#2d6a4f") => (
+  const sectionEyebrow = (text: string, color = accent) => (
     <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color, marginBottom: 12 }}>{text}</div>
   );
 
@@ -168,18 +178,18 @@ export function LandingSections() {
       `}</style>
 
       {/* SLIDE 0 - HERO */}
-      <div data-slide="0" style={{ ...slideBase, transform: tf(0), background: "linear-gradient(150deg,#1f4e3b 0%,#17382c 55%,#122a22 100%)" }}>
+      <div data-slide="0" style={{ ...slideBase, transform: tf(0), background: accentHero }}>
         <div style={{ maxWidth: 1080, margin: "auto", padding: "60px 28px", textAlign: "center" }}>
           <h1 className="fu hero-h1" style={{ fontFamily: serif, fontSize: 60, fontWeight: 600, lineHeight: 1.06, color: "#fff", maxWidth: 840, margin: "0 auto 22px", letterSpacing: "-.01em" }}>
             Stateless by Design
           </h1>
-          <p className="fu" style={{ fontSize: 17.5, lineHeight: 1.65, color: "#cfe0d8", maxWidth: 620, margin: "0 auto 34px" }}>
+          <p className="fu" style={{ fontSize: 17.5, lineHeight: 1.65, color: "#eadff0", maxWidth: 620, margin: "0 auto 34px" }}>
             AI-assisted compliance, risk, and proposal tools that turn your security documentation into audit-ready assessments without storing your private data.
           </p>
           <div className="fu" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/app?demo=1" style={{ fontSize: 15, color: "#1f4e3b", fontWeight: 700, padding: "14px 30px", background: "#fff", borderRadius: 10, whiteSpace: "nowrap" }}>View Demo</Link>
+            <Link href="/app?demo=1" style={{ fontSize: 15, color: accentDark, fontWeight: 700, padding: "14px 30px", background: "#fff", borderRadius: 10, whiteSpace: "nowrap" }}>View Demo</Link>
           </div>
-          <div className="fu" style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginTop: 36, fontSize: 12.5, color: "#bcd0c6" }}>
+          <div className="fu" style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginTop: 36, fontSize: 12.5, color: accentLight }}>
             {["We store nothing", "No PHI / client data collected", "Google, Microsoft & GitHub SSO"].map(check)}
           </div>
         </div>
@@ -190,20 +200,20 @@ export function LandingSections() {
         <div style={{ maxWidth: 1080, margin: "auto", padding: "60px 28px", width: "100%" }}>
           <div style={{ textAlign: "center", marginBottom: 44 }}>
             <h2 style={{ fontFamily: serif, fontSize: 36, fontWeight: 600, color: "#111", margin: 0 }}>Try Our Demo!</h2>
-            <p style={{ fontSize: 14.5, color: "#5d6b63", marginTop: 10 }}>Every module includes a demo. Click below to demo.</p>
+            <p style={{ fontSize: 14.5, color: "#665b6b", marginTop: 10 }}>Every module includes a demo. Click below to demo.</p>
           </div>
           <div className="stack-m" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18 }}>
             {modules.map((m) => (
-              <Link key={m.name} href={m.demoHref} style={{ background: "#fff", border: "1px solid #e1e8e4", borderRadius: 16, padding: 26, display: "flex", flexDirection: "column", cursor: "pointer", transition: "border-color .18s, box-shadow .18s, transform .18s", color: "inherit" }}
-                onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = "#2d6a4f"; el.style.boxShadow = "0 10px 28px rgba(31,78,59,.14)"; el.style.transform = "translateY(-3px)"; }}
-                onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = "#e1e8e4"; el.style.boxShadow = "none"; el.style.transform = "none"; }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(45,106,79,.1)", border: "1px solid rgba(45,106,79,.22)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <Link key={m.name} href={m.demoHref} style={{ background: "#fff", border: "1px solid #e4dce9", borderRadius: 16, padding: 26, display: "flex", flexDirection: "column", cursor: "pointer", transition: "border-color .18s, box-shadow .18s, transform .18s", color: "inherit" }}
+                onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = accent; el.style.boxShadow = `0 10px 28px ${accentShadow}`; el.style.transform = "translateY(-3px)"; }}
+                onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = "#e4dce9"; el.style.boxShadow = "none"; el.style.transform = "none"; }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: accentWash, border: `1px solid ${accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
                   <Icon paths={m.icon} />
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: "#111", marginBottom: 7 }}>{m.name}</div>
-                <div style={{ fontSize: 13.5, color: "#5d6b63", lineHeight: 1.6, flex: 1 }}>{m.desc}</div>
-                <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #eef1ef" }}>
-                  <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 600, color: "#1f4e3b" }}>{m.price}</div>
+                <div style={{ fontSize: 13.5, color: "#665b6b", lineHeight: 1.6, flex: 1 }}>{m.desc}</div>
+                <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #f0e9f4" }}>
+                  <div style={{ fontFamily: serif, fontSize: 22, fontWeight: 600, color: accentDark }}>{m.price}</div>
                   <div style={{ fontSize: 11.5, color: "#999", marginTop: 2 }}>{m.priceNote}</div>
                 </div>
               </Link>
@@ -213,12 +223,12 @@ export function LandingSections() {
       </div>
 
       {/* SLIDE 2 - SECURITY */}
-      <div data-slide="2" style={{ ...slideBase, transform: tf(2), background: "#1f2c26" }}>
-        <div style={{ maxWidth: 1080, margin: "auto", padding: "44px 28px", color: "#e6efe9", width: "100%" }}>
+      <div data-slide="2" style={{ ...slideBase, transform: tf(2), background: accentPanel }}>
+        <div style={{ maxWidth: 1080, margin: "auto", padding: "44px 28px", color: "#f3ecf6", width: "100%" }}>
           <div style={{ textAlign: "center", maxWidth: 680, margin: "0 auto 40px" }}>
-            {sectionEyebrow("Stateless by design", "#9ec5b4")}
+            {sectionEyebrow("Stateless by design", accentLight)}
             <h2 style={{ fontFamily: serif, fontSize: 38, fontWeight: 600, lineHeight: 1.12, margin: "0 0 16px", color: "#fff" }}>Your documents are never stored</h2>
-            <p style={{ fontSize: 15, lineHeight: 1.7, color: "#bcd0c6", margin: 0 }}>Your policies and evidence are held in memory for a single analysis, then discarded. Here is exactly where the line sits:</p>
+            <p style={{ fontSize: 15, lineHeight: 1.7, color: accentLight, margin: 0 }}>Your policies and evidence are held in memory for a single analysis, then discarded. Here is exactly where the line sits:</p>
           </div>
           <div className="stack-m sec-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", maxWidth: 880, margin: "0 auto", border: "1px solid rgba(255,255,255,.14)", borderRadius: 16, overflow: "hidden" }}>
             <div style={{ padding: "28px 30px", borderRight: "1px solid rgba(255,255,255,.14)" }}>
@@ -229,21 +239,21 @@ export function LandingSections() {
                     <span style={{ color: "#d9a3a3", fontSize: 14, marginTop: 1 }}>✕</span>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{t.title}</div>
-                      <div style={{ fontSize: 12.5, color: "#bcd0c6", lineHeight: 1.55, marginTop: 2 }}>{t.body}</div>
+                      <div style={{ fontSize: 12.5, color: accentLight, lineHeight: 1.55, marginTop: 2 }}>{t.body}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ padding: "28px 30px", background: "rgba(158,197,180,.07)" }}>
-              <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#9ec5b4", marginBottom: 18 }}>What we keep</div>
+            <div style={{ padding: "28px 30px", background: "rgba(217,195,229,.08)" }}>
+              <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: accentLight, marginBottom: 18 }}>What we keep</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {weKeep.map((t) => (
                   <div key={t.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                    <span style={{ color: "#9ec5b4", fontSize: 14, marginTop: 1 }}>✓</span>
+                    <span style={{ color: accentLight, fontSize: 14, marginTop: 1 }}>✓</span>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{t.title}</div>
-                      <div style={{ fontSize: 12.5, color: "#bcd0c6", lineHeight: 1.55, marginTop: 2 }}>{t.body}</div>
+                      <div style={{ fontSize: 12.5, color: accentLight, lineHeight: 1.55, marginTop: 2 }}>{t.body}</div>
                     </div>
                   </div>
                 ))}
@@ -263,9 +273,9 @@ export function LandingSections() {
           <div className="stack-m" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
             {steps.map((st) => (
               <div key={st.n} style={{ textAlign: "center", padding: "0 8px" }}>
-                <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#2d6a4f", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: serif, fontSize: 18, fontWeight: 600, margin: "0 auto 14px" }}>{st.n}</div>
+                <div style={{ width: 42, height: 42, borderRadius: "50%", background: accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: serif, fontSize: 18, fontWeight: 600, margin: "0 auto 14px" }}>{st.n}</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: "#111", marginBottom: 5 }}>{st.title}</div>
-                <div style={{ fontSize: 12.5, color: "#5d6b63", lineHeight: 1.55 }}>{st.body}</div>
+                <div style={{ fontSize: 12.5, color: "#665b6b", lineHeight: 1.55 }}>{st.body}</div>
               </div>
             ))}
           </div>
@@ -273,22 +283,22 @@ export function LandingSections() {
       </div>
 
       {/* SLIDE 4 - PRICING */}
-      <div data-slide="4" style={{ ...slideBase, transform: tf(4), background: "#f8faf9" }}>
+      <div data-slide="4" style={{ ...slideBase, transform: tf(4), background: accentSoft }}>
         <div style={{ maxWidth: 1080, margin: "auto", padding: "60px 28px", width: "100%" }}>
           <div style={{ textAlign: "center", marginBottom: 44 }}>
             {sectionEyebrow("Pricing")}
             <h2 style={{ fontFamily: serif, fontSize: 36, fontWeight: 600, color: "#111", margin: 0 }}>Pay for what you use</h2>
-            <p style={{ fontSize: 15, color: "#5d6b63", marginTop: 10, maxWidth: 540, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 15, color: "#665b6b", marginTop: 10, maxWidth: 540, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
               Demo every module free with sample data. Activate a module to run it on your own documents.
             </p>
           </div>
           <div className="stack-m" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18 }}>
             {modules.map((m) => (
-              <div key={m.name} style={{ background: "#fff", border: "1px solid #e1e8e4", borderRadius: 16, padding: 28, textAlign: "center" }}>
+              <div key={m.name} style={{ background: "#fff", border: "1px solid #e4dce9", borderRadius: 16, padding: 28, textAlign: "center" }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: "#111", marginBottom: 12 }}>{m.name}</div>
-                <div style={{ fontFamily: serif, fontSize: 34, fontWeight: 600, color: "#1f4e3b" }}>{m.price}</div>
+                <div style={{ fontFamily: serif, fontSize: 34, fontWeight: 600, color: accentDark }}>{m.price}</div>
                 <div style={{ fontSize: 12, color: "#999", marginTop: 4, marginBottom: 20 }}>{m.priceNote}</div>
-                <Link href="/signin" style={{ display: "block", fontSize: 13.5, color: "#fff", fontWeight: 600, padding: 11, background: "#2d6a4f", borderRadius: 9 }}>Get started</Link>
+                <Link href="/signin" style={{ display: "block", fontSize: 13.5, color: "#fff", fontWeight: 600, padding: 11, background: accent, borderRadius: 9 }}>Get started</Link>
               </div>
             ))}
           </div>
@@ -299,16 +309,16 @@ export function LandingSections() {
       <div data-slide="5" style={{ ...slideBase, transform: tf(5), flexDirection: "column", background: "#fff" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "80px 28px", textAlign: "center", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <h2 style={{ fontFamily: serif, fontSize: 40, fontWeight: 600, color: "#111", lineHeight: 1.15, maxWidth: 680, margin: "0 auto 18px" }}>Run your first assessment today</h2>
-          <p style={{ fontSize: 16, color: "#5d6b63", maxWidth: 540, margin: "0 auto 30px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: "#665b6b", maxWidth: 540, margin: "0 auto 30px", lineHeight: 1.6 }}>
             Sign in with your Google, Microsoft, or GitHub account. Try any module in demo mode before you pay.
           </p>
           <div>
-            <Link href="/signin" style={{ display: "inline-block", fontSize: 16, color: "#fff", fontWeight: 600, padding: "15px 30px", background: "#2d6a4f", borderRadius: 11 }}>Sign in to get started</Link>
+            <Link href="/signin" style={{ display: "inline-block", fontSize: 16, color: "#fff", fontWeight: 600, padding: "15px 30px", background: accent, borderRadius: 11 }}>Sign in to get started</Link>
           </div>
         </div>
-        <footer style={{ background: "#16201c", color: "#9fb3a8" }}>
+        <footer style={{ background: accentFooter, color: accentLight }}>
           <div style={{ padding: "16px 22px", textAlign: "right" }}>
-            <div style={{ fontFamily: mono, fontSize: 11, color: "#7d9488" }}>© 2026 Silhouette LLC. All rights reserved.</div>
+            <div style={{ fontFamily: mono, fontSize: 11, color: accentLight }}>© 2026 Silhouette LLC. All rights reserved.</div>
           </div>
         </footer>
       </div>

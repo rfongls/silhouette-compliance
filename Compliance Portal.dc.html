@@ -11,59 +11,67 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#eef1ef;font-family:'DM Sans',sans-serif;color:#111;}
+body{background:#f7f3ff;font-family:'DM Sans',sans-serif;color:#0f172a;}
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 input,button,textarea,select{font-family:inherit;}
-input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!important;}
+input:focus,textarea:focus{outline:none;border-color:#7c3aed!important;}
 </style>
 </helmet>
-<div style="min-height:100vh;background:#eef1ef;">
+<div style="min-height:calc(100vh - 45px);background:#f7f3ff;display:flex;flex-direction:column;">
 
-  <div style="border-bottom:1px solid #d7ddd9;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;background:#f8faf9;position:sticky;top:0;z-index:50;">
-    <div style="display:flex;align-items:baseline;gap:12px;">
-      <div style="font-family:'EB Garamond',Georgia,serif;font-size:21px;font-weight:600;color:var(--accentDark,#1f4e3b);letter-spacing:.02em;">Silhouette<span style="color:var(--accent,#2d6a4f);">.</span></div>
-      <div style="display:flex;gap:3px;background:#fff;padding:3px;border-radius:8px;border:1px solid #d7ddd9;">
-        <div style="font-family:'DM Mono',monospace;font-size:10.5px;padding:6px 12px;border-radius:6px;background:var(--accent,#2d6a4f);color:#fff;">Incident Response Plan</div>
-        <a href="SRA Module.dc.html" style="font-family:'DM Mono',monospace;font-size:10.5px;padding:6px 12px;border-radius:6px;color:#888;cursor:pointer;text-decoration:none;">Risk Assessment / Pen Test</a>
-        <a href="uploads/silhouette-proposal-template.html" style="font-family:'DM Mono',monospace;font-size:10.5px;padding:6px 12px;border-radius:6px;color:#888;cursor:pointer;text-decoration:none;">Proposals</a>
-      </div>
+  <div style="border-bottom:1px solid rgba(224,210,255,.16);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;background:#110f1d;position:sticky;top:0;z-index:50;">
+    <div style="display:flex;align-items:center;gap:14px;position:relative;">
+      <button onClick="{{ toggleMenu }}" title="Modules" style="display:flex;flex-direction:column;justify-content:center;gap:4px;background:transparent;border:none;cursor:pointer;padding:6px 2px;">
+        <span style="width:20px;height:2px;background:#f3efff;border-radius:2px;display:block;"></span>
+        <span style="width:20px;height:2px;background:#f3efff;border-radius:2px;display:block;"></span>
+        <span style="width:20px;height:2px;background:#f3efff;border-radius:2px;display:block;"></span>
+      </button>
+      <div style="font-family:'EB Garamond',Georgia,serif;font-size:21px;font-weight:600;color:#f3efff;letter-spacing:.02em;">Silhouette<span style="color:#9b6bff;">.</span></div>
+      <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:46px;left:0;background:#151022;border:1px solid rgba(224,210,255,.16);border-radius:10px;padding:6px;min-width:250px;box-shadow:0 14px 36px rgba(0,0,0,.45);z-index:100;display:flex;flex-direction:column;gap:2px;">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#a89fc6;padding:6px 10px 4px;">Modules</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;padding:9px 12px;border-radius:7px;background:linear-gradient(135deg,#d2b8ff,#9b6bff);color:#140f25;font-weight:700;">Incident Response Plan</div>
+          <a href="SRA Module.dc.html" style="font-family:'DM Mono',monospace;font-size:11px;padding:9px 12px;border-radius:7px;color:#d7cbed;cursor:pointer;text-decoration:none;">Risk Assessment / Pen Test</a>
+          <a href="uploads/silhouette-proposal-template.html" style="font-family:'DM Mono',monospace;font-size:11px;padding:9px 12px;border-radius:7px;color:#d7cbed;cursor:pointer;text-decoration:none;">Proposals</a>
+        </div>
+      </sc-if>
     </div>
     <div style="display:flex;align-items:center;gap:14px;">
       <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:#5d5d5d;">
-          <span style="width:7px;height:7px;border-radius:50%;background:var(--accent,#2d6a4f);display:inline-block;"></span>
+        <div style="display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:11px;color:#d7cbed;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#9b6bff;display:inline-block;"></span>
           {{ roleLabel }}
         </div>
-        <a href="{{ analyzerUrl }}" target="_blank" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent,#2d6a4f);color:#fff;border-radius:7px;padding:7px 13px;text-decoration:none;font-weight:500;">Open Live Analyzer ↗</a>
-        <div style="display:flex;align-items:center;gap:5px;margin-right:2px;" title="App accent theme">
-          <sc-for list="{{ accentSwatches }}" as="sw" hint-placeholder-count="5">
-            <div onClick="{{ sw.onPick }}" style="{{ sw.style }}"></div>
-          </sc-for>
+        <div style="display:flex;gap:2px;background:rgba(26,18,46,.68);border:1px solid rgba(224,210,255,.16);border-radius:20px;padding:2px;">
+          <button onClick="{{ modeLive }}" style="{{ modeLiveStyle }}">Live</button>
+          <button onClick="{{ modeDemo }}" style="{{ modeDemoStyle }}">Demo</button>
         </div>
-        <button onClick="{{ switchRole }}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:6px 12px;color:#5d5d5d;cursor:pointer;">Switch View</button>
-        <button onClick="{{ signOut }}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:none;color:#888;cursor:pointer;">Sign out</button>
+        <a href="{{ analyzerUrl }}" target="_blank" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(135deg,#d2b8ff,#9b6bff);color:#140f25;border-radius:999px;padding:7px 14px;text-decoration:none;font-weight:700;">Open Live Analyzer ↗</a>
+        <button onClick="{{ switchRole }}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,.22);border-radius:7px;padding:6px 12px;color:#d7cbed;cursor:pointer;">Switch View</button>
+        <button onClick="{{ signOut }}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:none;color:#a89fc6;cursor:pointer;">Sign out</button>
       </sc-if>
     </div>
   </div>
 
   <!-- ============ SIGN IN ============ -->
   <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ true }}">
-    <div style="max-width:420px;margin:0 auto;padding:72px 24px;">
-      <div style="background:#fff;border:1px solid #d7ddd9;border-radius:16px;padding:36px 34px;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:fadeUp .3s ease;">
-        <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#111;margin-bottom:6px;">Sign in</div>
-        <div style="font-size:13.5px;color:#5d5d5d;line-height:1.55;margin-bottom:26px;">Access your compliance assessments and reports.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Email</div>
-        <input type="text" value="you@healthcenter.org" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;color:#111;margin-bottom:16px;background:#f8faf9;"/>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Password</div>
-        <input type="password" value="demo1234" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;color:#111;margin-bottom:22px;background:#f8faf9;"/>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:9px;">Sign in as (demo)</div>
+    <div style="max-width:420px;margin:auto;padding:28px 24px;width:100%;">
+      <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:16px;padding:36px 34px;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:fadeUp .3s ease;">
+        <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#0f172a;margin-bottom:6px;">Sign in</div>
+        <div style="font-size:13.5px;color:#3f2f6b;line-height:1.55;margin-bottom:26px;">Access your compliance assessments and reports.</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">Email</div>
+        <input type="text" value="you@healthcenter.org" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;color:#0f172a;margin-bottom:16px;background:#f7f3ff;"/>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">Password</div>
+        <input type="password" value="demo1234" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;color:#0f172a;margin-bottom:22px;background:#f7f3ff;"/>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:9px;">Sign in as (demo)</div>
         <div style="display:flex;gap:8px;margin-bottom:22px;">
           <button onClick="{{ pickCustomer }}" style="{{ customerToggleStyle }}">Customer</button>
           <button onClick="{{ pickAdmin }}" style="{{ adminToggleStyle }}">Admin</button>
         </div>
-        <button onClick="{{ signIn }}" style="width:100%;padding:13px;background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.01em;">Sign In</button>
-        <div style="text-align:center;margin-top:16px;font-size:12px;color:#888;line-height:1.5;">We never store your uploaded documents.<br/>No patient or client data is collected.</div>
+        <button onClick="{{ signIn }}" style="width:100%;padding:13px;background:#7c3aed;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.01em;">Sign In</button>
+        <div style="text-align:center;margin-top:16px;font-size:12px;color:#6b5a95;line-height:1.5;">We never store your uploaded documents.<br/>No patient or client data is collected.</div>
+        <button onClick="{{ viewDemo }}" style="width:100%;margin-top:14px;padding:11px;background:transparent;border:1px solid rgba(91,33,182,.28);border-radius:9px;font-size:13px;font-weight:600;color:#7c3aed;cursor:pointer;">View demo with sample data →</button>
       </div>
     </div>
   </sc-if>
@@ -73,7 +81,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
     <div style="max-width:960px;margin:0 auto;padding:24px 32px 60px;">
 
       <sc-if value="{{ showCustTabs }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;gap:4px;margin-bottom:26px;background:#fff;padding:4px;border-radius:10px;border:1px solid #d7ddd9;width:fit-content;">
+        <div style="display:flex;gap:4px;margin-bottom:26px;background:#ffffff;padding:4px;border-radius:10px;border:1px solid rgba(91,33,182,.16);width:fit-content;">
           <button onClick="{{ goDashboard }}" style="{{ tabDashStyle }}">Dashboard</button>
           <button onClick="{{ goNew }}" style="{{ tabNewStyle }}">New Assessment</button>
         </div>
@@ -82,39 +90,54 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
       <!-- DASHBOARD -->
       <sc-if value="{{ custDashboard }}" hint-placeholder-val="{{ true }}">
         <div style="animation:fadeUp .3s ease;">
-          <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#111;margin-bottom:3px;">Welcome back</div>
-          <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:22px;">Your compliance assessments and remediation roadmaps.</div>
+          <sc-if value="{{ readonlyDemo }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.28);border-radius:11px;padding:13px 18px;margin-bottom:22px;flex-wrap:wrap;">
+              <div style="font-size:12.5px;color:#5b21b6;line-height:1.5;"><strong>Demo preview.</strong> These are sample results. Sign in to run assessments on your own documents.</div>
+              <button onClick="{{ exitDemo }}" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Sign in</button>
+            </div>
+          </sc-if>
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#0f172a;margin-bottom:3px;">{{ dashTitle }}</div>
+          <div style="font-size:13.5px;color:#3f2f6b;margin-bottom:22px;">{{ dashSubtitle }}</div>
 
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;">
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Assessments run</div>
-              <div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#111;">{{ statRuns }}</div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;padding:18px 20px;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Assessments run</div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#0f172a;">{{ statRuns }}</div>
             </div>
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Organizations</div>
-              <div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#111;">{{ statOrgs }}</div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;padding:18px 20px;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Organizations</div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#0f172a;">{{ statOrgs }}</div>
             </div>
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Avg. score</div>
-              <div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:var(--accentDark,#1f4e3b);">{{ statAvg }}</div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;padding:18px 20px;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Avg. score</div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#5b21b6;">{{ statAvg }}</div>
             </div>
           </div>
 
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888;">Recent assessments</div>
-            <button onClick="{{ goNew }}" style="background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">+ New assessment</button>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6b5a95;">Recent assessments</div>
+            <sc-if value="{{ canNew }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ goNew }}" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">+ New assessment</button>
+            </sc-if>
           </div>
-          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;">
+          <sc-if value="{{ noReports }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#ffffff;border:1px dashed rgba(91,33,182,.28);border-radius:12px;padding:38px;text-align:center;">
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#0f172a;margin-bottom:6px;">No assessments yet</div>
+              <div style="font-size:13px;color:#3f2f6b;margin-bottom:18px;">Queue your documents and run your first assessment, or switch to Demo mode to explore sample results.</div>
+              <button onClick="{{ goNew }}" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;">Start your first assessment</button>
+            </div>
+          </sc-if>
+          <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;overflow:hidden;">
             <sc-for list="{{ allReports }}" as="rep" hint-placeholder-count="3">
-              <div onClick="{{ rep.onView }}" style="display:grid;grid-template-columns:48px 1fr auto;gap:14px;padding:14px 18px;border-bottom:1px solid #eef1ef;align-items:center;cursor:pointer;">
+              <div onClick="{{ rep.onView }}" style="display:grid;grid-template-columns:48px 1fr auto;gap:14px;padding:14px 18px;border-bottom:1px solid rgba(91,33,182,.08);align-items:center;cursor:pointer;">
                 <div style="{{ rep.miniScoreStyle }}">{{ rep.score }}</div>
                 <div>
-                  <div style="font-size:14px;font-weight:600;color:#111;">{{ rep.org }}</div>
-                  <div style="font-size:12px;color:#888;margin-top:2px;">{{ rep.posture }} · {{ rep.industryLabel }} · {{ rep.date }}</div>
+                  <div style="font-size:14px;font-weight:600;color:#0f172a;">{{ rep.org }}</div>
+                  <div style="font-size:12px;color:#6b5a95;margin-top:2px;">{{ rep.posture }} · {{ rep.industryLabel }} · {{ rep.date }}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                   <span style="{{ rep.badgeStyle }}">{{ rep.gaps }} gaps</span>
-                  <span style="color:#cfd8d3;font-size:18px;">›</span>
+                  <span style="color:rgba(91,33,182,.22);font-size:18px;">›</span>
                 </div>
               </div>
             </sc-for>
@@ -138,83 +161,83 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
           <div style="animation:fadeUp .3s ease;">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px;flex-wrap:wrap;">
               <div>
-                <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Queue documents for analysis</div>
-                <div style="font-size:13.5px;color:#5d5d5d;line-height:1.55;margin-top:4px;max-width:560px;">Group documents by organization. You are billed per organization assessed, not per document. Each organization receives one report with one free refinement.</div>
+                <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#0f172a;">Queue documents for analysis</div>
+                <div style="font-size:13.5px;color:#3f2f6b;line-height:1.55;margin-top:4px;max-width:560px;">Group documents by organization. You are billed per organization assessed, not per document. Each organization receives one report with one free refinement.</div>
               </div>
               <div style="text-align:right;">
-                <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:5px;">Industry</div>
-                <select onChange="{{ setIndustry }}" value="{{ industry }}" style="font-family:'DM Mono',monospace;font-size:12px;padding:8px 11px;border:1px solid #cfd8d3;border-radius:8px;background:#fff;color:#111;cursor:pointer;">
+                <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:5px;">Industry</div>
+                <select onChange="{{ setIndustry }}" value="{{ industry }}" style="font-family:'DM Mono',monospace;font-size:12px;padding:8px 11px;border:1px solid rgba(91,33,182,.22);border-radius:8px;background:#ffffff;color:#0f172a;cursor:pointer;">
                   <sc-for list="{{ industries }}" as="ind" hint-placeholder-count="6">
                     <option value="{{ ind.key }}">{{ ind.label }}</option>
                   </sc-for>
                 </select>
-                <div style="font-size:11px;color:#888;margin-top:6px;max-width:200px;">Scored against the latest published control board.</div>
+                <div style="font-size:11px;color:#6b5a95;margin-top:6px;max-width:200px;">Scored against the latest published control board.</div>
               </div>
             </div>
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;">
-              <div style="display:grid;grid-template-columns:1fr 1.1fr 40px;gap:12px;padding:11px 16px;background:#f8faf9;border-bottom:1px solid #d7ddd9;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;">
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:1fr 1.1fr 40px;gap:12px;padding:11px 16px;background:#f7f3ff;border-bottom:1px solid rgba(91,33,182,.16);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#6b5a95;">
                 <div>Document</div><div>Organization</div><div></div>
               </div>
               <sc-for list="{{ queue }}" as="row" hint-placeholder-count="5">
-                <div style="display:grid;grid-template-columns:1fr 1.1fr 40px;gap:12px;padding:11px 16px;border-bottom:1px solid #eef1ef;align-items:center;">
-                  <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:#111;overflow:hidden;">
+                <div style="display:grid;grid-template-columns:1fr 1.1fr 40px;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(91,33,182,.08);align-items:center;">
+                  <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:#0f172a;overflow:hidden;">
                     <span style="font-size:14px;">📄</span>
                     <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ row.name }}</span>
                   </div>
-                  <input type="text" value="{{ row.org }}" onInput="{{ row.onOrg }}" placeholder="Organization name" style="padding:7px 10px;border:1px solid #e3e8e5;border-radius:7px;font-size:13px;color:#111;background:#f8faf9;width:100%;"/>
+                  <input type="text" value="{{ row.org }}" onInput="{{ row.onOrg }}" placeholder="Organization name" style="padding:7px 10px;border:1px solid rgba(91,33,182,.12);border-radius:7px;font-size:13px;color:#0f172a;background:#f7f3ff;width:100%;"/>
                   <button onClick="{{ row.onRemove }}" style="background:transparent;border:none;color:#b91c1c;cursor:pointer;font-size:16px;opacity:.6;">×</button>
                 </div>
               </sc-for>
               <div style="padding:12px 16px;">
-                <button onClick="{{ addDoc }}" style="background:transparent;border:1px dashed #cfd8d3;border-radius:8px;padding:9px 14px;font-size:12.5px;color:var(--accent,#2d6a4f);cursor:pointer;font-weight:500;">+ Add document</button>
+                <button onClick="{{ addDoc }}" style="background:transparent;border:1px dashed rgba(91,33,182,.22);border-radius:8px;padding:9px 14px;font-size:12.5px;color:#7c3aed;cursor:pointer;font-weight:500;">+ Add document</button>
               </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;gap:16px;flex-wrap:wrap;">
-              <div style="font-size:13.5px;color:#5d5d5d;"><strong style="color:#111;">{{ orgCount }}</strong> organization(s) · <strong style="color:#111;">{{ docCount }}</strong> document(s) queued</div>
-              <button onClick="{{ goToPay }}" style="padding:12px 22px;background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">Continue to payment →</button>
+              <div style="font-size:13.5px;color:#3f2f6b;"><strong style="color:#0f172a;">{{ orgCount }}</strong> organization(s) · <strong style="color:#0f172a;">{{ docCount }}</strong> document(s) queued</div>
+              <button onClick="{{ goToPay }}" style="padding:12px 22px;background:#7c3aed;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">Continue to payment →</button>
             </div>
           </div>
         </sc-if>
 
         <sc-if value="{{ stepPay }}" hint-placeholder-val="{{ false }}">
           <div style="animation:fadeUp .3s ease;display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start;">
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:28px;">
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:14px;padding:28px;">
               <div style="font-family:'EB Garamond',Georgia,serif;font-size:22px;font-weight:600;margin-bottom:4px;">Payment</div>
-              <div style="font-size:13px;color:#5d5d5d;margin-bottom:24px;">Assessments run only after payment is confirmed.</div>
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Card number</div>
-              <input type="text" value="4242 4242 4242 4242" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;margin-bottom:14px;background:#f8faf9;font-family:'DM Mono',monospace;"/>
+              <div style="font-size:13px;color:#3f2f6b;margin-bottom:24px;">Assessments run only after payment is confirmed.</div>
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">Card number</div>
+              <input type="text" value="4242 4242 4242 4242" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;margin-bottom:14px;background:#f7f3ff;font-family:'DM Mono',monospace;"/>
               <div style="display:flex;gap:12px;margin-bottom:24px;">
-                <div style="flex:1;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">Expiry</div><input type="text" value="04 / 28" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;background:#f8faf9;font-family:'DM Mono',monospace;"/></div>
-                <div style="flex:1;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;">CVC</div><input type="text" value="123" style="width:100%;padding:11px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:14px;background:#f8faf9;font-family:'DM Mono',monospace;"/></div>
+                <div style="flex:1;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">Expiry</div><input type="text" value="04 / 28" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;background:#f7f3ff;font-family:'DM Mono',monospace;"/></div>
+                <div style="flex:1;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">CVC</div><input type="text" value="123" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;background:#f7f3ff;font-family:'DM Mono',monospace;"/></div>
               </div>
-              <button onClick="{{ pay }}" style="width:100%;padding:14px;background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;">{{ payLabel }}</button>
+              <button onClick="{{ pay }}" style="width:100%;padding:14px;background:#7c3aed;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;">{{ payLabel }}</button>
               <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-                <div style="flex:1;height:1px;background:#eef1ef;"></div>
+                <div style="flex:1;height:1px;background:rgba(91,33,182,.08);"></div>
                 <div style="font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#bbb;">Demo</div>
-                <div style="flex:1;height:1px;background:#eef1ef;"></div>
+                <div style="flex:1;height:1px;background:rgba(91,33,182,.08);"></div>
               </div>
-              <button onClick="{{ demoSkip }}" style="width:100%;padding:11px;background:#f8faf9;border:1px solid #cfd8d3;border-radius:9px;font-size:13px;font-weight:600;color:var(--accent,#2d6a4f);cursor:pointer;margin-top:14px;">Continue without payment (demo) →</button>
-              <button onClick="{{ backToQueue }}" style="width:100%;padding:10px;background:transparent;border:none;color:#888;font-size:12.5px;cursor:pointer;margin-top:6px;">← Back to queue</button>
+              <button onClick="{{ demoSkip }}" style="width:100%;padding:11px;background:#f7f3ff;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:13px;font-weight:600;color:#7c3aed;cursor:pointer;margin-top:14px;">Continue without payment (demo) →</button>
+              <button onClick="{{ backToQueue }}" style="width:100%;padding:10px;background:transparent;border:none;color:#6b5a95;font-size:12.5px;cursor:pointer;margin-top:6px;">← Back to queue</button>
             </div>
-            <div style="background:var(--accentDark,#1f4e3b);border-radius:14px;padding:26px;color:#fff;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ec5b4;margin-bottom:16px;">Order summary</div>
-              <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;"><span style="color:#cfe0d8;">Assessment fee</span><span>{{ rateStr }} / org</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;"><span style="color:#cfe0d8;">Organizations</span><span>× {{ orgCount }}</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:16px;color:#9ec5b4;"><span>Refinement (1 per org)</span><span>Included</span></div>
+            <div style="background:rgba(124,58,237,.12);border-radius:14px;padding:26px;color:#fff;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5b21b6;margin-bottom:16px;">Order summary</div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;"><span style="color:#3f2f6b;">Assessment fee</span><span>{{ rateStr }} / org</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px;"><span style="color:#3f2f6b;">Organizations</span><span>× {{ orgCount }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:16px;color:#5b21b6;"><span>Refinement (1 per org)</span><span>Included</span></div>
               <div style="height:1px;background:rgba(255,255,255,.18);margin-bottom:16px;"></div>
               <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:15px;font-weight:600;">Total due</span><span style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;">{{ totalStr }}</span></div>
-              <div style="font-size:11.5px;color:#9ec5b4;line-height:1.5;margin-top:18px;">One-time charge. Includes every queued document for each organization, all report exports, and one refinement per organization. A full re-run is a new assessment.</div>
+              <div style="font-size:11.5px;color:#5b21b6;line-height:1.5;margin-top:18px;">One-time charge. Includes every queued document for each organization, all report exports, and one refinement per organization. A full re-run is a new assessment.</div>
             </div>
           </div>
         </sc-if>
 
         <sc-if value="{{ stepGen }}" hint-placeholder-val="{{ false }}">
-          <div style="animation:fadeUp .3s ease;background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:48px;text-align:center;max-width:520px;margin:40px auto;">
-            <div style="width:42px;height:42px;border:3px solid #e3e8e5;border-top-color:var(--accent,#2d6a4f);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 22px;"></div>
+          <div style="animation:fadeUp .3s ease;background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:14px;padding:48px;text-align:center;max-width:520px;margin:40px auto;">
+            <div style="width:42px;height:42px;border:3px solid rgba(91,33,182,.12);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 22px;"></div>
             <div style="font-family:'EB Garamond',Georgia,serif;font-size:22px;font-weight:600;margin-bottom:6px;">Generating assessments</div>
-            <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:24px;">Analyzing {{ docCount }} documents across {{ orgCount }} organizations against {{ industryLabel }} standards.</div>
-            <div style="height:8px;background:#eef1ef;border-radius:5px;overflow:hidden;margin-bottom:10px;"><div style="{{ progressStyle }}"></div></div>
-            <div style="font-family:'DM Mono',monospace;font-size:11px;color:#888;">{{ progressPct }}%</div>
+            <div style="font-size:13.5px;color:#3f2f6b;margin-bottom:24px;">Analyzing {{ docCount }} documents across {{ orgCount }} organizations against {{ industryLabel }} standards.</div>
+            <div style="height:8px;background:rgba(91,33,182,.08);border-radius:5px;overflow:hidden;margin-bottom:10px;"><div style="{{ progressStyle }}"></div></div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:#6b5a95;">{{ progressPct }}%</div>
           </div>
         </sc-if>
 
@@ -222,44 +245,44 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
           <div style="animation:fadeUp .3s ease;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
               <span style="width:24px;height:24px;border-radius:50%;background:#166534;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;">✓</span>
-              <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Assessments ready</div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#0f172a;">Assessments ready</div>
             </div>
-            <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:16px;">{{ batchCount }} reports generated. Click any report to view findings and the remediation roadmap.</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:#f0f5f2;border:1px solid #cfe0d8;border-radius:11px;padding:13px 18px;margin-bottom:22px;flex-wrap:wrap;">
-              <div style="font-size:12.5px;color:var(--accentDark,#1f4e3b);line-height:1.5;">These are demo results. Run a real assessment on your own documents in the live analyzer.</div>
-              <a href="{{ analyzerUrl }}" target="_blank" style="background:var(--accent,#2d6a4f);color:#fff;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap;">Open Live Analyzer ↗</a>
+            <div style="font-size:13.5px;color:#3f2f6b;margin-bottom:16px;">{{ batchCount }} reports generated. Click any report to view findings and the remediation roadmap.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:11px;padding:13px 18px;margin-bottom:22px;flex-wrap:wrap;">
+              <div style="font-size:12.5px;color:#5b21b6;line-height:1.5;">These are demo results. Run a real assessment on your own documents in the live analyzer.</div>
+              <a href="{{ analyzerUrl }}" target="_blank" style="background:#7c3aed;color:#fff;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap;">Open Live Analyzer ↗</a>
             </div>
             <div style="display:flex;flex-direction:column;gap:14px;">
               <sc-for list="{{ batchReports }}" as="rep" hint-placeholder-count="3">
-                <div style="background:#fff;border:1px solid #d7ddd9;border-radius:13px;padding:20px 22px;">
+                <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:13px;padding:20px 22px;">
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;">
                     <div onClick="{{ rep.onView }}" style="display:flex;align-items:center;gap:16px;cursor:pointer;">
                       <div style="{{ rep.scoreStyle }}">{{ rep.score }}</div>
                       <div>
-                        <div style="font-size:16px;font-weight:600;color:#111;">{{ rep.org }}</div>
-                        <div style="font-size:12.5px;color:#5d5d5d;margin-top:2px;">{{ rep.posture }} · {{ rep.docs }} document(s) · {{ rep.gaps }} gaps</div>
+                        <div style="font-size:16px;font-weight:600;color:#0f172a;">{{ rep.org }}</div>
+                        <div style="font-size:12.5px;color:#3f2f6b;margin-top:2px;">{{ rep.posture }} · {{ rep.docs }} document(s) · {{ rep.gaps }} gaps</div>
                         <div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;margin-top:4px;">{{ rep.boardCite }}</div>
                       </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-                      <button onClick="{{ rep.onView }}" style="background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:11.5px;font-weight:600;cursor:pointer;">View report</button>
+                      <button onClick="{{ rep.onView }}" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:11.5px;font-weight:600;cursor:pointer;">View report</button>
                       <button onClick="{{ rep.onRefine }}" style="{{ rep.refineBtnStyle }}">{{ rep.refineLabel }}</button>
                     </div>
                   </div>
                   <sc-if value="{{ rep.refineOpen }}" hint-placeholder-val="{{ false }}">
-                    <div style="margin-top:16px;padding:14px;background:#f8faf9;border:1px solid #e3e8e5;border-radius:9px;">
-                      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent,#2d6a4f);margin-bottom:7px;">Refine this report — 1 included</div>
-                      <textarea rows="2" placeholder="Describe what is inaccurate or missing — e.g. 'Control IR-4 is fully addressed in section 3, not partial.'" style="width:100%;padding:9px 11px;border:1px solid #cfd8d3;border-radius:8px;font-size:13px;resize:vertical;background:#fff;"></textarea>
+                    <div style="margin-top:16px;padding:14px;background:#f7f3ff;border:1px solid rgba(91,33,182,.12);border-radius:9px;">
+                      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#7c3aed;margin-bottom:7px;">Refine this report — 1 included</div>
+                      <textarea rows="2" placeholder="Describe what is inaccurate or missing — e.g. 'Control IR-4 is fully addressed in section 3, not partial.'" style="width:100%;padding:9px 11px;border:1px solid rgba(91,33,182,.22);border-radius:8px;font-size:13px;resize:vertical;background:#ffffff;"></textarea>
                       <div style="display:flex;gap:8px;margin-top:10px;">
-                        <button onClick="{{ rep.onSubmitRefine }}" style="background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Run Refinement</button>
-                        <button onClick="{{ rep.onRefine }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 14px;font-size:12.5px;color:#888;cursor:pointer;">Cancel</button>
+                        <button onClick="{{ rep.onSubmitRefine }}" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Run Refinement</button>
+                        <button onClick="{{ rep.onRefine }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 14px;font-size:12.5px;color:#6b5a95;cursor:pointer;">Cancel</button>
                       </div>
                     </div>
                   </sc-if>
                 </div>
               </sc-for>
             </div>
-            <button onClick="{{ goDashboard }}" style="margin-top:24px;padding:11px 20px;background:transparent;border:1px solid var(--accent,#2d6a4f);border-radius:9px;font-size:13px;color:var(--accent,#2d6a4f);font-weight:600;cursor:pointer;">Go to dashboard →</button>
+            <button onClick="{{ goDashboard }}" style="margin-top:24px;padding:11px 20px;background:transparent;border:1px solid #7c3aed;border-radius:9px;font-size:13px;color:#7c3aed;font-weight:600;cursor:pointer;">Go to dashboard →</button>
           </div>
         </sc-if>
       </sc-if>
@@ -268,87 +291,87 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
       <sc-if value="{{ custDetail }}" hint-placeholder-val="{{ false }}">
         <sc-if value="{{ detail }}" hint-placeholder-val="{{ false }}">
         <div style="animation:fadeUp .3s ease;">
-          <button onClick="{{ backToList }}" style="background:transparent;border:none;color:#888;font-size:12.5px;cursor:pointer;margin-bottom:16px;padding:0;">← Back</button>
+          <button onClick="{{ backToList }}" style="background:transparent;border:none;color:#6b5a95;font-size:12.5px;cursor:pointer;margin-bottom:16px;padding:0;">← Back</button>
 
-          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:26px 28px;margin-bottom:18px;">
+          <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:14px;padding:26px 28px;margin-bottom:18px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
               <div style="display:flex;align-items:center;gap:20px;">
-                <div style="{{ detail.ringStyle }}"><div style="width:62px;height:62px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:700;color:{{ detail.scoreColor }};">{{ detail.score }}</div></div>
+                <div style="{{ detail.ringStyle }}"><div style="width:62px;height:62px;border-radius:50%;background:#ffffff;display:flex;align-items:center;justify-content:center;font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:700;color:{{ detail.scoreColor }};">{{ detail.score }}</div></div>
                 <div>
-                  <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">{{ detail.org }}</div>
-                  <div style="font-size:13px;color:#5d5d5d;margin-top:3px;">{{ detail.posture }} · {{ detail.industryLabel }}</div>
+                  <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#0f172a;">{{ detail.org }}</div>
+                  <div style="font-size:13px;color:#3f2f6b;margin-top:3px;">{{ detail.posture }} · {{ detail.industryLabel }}</div>
                   <div style="font-family:'DM Mono',monospace;font-size:10.5px;color:#aaa;margin-top:4px;">{{ detail.boardCite }} · {{ detail.date }}</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-                <label style="display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#888;">Vendor Name:<input value="{{ preparedBy }}" onInput="{{ setPreparedBy }}" title="Vendor / firm running this report (shows on the report cover and footer)" placeholder="Vendor name" style="width:150px;padding:8px 10px;border:1px solid #cfd8d3;border-radius:7px;font-size:11.5px;background:#f8faf9;color:#111;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif;"/></label>
-                <button onClick="{{ detail.onExportReport }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 13px;font-size:11.5px;color:#5d5d5d;cursor:pointer;">Export Report</button>
-                <button onClick="{{ detail.onExportDeck }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 13px;font-size:11.5px;color:#5d5d5d;cursor:pointer;">Export Deck</button>
-                <button onClick="{{ detail.onExportJson }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 13px;font-size:11.5px;color:#5d5d5d;cursor:pointer;">Export JSON</button>
-                <a href="{{ analyzerUrl }}" target="_blank" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 13px;font-size:11.5px;color:var(--accent,#2d6a4f);cursor:pointer;text-decoration:none;">Open in Analyzer ↗</a>
+                <label style="display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#6b5a95;">Vendor Name:<input value="{{ preparedBy }}" onInput="{{ setPreparedBy }}" title="Vendor / firm running this report (shows on the report cover and footer)" placeholder="Vendor name" style="width:150px;padding:8px 10px;border:1px solid rgba(91,33,182,.22);border-radius:7px;font-size:11.5px;background:#f7f3ff;color:#0f172a;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif;"/></label>
+                <button onClick="{{ detail.onExportReport }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 13px;font-size:11.5px;color:#3f2f6b;cursor:pointer;">Export Report</button>
+                <button onClick="{{ detail.onExportDeck }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 13px;font-size:11.5px;color:#3f2f6b;cursor:pointer;">Export Deck</button>
+                <button onClick="{{ detail.onExportJson }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 13px;font-size:11.5px;color:#3f2f6b;cursor:pointer;">Export JSON</button>
+                <a href="{{ analyzerUrl }}" target="_blank" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 13px;font-size:11.5px;color:#7c3aed;cursor:pointer;text-decoration:none;">Open in Analyzer ↗</a>
                 <button onClick="{{ detail.onRefine }}" style="{{ detail.refineBtnStyle }}">{{ detail.refineLabel }}</button>
                 <sc-if value="{{ detail.refined }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ detail.onRevert }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 13px;font-size:11.5px;color:#888;cursor:pointer;">↩ Revert</button>
+                  <button onClick="{{ detail.onRevert }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 13px;font-size:11.5px;color:#6b5a95;cursor:pointer;">↩ Revert</button>
                 </sc-if>
               </div>
             </div>
             <sc-if value="{{ detail.refineOpen }}" hint-placeholder-val="{{ false }}">
-              <div style="margin-top:18px;padding:14px;background:#f8faf9;border:1px solid #e3e8e5;border-radius:9px;">
-                <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent,#2d6a4f);margin-bottom:7px;">Refine this report — 1 included</div>
-                <textarea rows="2" placeholder="Describe what is inaccurate or missing." style="width:100%;padding:9px 11px;border:1px solid #cfd8d3;border-radius:8px;font-size:13px;resize:vertical;background:#fff;"></textarea>
+              <div style="margin-top:18px;padding:14px;background:#f7f3ff;border:1px solid rgba(91,33,182,.12);border-radius:9px;">
+                <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#7c3aed;margin-bottom:7px;">Refine this report — 1 included</div>
+                <textarea rows="2" placeholder="Describe what is inaccurate or missing." style="width:100%;padding:9px 11px;border:1px solid rgba(91,33,182,.22);border-radius:8px;font-size:13px;resize:vertical;background:#ffffff;"></textarea>
                 <div style="display:flex;gap:8px;margin-top:10px;">
-                  <button onClick="{{ detail.onSubmitRefine }}" style="background:var(--accent,#2d6a4f);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Run Refinement</button>
-                  <button onClick="{{ detail.onRefine }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:8px 14px;font-size:12.5px;color:#888;cursor:pointer;">Cancel</button>
+                  <button onClick="{{ detail.onSubmitRefine }}" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Run Refinement</button>
+                  <button onClick="{{ detail.onRefine }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:8px 14px;font-size:12.5px;color:#6b5a95;cursor:pointer;">Cancel</button>
                 </div>
               </div>
             </sc-if>
           </div>
 
           <div style="display:flex;flex-direction:column;gap:18px;align-items:stretch;">
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:22px;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:16px;">Score by standard</div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:14px;padding:22px;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6b5a95;margin-bottom:16px;">Score by standard</div>
               <sc-for list="{{ detail.breakdown }}" as="b" hint-placeholder-count="3">
                 <div style="margin-bottom:15px;">
-                  <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span style="color:#111;font-weight:500;">{{ b.label }}</span><span style="color:#5d5d5d;font-family:'DM Mono',monospace;">{{ b.score }}</span></div>
-                  <div style="height:7px;background:#eef1ef;border-radius:4px;overflow:hidden;"><div style="{{ b.barStyle }}"></div></div>
+                  <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span style="color:#0f172a;font-weight:500;">{{ b.label }}</span><span style="color:#3f2f6b;font-family:'DM Mono',monospace;">{{ b.score }}</span></div>
+                  <div style="height:7px;background:rgba(91,33,182,.08);border-radius:4px;overflow:hidden;"><div style="{{ b.barStyle }}"></div></div>
                   <div style="font-size:10.5px;color:#aaa;margin-top:3px;">{{ b.reviewed }} controls reviewed</div>
                 </div>
               </sc-for>
             </div>
 
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:22px;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:14px;">Gap findings</div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:14px;padding:22px;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6b5a95;margin-bottom:14px;">Gap findings</div>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <sc-for list="{{ detail.findings }}" as="f" hint-placeholder-count="4">
-                  <div style="border:1px solid #eef1ef;border-radius:9px;padding:12px 14px;">
+                  <div style="border:1px solid rgba(91,33,182,.08);border-radius:9px;padding:12px 14px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px;">
                       <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#111;font-weight:500;">{{ f.control }}</span>
-                        <span style="font-family:'DM Mono',monospace;font-size:9.5px;color:#888;background:#f3f5f4;padding:2px 6px;border-radius:4px;">{{ f.standard }}</span>
+                        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#0f172a;font-weight:500;">{{ f.control }}</span>
+                        <span style="font-family:'DM Mono',monospace;font-size:9.5px;color:#6b5a95;background:#f3f5f4;padding:2px 6px;border-radius:4px;">{{ f.standard }}</span>
                       </div>
                       <span style="{{ f.riskStyle }}">{{ f.risk }}</span>
                     </div>
-                    <div style="font-size:12.5px;color:#5d5d5d;line-height:1.5;">{{ f.desc }}</div>
+                    <div style="font-size:12.5px;color:#3f2f6b;line-height:1.5;">{{ f.desc }}</div>
                   </div>
                 </sc-for>
               </div>
             </div>
           </div>
 
-          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:14px;padding:22px;margin-top:18px;">
-            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:16px;">Priority remediation roadmap</div>
+          <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:14px;padding:22px;margin-top:18px;">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6b5a95;margin-bottom:16px;">Priority remediation roadmap</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
               <sc-for list="{{ detail.roadmap }}" as="ph" hint-placeholder-count="4">
-                <div style="border:1px solid #eef1ef;border-radius:10px;padding:15px 16px;border-top:3px solid {{ ph.color }};">
+                <div style="border:1px solid rgba(91,33,182,.08);border-radius:10px;padding:15px 16px;border-top:3px solid {{ ph.color }};">
                   <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                    <div style="font-size:12.5px;font-weight:700;color:#111;">{{ ph.phase }}</div>
+                    <div style="font-size:12.5px;font-weight:700;color:#0f172a;">{{ ph.phase }}</div>
                     <div style="font-family:'DM Mono',monospace;font-size:10px;color:{{ ph.color }};white-space:nowrap;">{{ ph.window }}</div>
                   </div>
                   <sc-for list="{{ ph.items }}" as="it" hint-placeholder-count="2">
                     <div style="margin-bottom:11px;">
                       <div style="font-size:12.5px;font-weight:600;color:#1a1a1a;line-height:1.4;">{{ it.action }}</div>
-                      <div style="font-size:11.5px;color:#5d5d5d;line-height:1.45;margin-top:2px;">{{ it.detail }}</div>
-                      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#999;margin-top:3px;">Controls: {{ it.refs }}</div>
+                      <div style="font-size:11.5px;color:#3f2f6b;line-height:1.45;margin-top:2px;">{{ it.detail }}</div>
+                      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#6b5a95;margin-top:3px;">Controls: {{ it.refs }}</div>
                     </div>
                   </sc-for>
                 </div>
@@ -365,7 +388,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
   <!-- ============ ADMIN ============ -->
   <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
     <div style="max-width:1080px;margin:0 auto;padding:28px 32px 60px;">
-      <div style="display:flex;gap:4px;margin-bottom:24px;background:#fff;padding:4px;border-radius:10px;border:1px solid #d7ddd9;width:fit-content;">
+      <div style="display:flex;gap:4px;margin-bottom:24px;background:#ffffff;padding:4px;border-radius:10px;border:1px solid rgba(91,33,182,.16);width:fit-content;">
         <button onClick="{{ adminTabBoards }}" style="{{ tabBoardsStyle }}">Control Boards</button>
         <button onClick="{{ adminTabAccounts }}" style="{{ tabAccountsStyle }}">Accounts &amp; Usage</button>
         <button onClick="{{ adminTabSettings }}" style="{{ tabSettingsStyle }}">Pricing &amp; Settings</button>
@@ -374,36 +397,36 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
       <sc-if value="{{ adminBoards }}" hint-placeholder-val="{{ true }}">
         <div style="animation:fadeUp .3s ease;">
           <div style="margin-bottom:20px;">
-            <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;">Control Boards</div>
-            <div style="font-size:13.5px;color:#5d5d5d;line-height:1.55;margin-top:4px;max-width:600px;">These published boards are the control sets used for scoring when a customer selects an industry. Fetch refreshes a board to a draft; publishing makes it the live version. Snapshots can be exported and stored on a schedule.</div>
+            <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#0f172a;">Control Boards</div>
+            <div style="font-size:13.5px;color:#3f2f6b;line-height:1.55;margin-top:4px;max-width:600px;">These published boards are the control sets used for scoring when a customer selects an industry. Fetch refreshes a board to a draft; publishing makes it the live version. Snapshots can be exported and stored on a schedule.</div>
           </div>
-          <div style="background:var(--accentDark,#1f4e3b);border-radius:13px;padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px;flex-wrap:wrap;">
+          <div style="background:rgba(124,58,237,.12);border-radius:13px;padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px;flex-wrap:wrap;">
             <div>
               <div style="font-size:14px;font-weight:600;margin-bottom:3px;">Scheduled snapshot export</div>
-              <div style="font-size:12px;color:#9ec5b4;">Last exported {{ lastExport }} · {{ boardTotal }} boards · cadence:</div>
+              <div style="font-size:12px;color:#5b21b6;">Last exported {{ lastExport }} · {{ boardTotal }} boards · cadence:</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <select onChange="{{ setCadence }}" value="{{ cadence }}" style="font-family:'DM Mono',monospace;font-size:11px;padding:7px 10px;border-radius:7px;border:none;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;">
-                <option value="weekly" style="color:#111;">Weekly</option>
-                <option value="monthly" style="color:#111;">Monthly</option>
+                <option value="weekly" style="color:#0f172a;">Weekly</option>
+                <option value="monthly" style="color:#0f172a;">Monthly</option>
               </select>
               <a href="{{ analyzerUrl }}" target="_blank" style="background:rgba(255,255,255,.14);color:#fff;border-radius:8px;padding:9px 14px;font-size:12.5px;font-weight:600;text-decoration:none;">Fetch in Analyzer ↗</a>
-              <button onClick="{{ exportSnapshot }}" style="background:#fff;color:var(--accentDark,#1f4e3b);border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Export snapshot now</button>
+              <button onClick="{{ exportSnapshot }}" style="background:#ffffff;color:#5b21b6;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:600;cursor:pointer;">Export snapshot now</button>
             </div>
           </div>
           <sc-for list="{{ boardGroups }}" as="grp" hint-placeholder-count="6">
             <div style="margin-bottom:18px;">
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">{{ grp.label }}</div>
-              <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">{{ grp.label }}</div>
+              <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;overflow:hidden;">
                 <sc-for list="{{ grp.rows }}" as="b" hint-placeholder-count="3">
-                  <div style="display:grid;grid-template-columns:1.4fr .8fr 1fr auto;gap:14px;padding:13px 18px;border-bottom:1px solid #eef1ef;align-items:center;">
-                    <div><div style="font-size:13.5px;font-weight:600;color:#111;">{{ b.standard }}</div><div style="font-family:'DM Mono',monospace;font-size:10.5px;color:#aaa;margin-top:2px;">{{ b.controls }} controls</div></div>
-                    <div style="font-family:'DM Mono',monospace;font-size:11.5px;color:#5d5d5d;">{{ b.version }}</div>
+                  <div style="display:grid;grid-template-columns:1.4fr .8fr 1fr auto;gap:14px;padding:13px 18px;border-bottom:1px solid rgba(91,33,182,.08);align-items:center;">
+                    <div><div style="font-size:13.5px;font-weight:600;color:#0f172a;">{{ b.standard }}</div><div style="font-family:'DM Mono',monospace;font-size:10.5px;color:#aaa;margin-top:2px;">{{ b.controls }} controls</div></div>
+                    <div style="font-family:'DM Mono',monospace;font-size:11.5px;color:#3f2f6b;">{{ b.version }}</div>
                     <div><span style="{{ b.statusStyle }}">{{ b.status }}</span><div style="font-size:10.5px;color:#aaa;margin-top:3px;">{{ b.date }}</div></div>
                     <div style="display:flex;gap:6px;justify-content:flex-end;">
-                      <button onClick="{{ b.onFetch }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:6px 11px;font-size:11px;color:#5d5d5d;cursor:pointer;">Fetch</button>
+                      <button onClick="{{ b.onFetch }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:6px 11px;font-size:11px;color:#3f2f6b;cursor:pointer;">Fetch</button>
                       <button onClick="{{ b.onPublish }}" style="{{ b.publishStyle }}">Publish</button>
-                      <button onClick="{{ b.onExport }}" style="background:transparent;border:1px solid #cfd8d3;border-radius:7px;padding:6px 11px;font-size:11px;color:#5d5d5d;cursor:pointer;">Export</button>
+                      <button onClick="{{ b.onExport }}" style="background:transparent;border:1px solid rgba(91,33,182,.22);border-radius:7px;padding:6px 11px;font-size:11px;color:#3f2f6b;cursor:pointer;">Export</button>
                     </div>
                   </div>
                 </sc-for>
@@ -415,23 +438,23 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
 
       <sc-if value="{{ adminAccounts }}" hint-placeholder-val="{{ false }}">
         <div style="animation:fadeUp .3s ease;">
-          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;margin-bottom:4px;">Accounts &amp; Usage</div>
-          <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:22px;">Customer accounts, assessment volume, and revenue. Usage is metered per organization assessed.</div>
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#0f172a;margin-bottom:4px;">Accounts &amp; Usage</div>
+          <div style="font-size:13.5px;color:#3f2f6b;margin-bottom:22px;">Customer accounts, assessment volume, and revenue. Usage is metered per organization assessed.</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px;">
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Active accounts</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#111;">{{ acctCount }}</div></div>
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Assessments (30d)</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#111;">{{ acctRuns }}</div></div>
-            <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Revenue (30d)</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:var(--accentDark,#1f4e3b);">{{ acctRevenue }}</div></div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Active accounts</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#0f172a;">{{ acctCount }}</div></div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Assessments (30d)</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#0f172a;">{{ acctRuns }}</div></div>
+            <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;padding:18px 20px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Revenue (30d)</div><div style="font-family:'EB Garamond',Georgia,serif;font-size:30px;font-weight:600;color:#5b21b6;">{{ acctRevenue }}</div></div>
           </div>
-          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:12px;overflow:hidden;">
-            <div style="display:grid;grid-template-columns:1.6fr 1fr .7fr 1fr;gap:14px;padding:11px 18px;background:#f8faf9;border-bottom:1px solid #d7ddd9;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#888;">
+          <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:12px;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:1.6fr 1fr .7fr 1fr;gap:14px;padding:11px 18px;background:#f7f3ff;border-bottom:1px solid rgba(91,33,182,.16);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#6b5a95;">
               <div>Account</div><div>Plan / balance</div><div>Runs</div><div>Last active</div>
             </div>
             <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="5">
-              <div style="display:grid;grid-template-columns:1.6fr 1fr .7fr 1fr;gap:14px;padding:13px 18px;border-bottom:1px solid #eef1ef;align-items:center;">
-                <div style="font-size:13.5px;font-weight:600;color:#111;">{{ a.org }}</div>
-                <div style="font-size:12.5px;color:#5d5d5d;">{{ a.plan }} <span style="color:#aaa;">· {{ a.balance }}</span></div>
-                <div style="font-size:13px;color:#111;font-family:'DM Mono',monospace;">{{ a.runs }}</div>
-                <div style="font-size:12.5px;color:#5d5d5d;">{{ a.last }}</div>
+              <div style="display:grid;grid-template-columns:1.6fr 1fr .7fr 1fr;gap:14px;padding:13px 18px;border-bottom:1px solid rgba(91,33,182,.08);align-items:center;">
+                <div style="font-size:13.5px;font-weight:600;color:#0f172a;">{{ a.org }}</div>
+                <div style="font-size:12.5px;color:#3f2f6b;">{{ a.plan }} <span style="color:#aaa;">· {{ a.balance }}</span></div>
+                <div style="font-size:13px;color:#0f172a;font-family:'DM Mono',monospace;">{{ a.runs }}</div>
+                <div style="font-size:12.5px;color:#3f2f6b;">{{ a.last }}</div>
               </div>
             </sc-for>
           </div>
@@ -440,20 +463,20 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
 
       <sc-if value="{{ adminSettings }}" hint-placeholder-val="{{ false }}">
         <div style="animation:fadeUp .3s ease;max-width:520px;">
-          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#111;margin-bottom:4px;">Pricing &amp; Settings</div>
-          <div style="font-size:13.5px;color:#5d5d5d;margin-bottom:24px;">The service fee is charged per organization assessed. Customers see (rate × organizations) at the payment gate.</div>
-          <div style="background:#fff;border:1px solid #d7ddd9;border-radius:13px;padding:24px;">
-            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:8px;">Assessment fee (per organization)</div>
+          <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:600;color:#0f172a;margin-bottom:4px;">Pricing &amp; Settings</div>
+          <div style="font-size:13.5px;color:#3f2f6b;margin-bottom:24px;">The service fee is charged per organization assessed. Customers see (rate × organizations) at the payment gate.</div>
+          <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:13px;padding:24px;">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:8px;">Assessment fee (per organization)</div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-              <span style="font-family:'EB Garamond',Georgia,serif;font-size:28px;color:var(--accentDark,#1f4e3b);">$</span>
-              <input type="number" value="{{ rate }}" onInput="{{ setRate }}" style="width:140px;padding:10px 13px;border:1px solid #cfd8d3;border-radius:9px;font-size:20px;font-weight:600;color:#111;background:#f8faf9;font-family:'EB Garamond',Georgia,serif;"/>
-              <span style="font-size:13px;color:#888;">/ org</span>
+              <span style="font-family:'EB Garamond',Georgia,serif;font-size:28px;color:#5b21b6;">$</span>
+              <input type="number" value="{{ rate }}" onInput="{{ setRate }}" style="width:140px;padding:10px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:20px;font-weight:600;color:#0f172a;background:#f7f3ff;font-family:'EB Garamond',Georgia,serif;"/>
+              <span style="font-size:13px;color:#6b5a95;">/ org</span>
             </div>
-            <div style="background:#f8faf9;border-radius:9px;padding:14px 16px;font-size:13px;color:#5d5d5d;line-height:1.6;">
-              <div style="display:flex;justify-content:space-between;"><span>3 organizations</span><span style="color:#111;font-weight:600;">{{ example3 }}</span></div>
-              <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>10 organizations</span><span style="color:#111;font-weight:600;">{{ example10 }}</span></div>
+            <div style="background:#f7f3ff;border-radius:9px;padding:14px 16px;font-size:13px;color:#3f2f6b;line-height:1.6;">
+              <div style="display:flex;justify-content:space-between;"><span>3 organizations</span><span style="color:#0f172a;font-weight:600;">{{ example3 }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>10 organizations</span><span style="color:#0f172a;font-weight:600;">{{ example10 }}</span></div>
             </div>
-            <div style="font-size:12px;color:#888;line-height:1.55;margin-top:14px;">Included per organization: one report (all queued documents), every export format, and one refinement. A full re-run is billed as a new assessment.</div>
+            <div style="font-size:12px;color:#6b5a95;line-height:1.55;margin-top:14px;">Included per organization: one report (all queued documents), every export format, and one refinement. A full re-run is billed as a new assessment.</div>
           </div>
         </div>
       </sc-if>
@@ -465,11 +488,17 @@ input:focus,textarea:focus{outline:none;border-color:var(--accent,#2d6a4f)!impor
   </sc-if>
 
 </div>
-</x-dc>
+
+<div style="background:#151022;border-top:1px solid rgba(224,210,255,.16);padding:14px 22px;text-align:right;">
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#a89fc6;">© 2026 Silhouette LLC. All rights reserved.</div>
+</div></x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:820},&quot;rate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:250,&quot;tsType&quot;:&quot;number&quot;},&quot;analyzerUrl&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;uploads/compliance-gap-analyzer-claude.html&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = {
-    role: 'customer',
+    role: null,
+    demoView: false,
+    demoMode: false,
+    menuOpen: false,
     pendingRole: 'customer',
     preparedBy: 'Silhouette LLC',
     accent: '',
@@ -628,16 +657,8 @@ class Component extends DCLogic {
 
   componentDidMount() {
     const patch = {};
+    try { if ((location.hash || '').indexOf('demo') >= 0) patch.demoView = true; } catch (e) {}
     if (!this.state.boards) patch.boards = this.seedBoards();
-    if (!this.state.assessments) patch.assessments = this.seedAssessments();
-    try {
-      const saved = localStorage.getItem('sil_app_accent');
-      if (saved) { patch.accent = saved; this._applyAccent(saved); }
-    } catch (e) {}
-    try {
-      const q = (window.location.hash || '') + (window.location.search || '');
-      if (/demo/i.test(q) && !this.state.role) patch.role = 'customer';
-    } catch (e) {}
     if (Object.keys(patch).length) this.setState(patch);
   }
 
@@ -686,7 +707,10 @@ class Component extends DCLogic {
   industryLabel(key) { const i = this.INDUSTRIES.find(x => x.key === (key || this.state.industry)); return i ? i.label : ''; }
   scoreColor(sc) { return sc >= 85 ? '#166534' : sc >= 50 ? '#92400e' : '#b91c1c'; }
   scoreBg(sc) { return sc >= 85 ? 'rgba(22,101,52,.1)' : sc >= 50 ? 'rgba(146,64,14,.1)' : 'rgba(185,28,28,.1)'; }
+  scoreColorApp(sc) { return sc >= 85 ? '#166534' : sc >= 50 ? '#92400e' : '#b91c1c'; }
+  scoreBgApp(sc) { return sc >= 85 ? 'rgba(22,101,52,.1)' : sc >= 50 ? 'rgba(146,64,14,.1)' : 'rgba(185,28,28,.1)'; }
   _slug(s) { return (s || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  _modePill(active) { return "font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:none;cursor:pointer;border-radius:18px;padding:5px 13px;" + (active ? 'background:linear-gradient(135deg,#d2b8ff,#9b6bff);color:#140f25;font-weight:700;' : 'background:transparent;color:#a89fc6;'); }
   _esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   _cleanReport(r) {
     return {
@@ -739,12 +763,12 @@ class Component extends DCLogic {
     var strip='<div style="display:flex;gap:8px;margin:4px 0 16px;">'+badge(cnt('Critical'),'Critical','#b91c1c')+badge(cnt('High'),'High','#92400e')+badge(cnt('Medium'),'Medium','#1a365d')+badge(cnt('Low'),'Low','#166534')+badge(r.findings.length,'Total','#444')+'</div>';
     var fHeadRow='<div style="display:flex;gap:8px;padding:6px 4px;border-bottom:2px solid #111;font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;color:#888;font-weight:700;"><div style="flex:1.1;">Control</div><div style="flex:.9;">Standard</div><div style="flex:.6;">Status</div><div style="flex:.6;">Risk</div><div style="flex:2.4;">Gap Description</div></div>';
     var fRow=function(f){var rc=f.risk==='Critical'?'#b91c1c':f.risk==='High'?'#92400e':f.risk==='Medium'?'#1a365d':'#166534';return '<div style="display:flex;gap:8px;padding:7px 4px;border-bottom:1px solid #eef1ef;font-size:9.5px;align-items:flex-start;"><div style="flex:1.1;font-family:monospace;color:#333;">'+esc(f.control)+'</div><div style="flex:.9;color:#666;">'+esc(f.standard)+'</div><div style="flex:.6;color:#666;">'+esc(f.status)+'</div><div style="flex:.6;font-weight:700;text-transform:uppercase;color:'+rc+';">'+esc(f.risk)+'</div><div style="flex:2.4;color:#333;line-height:1.45;">'+esc(f.desc)+'</div></div>';};
-    var road=r.roadmap.map(function(p){return '<div style="border:1px solid #eee;border-top:3px solid '+p.color+';border-radius:7px;padding:12px 14px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;"><div style="font-size:12px;font-weight:700;color:#111;">'+esc(p.phase)+'</div><div style="font-family:monospace;font-size:9.5px;color:'+p.color+';">'+esc(p.window||'')+'</div></div>'+p.items.map(function(it){return '<div style="margin-bottom:7px;"><div style="font-size:10.5px;font-weight:600;color:#1a1a1a;">'+esc(it.action||it)+'</div>'+(it.detail?'<div style="font-size:10px;color:#555;line-height:1.45;margin-top:1px;">'+esc(it.detail)+'</div>':'')+(it.refs?'<div style="font-family:monospace;font-size:9px;color:#999;margin-top:1px;">Controls: '+esc(it.refs)+'</div>':'')+'</div>';}).join('')+'</div>';}).join('');
+    var road=r.roadmap.map(function(p){return '<div style="border:1px solid #eee;border-top:3px solid '+p.color+';border-radius:7px;padding:12px 14px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;"><div style="font-size:12px;font-weight:700;color:#111;">'+esc(p.phase)+'</div><div style="font-family:monospace;font-size:9.5px;color:'+p.color+';">'+esc(p.window||'')+'</div></div>'+p.items.map(function(it){return '<div style="margin-bottom:7px;"><div style="font-size:10.5px;font-weight:600;color:#1a1a1a;">'+esc(it.action||it)+'</div>'+(it.detail?'<div style="font-size:10px;color:#555;line-height:1.45;margin-top:1px;">'+esc(it.detail)+'</div>':'')+(it.refs?'<div style="font-family:monospace;font-size:9px;color:#888;margin-top:1px;">Controls: '+esc(it.refs)+'</div>':'')+'</div>';}).join('')+'</div>';}).join('');
     var logo='<div class="rpt-logo-area" style="position:absolute;top:0;right:0;"><div id="rpt-logo-wrap"><div id="rpt-logo-placeholder" style="width:150px;height:54px;border:1px dashed #44544c;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#6f8478;font-size:9px;letter-spacing:.18em;text-transform:uppercase;">Add Logo</div><img id="rpt-logo-img" style="max-width:170px;max-height:60px;object-fit:contain;display:none;cursor:pointer;"/></div><input id="rpt-logo-input" type="file" accept="image/*" style="display:none;"/></div><div id="rpt-logo-print" style="position:absolute;top:0;right:0;display:none;"><img id="rpt-logo-print-img" style="max-width:170px;max-height:60px;object-fit:contain;"/></div>';
-    var cover='<div class="rpt-page dark"><div class="rpt-inner" style="color:#fff;"><div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;">'+logo+'<div style="font-size:12px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:#7fb89e;margin-bottom:18px;">'+aud.toUpperCase()+'</div><div style="font-size:34px;font-weight:700;color:#fff;line-height:1.15;max-width:6in;">'+esc(r.org)+'</div><div style="font-size:17px;color:#9fb3a8;margin-top:10px;">Incident Response Plan Gap Analysis</div><div style="width:4.5in;height:2px;background:var(--accent,#2d6a4f);margin:26px 0;"></div><div style="font-size:11px;color:#8aa297;">'+esc(r.date)+'</div><div style="font-size:11px;color:#8aa297;margin-top:3px;">Prepared by '+aud+'  &middot;  '+ind+'</div></div></div>'+ftr(true)+'</div>';
-    var tocRows=[['1','Introduction','Scope, documents reviewed, and standards evaluated'],['2','Executive Summary','Overall compliance posture and score breakdown'],['3','Gap Analysis','Detailed findings across all evaluated controls ('+r.findings.length+' total)'],['4','Priority Remediation Roadmap','Phased action plan with timelines and control references'],['5','Conclusion & Limitations','Key takeaways, scope boundaries, and recommended next steps']].map(function(t){return '<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #eef1ef;"><div style="font-family:\'EB Garamond\',Georgia,serif;font-size:22px;font-weight:700;color:var(--accent,#2d6a4f);width:28px;">'+t[0]+'</div><div><div style="font-size:14px;font-weight:700;color:#111;">'+t[1]+'</div><div style="font-size:11px;color:#777;margin-top:1px;">'+t[2]+'</div></div></div>';}).join('');
+    var cover='<div class="rpt-page dark"><div class="rpt-inner" style="color:#fff;"><div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;">'+logo+'<div style="font-size:12px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:#7fb89e;margin-bottom:18px;">'+aud.toUpperCase()+'</div><div style="font-size:34px;font-weight:700;color:#fff;line-height:1.15;max-width:6in;">'+esc(r.org)+'</div><div style="font-size:17px;color:#9fb3a8;margin-top:10px;">Incident Response Plan Gap Analysis</div><div style="width:4.5in;height:2px;background:#2d6a4f;margin:26px 0;"></div><div style="font-size:11px;color:#8aa297;">'+esc(r.date)+'</div><div style="font-size:11px;color:#8aa297;margin-top:3px;">Prepared by '+aud+'  &middot;  '+ind+'</div></div></div>'+ftr(true)+'</div>';
+    var tocRows=[['1','Introduction','Scope, documents reviewed, and standards evaluated'],['2','Executive Summary','Overall compliance posture and score breakdown'],['3','Gap Analysis','Detailed findings across all evaluated controls ('+r.findings.length+' total)'],['4','Priority Remediation Roadmap','Phased action plan with timelines and control references'],['5','Conclusion & Limitations','Key takeaways, scope boundaries, and recommended next steps']].map(function(t){return '<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #eef1ef;"><div style="font-family:\'EB Garamond\',Georgia,serif;font-size:22px;font-weight:700;color:#2d6a4f;width:28px;">'+t[0]+'</div><div><div style="font-size:14px;font-weight:700;color:#111;">'+t[1]+'</div><div style="font-size:11px;color:#777;margin-top:1px;">'+t[2]+'</div></div></div>';}).join('');
     var toc='<div class="rpt-page"><div class="rpt-inner"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.18em;color:#aaa;margin-bottom:4px;">Contents</div><div style="font-size:19px;font-weight:700;color:#111;margin-bottom:14px;">Table of Contents</div>'+tocRows+'</div>'+ftr(false)+'</div>';
-    var introInner='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid var(--accent,#2d6a4f);padding-left:8px;margin-bottom:6px;">Purpose</div><p style="font-size:10.5px;color:#444;line-height:1.6;margin-bottom:14px;">'+aud+' conducted this gap analysis on behalf of '+esc(r.org)+' to assess readiness across applicable '+ind+' frameworks. The objective is to provide a clear, evidence-based view of where documentation and controls stand today, and to deliver a prioritized roadmap toward full compliance.</p><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid var(--accent,#2d6a4f);padding-left:8px;margin-bottom:6px;">Documents Reviewed ('+docs.length+')</div><div style="columns:2;column-gap:24px;font-size:10px;color:#444;line-height:1.7;margin-bottom:14px;">'+docs.map(function(d,i){return '<div>'+(i+1)+'. '+esc(d)+'</div>';}).join('')+'</div><div style="font-size:10px;color:#666;">Organization: '+esc(r.org)+'  &middot;  Entity Classification: '+entity+'  &middot;  Standards: '+r.breakdown.map(function(b){return esc(b.label);}).join(', ')+'</div>';
+    var introInner='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid #2d6a4f;padding-left:8px;margin-bottom:6px;">Purpose</div><p style="font-size:10.5px;color:#444;line-height:1.6;margin-bottom:14px;">'+aud+' conducted this gap analysis on behalf of '+esc(r.org)+' to assess readiness across applicable '+ind+' frameworks. The objective is to provide a clear, evidence-based view of where documentation and controls stand today, and to deliver a prioritized roadmap toward full compliance.</p><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid #2d6a4f;padding-left:8px;margin-bottom:6px;">Documents Reviewed ('+docs.length+')</div><div style="columns:2;column-gap:24px;font-size:10px;color:#444;line-height:1.7;margin-bottom:14px;">'+docs.map(function(d,i){return '<div>'+(i+1)+'. '+esc(d)+'</div>';}).join('')+'</div><div style="font-size:10px;color:#666;">Organization: '+esc(r.org)+'  &middot;  Entity Classification: '+entity+'  &middot;  Standards: '+r.breakdown.map(function(b){return esc(b.label);}).join(', ')+'</div>';
     var intro=sect('01','Introduction','Scope & Methodology',introInner);
     var scopeInner='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid #ccc;padding-left:8px;margin-bottom:6px;">Scope Limitations</div><p style="font-size:10px;color:#444;line-height:1.6;margin-bottom:12px;">This assessment covers the documentation submitted for review. Operational controls and configurations not captured in the reviewed artifacts are outside scope. Findings are based on authoritative control text from official sources at the time of analysis. This report is informational and should be reviewed alongside qualified legal or compliance counsel before submission to any regulatory body. '+aud+' uses AI to structure and consistently present findings; all analysis and scoring is reviewed for accuracy by our compliance team.</p><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid #ccc;padding-left:8px;margin-bottom:6px;">How Scoring Works</div><div style="font-size:10px;color:#444;line-height:1.55;margin-bottom:10px;"><b>Step 1</b> &mdash; Identify applicable controls per standard for the document type reviewed.<br/><b>Step 2</b> &mdash; Evaluate each control against the submitted document: Yes (fully addressed), Partial (incomplete), No (not addressed).<br/><b>Step 3</b> &mdash; Score per standard: credits (Yes=1.0, Partial=0.5, No=0) &divide; controls reviewed &times; 100.</div><div style="display:flex;gap:8px;font-size:9.5px;"><div style="flex:1;border:1px solid #eee;border-radius:6px;padding:8px;"><b style="color:#166534;">&ge;85 Compliant</b><div style="color:#777;margin-top:2px;">All or nearly all controls addressed</div></div><div style="flex:1;border:1px solid #eee;border-radius:6px;padding:8px;"><b style="color:#92400e;">50&ndash;84 Partially Compliant</b><div style="color:#777;margin-top:2px;">Core controls present, gaps remain</div></div><div style="flex:1;border:1px solid #eee;border-radius:6px;padding:8px;"><b style="color:#b91c1c;">&lt;50 Non-Compliant</b><div style="color:#777;margin-top:2px;">Significant controls absent</div></div></div>';
     var scope=sect('01','Scope & Methodology','How This Assessment Was Conducted',scopeInner);
@@ -753,9 +777,9 @@ class Component extends DCLogic {
     var gapChildren='<div style="font-size:10.5px;color:#444;margin-bottom:10px;">A total of '+r.findings.length+' findings: '+cnt('Critical')+' Critical, '+cnt('High')+' High, '+cnt('Medium')+' Medium, '+cnt('Low')+' Low.</div>'+fHeadRow+sortedF.map(fRow).join('');
     var gap='<div class="rpt-page"><div class="rpt-inner"><div class="rpt-hdr"><span class="rpt-hdr-num">03</span><span class="rpt-hdr-lbl">Gap Analysis</span></div><div style="font-size:19px;font-weight:700;color:#111;margin-bottom:12px;">Detailed Findings</div>'+gapChildren+'</div>'+ftr(false)+'</div>';
     var roadmap=sect('04','Priority Remediation Roadmap','Phased Action Plan',road);
-    var concInner='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid var(--accent,#2d6a4f);padding-left:8px;margin-bottom:6px;">Key Takeaways</div><p style="font-size:10.5px;color:#444;line-height:1.6;margin-bottom:8px;">This assessment identified '+cnt('Critical')+' critical findings requiring immediate attention; these represent material regulatory exposure and should be escalated to leadership. The lowest-scoring standard was '+esc(lowest.label)+' at '+lowest.score+'/100, warranting focused remediation investment. '+partialN+' controls were rated Partial, indicating foundational elements exist but require enhancement &mdash; an efficient remediation opportunity.</p><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid var(--accent,#2d6a4f);padding-left:8px;margin:14px 0 6px;">Recommended Next Steps</div><div style="font-size:10.5px;color:#444;line-height:1.6;"><div style="margin-bottom:6px;"><b>1. Distribute to leadership.</b> Share this report with the compliance officer, IT leadership, and executive sponsor. Critical and High findings should be escalated immediately.</div><div style="margin-bottom:6px;"><b>2. Assign ownership.</b> Map each remediation roadmap item to a named owner with a target date.</div><div style="margin-bottom:6px;"><b>3. Begin Phase 1.</b> Prioritize the critical regulatory foundations identified in the roadmap.</div><div><b>4. Re-assess.</b> Re-run the analysis after remediation to validate progress and update the compliance score.</div></div>';
+    var concInner='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid #2d6a4f;padding-left:8px;margin-bottom:6px;">Key Takeaways</div><p style="font-size:10.5px;color:#444;line-height:1.6;margin-bottom:8px;">This assessment identified '+cnt('Critical')+' critical findings requiring immediate attention; these represent material regulatory exposure and should be escalated to leadership. The lowest-scoring standard was '+esc(lowest.label)+' at '+lowest.score+'/100, warranting focused remediation investment. '+partialN+' controls were rated Partial, indicating foundational elements exist but require enhancement &mdash; an efficient remediation opportunity.</p><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#333;border-left:3px solid #2d6a4f;padding-left:8px;margin:14px 0 6px;">Recommended Next Steps</div><div style="font-size:10.5px;color:#444;line-height:1.6;"><div style="margin-bottom:6px;"><b>1. Distribute to leadership.</b> Share this report with the compliance officer, IT leadership, and executive sponsor. Critical and High findings should be escalated immediately.</div><div style="margin-bottom:6px;"><b>2. Assign ownership.</b> Map each remediation roadmap item to a named owner with a target date.</div><div style="margin-bottom:6px;"><b>3. Begin Phase 1.</b> Prioritize the critical regulatory foundations identified in the roadmap.</div><div><b>4. Re-assess.</b> Re-run the analysis after remediation to validate progress and update the compliance score.</div></div>';
     var conclusion=sect('05','Conclusion','Conclusion & Limitations',concInner);
-    var closing='<div class="rpt-page dark"><div class="rpt-inner" style="color:#fff;"><div style="height:100%;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#7fb89e;margin-bottom:16px;">Thank You</div><div style="font-size:30px;font-weight:700;color:#fff;">Next Steps</div><div style="width:4in;height:2px;background:var(--accent,#2d6a4f);margin:20px 0;"></div><p style="font-size:12px;color:#9fb3a8;line-height:1.6;max-width:5in;">Engage '+aud+' to develop a remediation plan addressing the identified gaps and prioritize controls based on regulatory exposure and organizational risk tolerance.</p><div style="font-size:11px;color:#8aa297;margin-top:18px;">'+aud+'  |  www.silhouettellc.com</div><div style="font-size:10px;color:#6f8478;font-style:italic;margin-top:8px;">This report is confidential and prepared solely for '+esc(r.org)+'.</div></div></div>'+ftr(true)+'</div>';
+    var closing='<div class="rpt-page dark"><div class="rpt-inner" style="color:#fff;"><div style="height:100%;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#7fb89e;margin-bottom:16px;">Thank You</div><div style="font-size:30px;font-weight:700;color:#fff;">Next Steps</div><div style="width:4in;height:2px;background:#2d6a4f;margin:20px 0;"></div><p style="font-size:12px;color:#9fb3a8;line-height:1.6;max-width:5in;">Engage '+aud+' to develop a remediation plan addressing the identified gaps and prioritize controls based on regulatory exposure and organizational risk tolerance.</p><div style="font-size:11px;color:#8aa297;margin-top:18px;">'+aud+'  |  www.silhouettellc.com</div><div style="font-size:10px;color:#6f8478;font-style:italic;margin-top:8px;">This report is confidential and prepared solely for '+esc(r.org)+'.</div></div></div>'+ftr(true)+'</div>';
     var pagesHtml=cover+toc+intro+scope+exec+gap+roadmap+conclusion+closing;
     var CSS=atob('Kntib3gtc2l6aW5nOmJvcmRlci1ib3g7bWFyZ2luOjA7cGFkZGluZzowO306cm9vdHstLXBhZ2Utdzo4LjVpbjstLXBhZ2UtaDoxMWluOy0tcGFkLXRvcDowLjY1aW47LS1wYWQtbHI6MWluOy0tcGFkLWJvdDowLjc1aW47fWh0bWwsYm9keXtmb250LWZhbWlseTpBcmlhbCxzYW5zLXNlcmlmO2ZvbnQtc2l6ZToxMnB4O2NvbG9yOiMxMTE7bWFyZ2luOjA7fXB7bWFyZ2luOjA7fSNycHQtdG9vbGJhcntkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2dhcDo4cHg7cGFkZGluZzo3cHggMTRweDtiYWNrZ3JvdW5kOiMxZjJjMjY7Ym9yZGVyLWJvdHRvbToxcHggc29saWQgIzMzMztwb3NpdGlvbjpzdGlja3k7dG9wOjA7ei1pbmRleDoyMDA7fSNycHQtdG9vbGJhciAudGItdGl0bGV7Y29sb3I6I2FhYTtmb250LXNpemU6MTFweDtmbGV4OjE7b3ZlcmZsb3c6aGlkZGVuO3RleHQtb3ZlcmZsb3c6ZWxsaXBzaXM7d2hpdGUtc3BhY2U6bm93cmFwO30jcnB0LXRvb2xiYXIgYnV0dG9ue2JhY2tncm91bmQ6IzJhMmEyYTtib3JkZXI6MXB4IHNvbGlkICM0NDQ7Y29sb3I6I2NjYztwYWRkaW5nOjVweCAxMXB4O2JvcmRlci1yYWRpdXM6NHB4O2N1cnNvcjpwb2ludGVyO2ZvbnQtc2l6ZToxMXB4O2ZvbnQtZmFtaWx5OkFyaWFsLHNhbnMtc2VyaWY7fSNycHQtdG9vbGJhciBidXR0b246aG92ZXJ7YmFja2dyb3VuZDojMzgzODM4O2NvbG9yOiNmZmY7fSNycHQtdG9vbGJhciBidXR0b24udGItYWN0aXZle2JhY2tncm91bmQ6IzQ0NDtjb2xvcjojZmZmO2JvcmRlci1jb2xvcjojNjY2O30jcnB0LXRvb2xiYXIgLnRiLXNlcHt3aWR0aDoxcHg7aGVpZ2h0OjE4cHg7YmFja2dyb3VuZDojNDQ0O21hcmdpbjowIDJweDt9I3JwdC10b29sYmFyIC50Yi1wZ2N0cntjb2xvcjojNzc3O2ZvbnQtc2l6ZToxMXB4O21pbi13aWR0aDo1MnB4O3RleHQtYWxpZ246Y2VudGVyO30jcnB0LXRvb2xiYXIgLnRiLXBkZntiYWNrZ3JvdW5kOiMyZDZhNGY7Y29sb3I6I2ZmZiFpbXBvcnRhbnQ7Ym9yZGVyLWNvbG9yOiMyZDZhNGY7Zm9udC13ZWlnaHQ6NzAwO30jcnB0LXRvb2xiYXIgLnRiLXBkZjpob3ZlcntiYWNrZ3JvdW5kOiMzNThhNjY7fS5ycHQtcGFnZXtkaXNwbGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1uO2JhY2tncm91bmQ6d2hpdGU7b3ZlcmZsb3c6aGlkZGVuO3Bvc2l0aW9uOnJlbGF0aXZlO30ucnB0LXBhZ2UuZGFya3tiYWNrZ3JvdW5kOiMwZDBkMGQ7cHJpbnQtY29sb3ItYWRqdXN0OmV4YWN0Oy13ZWJraXQtcHJpbnQtY29sb3ItYWRqdXN0OmV4YWN0O30ucnB0LWlubmVye2ZsZXg6MTtwYWRkaW5nOnZhcigtLXBhZC10b3ApIHZhcigtLXBhZC1scikgMDtvdmVyZmxvdzp2aXNpYmxlO30ucnB0LWZ0cntmbGV4LXNocmluazowO3BhZGRpbmc6NXB4IHZhcigtLXBhZC1scikgdmFyKC0tcGFkLWJvdCk7fS5ycHQtZnRyLWlubmVye2Rpc3BsYXk6ZmxleDthbGlnbi1pdGVtczpjZW50ZXI7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47Ym9yZGVyLXRvcDoxcHggc29saWQgI2QwZDBkMDtwYWRkaW5nLXRvcDo1cHg7fS5ycHQtZnRyIC5mbHtmb250LXNpemU6Ny41cHg7Y29sb3I6Izg4ODtmbGV4OjE7b3ZlcmZsb3c6aGlkZGVuO3RleHQtb3ZlcmZsb3c6ZWxsaXBzaXM7d2hpdGUtc3BhY2U6bm93cmFwO30ucnB0LWZ0ciAuZnJ7Zm9udC1zaXplOjcuNXB4O2NvbG9yOiM4ODg7d2hpdGUtc3BhY2U6bm93cmFwO3BhZGRpbmctbGVmdDoxMnB4O30ucnB0LWhkcntkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2dhcDoxMHB4O3BhZGRpbmctYm90dG9tOjhweDtib3JkZXItYm90dG9tOjJweCBzb2xpZCAjMTExO21hcmdpbi1ib3R0b206MTRweDt9LnJwdC1oZHItbnVte2ZvbnQtc2l6ZToxMHB4O2ZvbnQtd2VpZ2h0OjcwMDtjb2xvcjojOTk5O2xldHRlci1zcGFjaW5nOi4xOGVtO30ucnB0LWhkci1sYmx7Zm9udC1zaXplOjlweDt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7bGV0dGVyLXNwYWNpbmc6LjE2ZW07Y29sb3I6I2FhYTt9LnJwdC10aXRsZXtmb250LXNpemU6MThweDtmb250LXdlaWdodDo3MDA7Y29sb3I6IzExMTttYXJnaW46MCAwIDEwcHg7bGV0dGVyLXNwYWNpbmc6LS4wMWVtO30ucnB0LXN1Yntmb250LXNpemU6MTFweDtmb250LXdlaWdodDo3MDA7Y29sb3I6IzMzMzttYXJnaW46MTRweCAwIDVweDt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7bGV0dGVyLXNwYWNpbmc6LjA2ZW07Ym9yZGVyLWxlZnQ6M3B4IHNvbGlkICNjY2M7cGFkZGluZy1sZWZ0OjhweDt9LnJwdC1ib2R5e2ZvbnQtc2l6ZToxMC41cHg7Y29sb3I6IzQ0NDtsaW5lLWhlaWdodDoxLjY7bWFyZ2luLWJvdHRvbTo4cHg7fWJvZHkubW9kZS1wcmVzZW50e2JhY2tncm91bmQ6IzExMTtkaXNwbGF5OmZsZXg7ZmxleC1kaXJlY3Rpb246Y29sdW1uO2hlaWdodDoxMDB2aDtvdmVyZmxvdzpoaWRkZW47fS5tb2RlLXByZXNlbnQgLnJwdC1wYWdlc3tmbGV4OjE7cG9zaXRpb246cmVsYXRpdmU7b3ZlcmZsb3c6aGlkZGVuO2hlaWdodDoxMDAlO30ubW9kZS1wcmVzZW50IC5ycHQtcGFnZXtwb3NpdGlvbjphYnNvbHV0ZTtpbnNldDowO29wYWNpdHk6MDtwb2ludGVyLWV2ZW50czpub25lO3RyYW5zaXRpb246b3BhY2l0eSAuMnM7fS5tb2RlLXByZXNlbnQgLnJwdC1wYWdlLmFjdGl2ZXtvcGFjaXR5OjE7cG9pbnRlci1ldmVudHM6YXV0bztvdmVyZmxvdy15OmF1dG87fS5tb2RlLXByZXNlbnQgLnJwdC1wYWdlOjotd2Via2l0LXNjcm9sbGJhcnt3aWR0aDo0cHg7fS5tb2RlLXByZXNlbnQgLnJwdC1wYWdlOjotd2Via2l0LXNjcm9sbGJhci10cmFja3tiYWNrZ3JvdW5kOnRyYW5zcGFyZW50O30ubW9kZS1wcmVzZW50IC5ycHQtcGFnZTo6LXdlYmtpdC1zY3JvbGxiYXItdGh1bWJ7YmFja2dyb3VuZDojNTU1O2JvcmRlci1yYWRpdXM6MnB4O30ubW9kZS1wcmVzZW50IC5ycHQtcGFnZTo6LXdlYmtpdC1zY3JvbGxiYXItdGh1bWI6aG92ZXJ7YmFja2dyb3VuZDojODg4O30ucnB0LXNjcm9sbC1oaW50e3Bvc2l0aW9uOmZpeGVkO2JvdHRvbTo4MHB4O2xlZnQ6NTAlO3RyYW5zZm9ybTp0cmFuc2xhdGVYKC01MCUpO2JhY2tncm91bmQ6cmdiYSgwLDAsMCwuNTUpO2NvbG9yOiNmZmY7Zm9udC1zaXplOjExcHg7cGFkZGluZzo1cHggMTRweDtib3JkZXItcmFkaXVzOjIwcHg7cG9pbnRlci1ldmVudHM6bm9uZTtvcGFjaXR5OjA7dHJhbnNpdGlvbjpvcGFjaXR5IC4zczt6LWluZGV4OjMwMDt9LnJwdC1zY3JvbGwtaGludC52aXNpYmxle29wYWNpdHk6MTt9Ym9keS5tb2RlLWRvY3tiYWNrZ3JvdW5kOiNjOGM4Yzg7fS5tb2RlLWRvYyAucnB0LXBhZ2Vze3BhZGRpbmc6MjRweCAwO30ubW9kZS1kb2MgLnJwdC1wYWdle3dpZHRoOnZhcigtLXBhZ2Utdyk7aGVpZ2h0OnZhcigtLXBhZ2UtaCk7bWFyZ2luOjAgYXV0byAyMHB4O2JveC1zaGFkb3c6MCAycHggMTZweCByZ2JhKDAsMCwwLC4yMik7fUBtZWRpYSBwcmludHsgICNycHQtdG9vbGJhciwjcnB0LXBkZmRsZ3tkaXNwbGF5Om5vbmUhaW1wb3J0YW50O30gIGh0bWwsYm9keXtkaXNwbGF5OmJsb2NrIWltcG9ydGFudDtoZWlnaHQ6YXV0byFpbXBvcnRhbnQ7b3ZlcmZsb3c6dmlzaWJsZSFpbXBvcnRhbnQ7fSAgLnJwdC1wYWdlc3tkaXNwbGF5OmJsb2NrIWltcG9ydGFudDtwYWRkaW5nOjAhaW1wb3J0YW50O3Bvc2l0aW9uOnN0YXRpYyFpbXBvcnRhbnQ7fSAgQHBhZ2V7c2l6ZTo4LjVpbiAxMWluO21hcmdpbjowO30gIC5ycHQtcGFnZXtwb3NpdGlvbjpzdGF0aWMhaW1wb3J0YW50O29wYWNpdHk6MSFpbXBvcnRhbnQ7d2lkdGg6OC41aW4haW1wb3J0YW50O2hlaWdodDoxMWluIWltcG9ydGFudDttYXJnaW46MCFpbXBvcnRhbnQ7Ym94LXNoYWRvdzpub25lIWltcG9ydGFudDtkaXNwbGF5OmZsZXghaW1wb3J0YW50O2ZsZXgtZGlyZWN0aW9uOmNvbHVtbiFpbXBvcnRhbnQ7b3ZlcmZsb3c6aGlkZGVuIWltcG9ydGFudDticmVhay1hZnRlcjpwYWdlO3BhZ2UtYnJlYWstYWZ0ZXI6YWx3YXlzO3ByaW50LWNvbG9yLWFkanVzdDpleGFjdDstd2Via2l0LXByaW50LWNvbG9yLWFkanVzdDpleGFjdDt9ICAucnB0LXBhZ2U6bGFzdC1jaGlsZHticmVhay1hZnRlcjphdXRvIWltcG9ydGFudDtwYWdlLWJyZWFrLWFmdGVyOmF1dG8haW1wb3J0YW50O30gIC5ycHQtaW5uZXJ7ZmxleDoxIWltcG9ydGFudDtvdmVyZmxvdzpoaWRkZW4haW1wb3J0YW50O30gIC5ycHQtcGFnZS5hY3RpdmV7b3ZlcmZsb3c6aGlkZGVuIWltcG9ydGFudDtvdmVyZmxvdy15OmhpZGRlbiFpbXBvcnRhbnQ7fSAgLnJwdC1zY3JvbGwtaGludHtkaXNwbGF5Om5vbmUhaW1wb3J0YW50O30gIC5ycHQtZnRye2ZsZXgtc2hyaW5rOjAhaW1wb3J0YW50O30gIHRye2JyZWFrLWluc2lkZTphdm9pZDtwYWdlLWJyZWFrLWluc2lkZTphdm9pZDt9ICB0aGVhZHtkaXNwbGF5OnRhYmxlLWhlYWRlci1ncm91cDt9ICAjcnB0LWxvZ28tcGxhY2Vob2xkZXJ7ZGlzcGxheTpub25lIWltcG9ydGFudDt9ICAjcnB0LWxvZ28td3JhcDpub3QoW2RhdGEtbG9hZGVkXSl7ZGlzcGxheTpub25lIWltcG9ydGFudDt9ICAjcnB0LWxvZ28taW1ne3BvaW50ZXItZXZlbnRzOm5vbmUhaW1wb3J0YW50O2N1cnNvcjpkZWZhdWx0IWltcG9ydGFudDt9ICAjcnB0LWxvZ28taW5wdXR7ZGlzcGxheTpub25lIWltcG9ydGFudDt9ICAucnB0LWxvZ28tYXJlYXtkaXNwbGF5Om5vbmUhaW1wb3J0YW50O30gICNycHQtbG9nby1wcmludHtkaXNwbGF5OmJsb2NrIWltcG9ydGFudDt9fQ==');
     var CTRL=atob('KGZ1bmN0aW9uKCl7dmFyIHBhZ2VzPVtdLGN1cj0wO2Z1bmN0aW9uIHNob3dQYWdlKG4peyAgaWYobjwwfHxuPj1wYWdlcy5sZW5ndGgpcmV0dXJuOyAgY3VyPW47ICBwYWdlcy5mb3JFYWNoKGZ1bmN0aW9uKHAsaSl7cC5jbGFzc0xpc3QudG9nZ2xlKCJhY3RpdmUiLGk9PT1jdXIpO2lmKGk9PT1jdXIpcC5zY3JvbGxUb3A9MDt9KTsgIHZhciBjPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJ0Yi1wZ2N0ciIpOyAgaWYoYyljLnRleHRDb250ZW50PShjdXIrMSkrIiAvICIrcGFnZXMubGVuZ3RoOyAgdmFyIHNoPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJycHQtc2Nyb2xsLWhpbnQiKTsgIGlmKHNoKXt2YXIgYXA9cGFnZXNbbl07dmFyIGNhblNjcm9sbD1hcCYmYXAuc2Nyb2xsSGVpZ2h0PmFwLmNsaWVudEhlaWdodCs0O3NoLmNsYXNzTGlzdC50b2dnbGUoInZpc2libGUiLGNhblNjcm9sbCk7fX1mdW5jdGlvbiBnbyhkKXtzaG93UGFnZShjdXIrZCk7fWZ1bmN0aW9uIHNldE1vZGUobSl7ICBkb2N1bWVudC5ib2R5LmNsYXNzTmFtZT0ibW9kZS0iK207ICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgiYnRuLXByZXNlbnQiKS5jbGFzc0xpc3QudG9nZ2xlKCJ0Yi1hY3RpdmUiLG09PT0icHJlc2VudCIpOyAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImJ0bi1kb2MiKS5jbGFzc0xpc3QudG9nZ2xlKCJ0Yi1hY3RpdmUiLG09PT0iZG9jIik7ICBpZihtPT09InByZXNlbnQiKXNob3dQYWdlKGN1cik7fWZ1bmN0aW9uIHNhdmVQREYoKXsgIHZhciBkPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJycHQtcGRmZGxnIik7ICBpZihkKWQuc3R5bGUuZGlzcGxheT0iZmxleCI7ICBzZXRUaW1lb3V0KGZ1bmN0aW9uKCl7d2luZG93LnByaW50KCk7fSwyNTApOyAgc2V0VGltZW91dChmdW5jdGlvbigpe2lmKGQpZC5zdHlsZS5kaXNwbGF5PSJub25lIjt9LDIwMDApO31kb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCJrZXlkb3duIixmdW5jdGlvbihlKXsgIGlmKGRvY3VtZW50LmJvZHkuY2xhc3NOYW1lIT09Im1vZGUtcHJlc2VudCIpcmV0dXJuOyAgaWYoZS5rZXk9PT0iQXJyb3dSaWdodCJ8fGUua2V5PT09IkFycm93RG93biJ8fGUua2V5PT09IiAiKXsgICAgdmFyIGFwPXBhZ2VzW2N1cl07ICAgIGlmKGFwJiZlLmtleSE9PSJBcnJvd1JpZ2h0IiYmYXAuc2Nyb2xsSGVpZ2h0PmFwLmNsaWVudEhlaWdodCYmYXAuc2Nyb2xsVG9wK2FwLmNsaWVudEhlaWdodDxhcC5zY3JvbGxIZWlnaHQtNCl7ICAgICAgYXAuc2Nyb2xsQnkoe3RvcDoxMjAsYmVoYXZpb3I6InNtb290aCJ9KTsgICAgfWVsc2V7Z28oMSk7fSAgICBlLnByZXZlbnREZWZhdWx0KCk7ICB9ICBpZihlLmtleT09PSJBcnJvd0xlZnQifHxlLmtleT09PSJBcnJvd1VwIil7ICAgIHZhciBhcDI9cGFnZXNbY3VyXTsgICAgaWYoYXAyJiZlLmtleSE9PSJBcnJvd0xlZnQiJiZhcDIuc2Nyb2xsVG9wPjQpeyAgICAgIGFwMi5zY3JvbGxCeSh7dG9wOi0xMjAsYmVoYXZpb3I6InNtb290aCJ9KTsgICAgfWVsc2V7Z28oLTEpO30gICAgZS5wcmV2ZW50RGVmYXVsdCgpOyAgfSAgaWYoZS5rZXk9PT0iSG9tZSIpe3Nob3dQYWdlKDApO2UucHJldmVudERlZmF1bHQoKTt9ICBpZihlLmtleT09PSJFbmQiKXtzaG93UGFnZShwYWdlcy5sZW5ndGgtMSk7ZS5wcmV2ZW50RGVmYXVsdCgpO319KTt3aW5kb3cucnB0PXtnbzpnbyxzaG93UGFnZTpzaG93UGFnZSxzZXRNb2RlOnNldE1vZGUsc2F2ZVBERjpzYXZlUERGfTtkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCJzY3JvbGwiLGZ1bmN0aW9uKCl7ICBpZihkb2N1bWVudC5ib2R5LmNsYXNzTmFtZSE9PSJtb2RlLXByZXNlbnQiKXJldHVybjsgIHZhciBhcD1wYWdlc1tjdXJdO3ZhciBzaD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgicnB0LXNjcm9sbC1oaW50Iik7ICBpZihhcCYmc2gpe3ZhciBhdEJvdHRvbT1hcC5zY3JvbGxUb3ArYXAuY2xpZW50SGVpZ2h0Pj1hcC5zY3JvbGxIZWlnaHQtNDtzaC5jbGFzc0xpc3QudG9nZ2xlKCJ2aXNpYmxlIiwhYXRCb3R0b20mJmFwLnNjcm9sbEhlaWdodD5hcC5jbGllbnRIZWlnaHQrNCk7fX0sdHJ1ZSk7dmFyIGlucD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgicnB0LWxvZ28taW5wdXQiKTt2YXIgcGg9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoInJwdC1sb2dvLXBsYWNlaG9sZGVyIik7dmFyIGltZz1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgicnB0LWxvZ28taW1nIik7aWYoaW5wJiZwaCYmaW1nKXsgIGlucC5vbmNoYW5nZT1mdW5jdGlvbihlKXsgICAgdmFyIGZpbGU9ZS50YXJnZXQuZmlsZXNbMF07ICAgIGlmKCFmaWxlfHwhZmlsZS50eXBlLnN0YXJ0c1dpdGgoImltYWdlLyIpKXJldHVybjsgICAgdmFyIHJlYWRlcj1uZXcgRmlsZVJlYWRlcigpOyAgICByZWFkZXIub25sb2FkPWZ1bmN0aW9uKGV2KXsgICAgICBpbWcuc3JjPWV2LnRhcmdldC5yZXN1bHQ7aW1nLnN0eWxlLmRpc3BsYXk9ImlubGluZS1ibG9jayI7cGguc3R5bGUuZGlzcGxheT0ibm9uZSI7ICAgICAgdmFyIHBpPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJycHQtbG9nby1wcmludC1pbWciKTtpZihwaSl7cGkuc3JjPWV2LnRhcmdldC5yZXN1bHQ7cGkuc3R5bGUuZGlzcGxheT0iaW5saW5lLWJsb2NrIjt9ICAgICAgdmFyIHdyYXA9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoInJwdC1sb2dvLXdyYXAiKTsgICAgICBpZih3cmFwKXdyYXAuc2V0QXR0cmlidXRlKCJkYXRhLWxvYWRlZCIsIjEiKTsgICAgICB2YXIgY2w9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoInJwdC1jbG9zaW5nLWxvZ28iKTsgICAgICBpZihjbCl7Y2wuaW5uZXJIVE1MPSIiO3ZhciBjaT1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJpbWciKTtjaS5zcmM9ZXYudGFyZ2V0LnJlc3VsdDtjaS5zdHlsZS5jc3NUZXh0PSJtYXgtaGVpZ2h0OjUycHg7bWF4LXdpZHRoOjE1MHB4O29iamVjdC1maXQ6Y29udGFpbjsiO2NsLmFwcGVuZENoaWxkKGNpKTt9ICAgIH07ICAgIHJlYWRlci5yZWFkQXNEYXRhVVJMKGZpbGUpOyAgfTsgIGltZy5vbmNsaWNrPWZ1bmN0aW9uKCl7aW5wLmNsaWNrKCk7fTt9cGFnZXM9QXJyYXkuZnJvbShkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCIucnB0LXBhZ2UiKSk7c2V0TW9kZSgicHJlc2VudCIpO3Nob3dQYWdlKDApO30pKCk7');
@@ -775,12 +799,12 @@ class Component extends DCLogic {
     const ftr = '<div style="position:absolute;left:0;right:0;bottom:0;height:0.36in;background:#1f2c26;display:flex;align-items:center;justify-content:space-between;padding:0 0.5in;"><span style="font-family:Arial,sans-serif;font-size:9px;color:#9fb3a8;">'+aud+'  |  Compliance Gap Analysis</span><span style="font-family:Arial,sans-serif;font-size:9px;color:#9fb3a8;">https://www.silhouettellc.com</span></div>';
     const slide = (inner, dark) => '<section style="position:relative;width:100%;min-height:100vh;page-break-after:always;display:flex;flex-direction:column;justify-content:center;padding:7vh 9vw 0.9in;background:'+(dark?'#1f2c26':'#fff')+';border-bottom:1px solid #eee;">' + inner + ftr + '</section>';
     const kicker = (t,c) => '<div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:'+(c||col)+';margin-bottom:16px;">'+t+'</div>';
-    const cover = slide(kicker(aud, '#9ec5b4') + '<div style="font-family:\'EB Garamond\',Georgia,serif;font-size:50px;font-weight:600;line-height:1.1;color:#fff;">'+this._esc(r.org)+'</div><div style="width:5.5in;height:2px;background:var(--accent,#2d6a4f);margin:18px 0;"></div><div style="font-size:18px;color:#bcd0c6;">Compliance Gap Analysis &middot; '+this._esc(this.industryLabel(r.industry))+'</div><div style="font-family:Arial,sans-serif;font-size:13px;color:#9fb3a8;margin-top:10px;">'+this._esc(r.date)+'  |  Prepared by '+aud+'</div>', true);
+    const cover = slide(kicker(aud, '#9ec5b4') + '<div style="font-family:\'EB Garamond\',Georgia,serif;font-size:50px;font-weight:600;line-height:1.1;color:#fff;">'+this._esc(r.org)+'</div><div style="width:5.5in;height:2px;background:#2d6a4f;margin:18px 0;"></div><div style="font-size:18px;color:#bcd0c6;">Compliance Gap Analysis &middot; '+this._esc(this.industryLabel(r.industry))+'</div><div style="font-family:Arial,sans-serif;font-size:13px;color:#9fb3a8;margin-top:10px;">'+this._esc(r.date)+'  |  Prepared by '+aud+'</div>', true);
     const exec = slide(kicker('Executive Summary') + '<div style="display:flex;gap:36px;align-items:center;"><div style="font-family:\'EB Garamond\',Georgia,serif;font-size:96px;font-weight:700;color:'+col+';line-height:1;">'+r.score+'</div><div><div style="font-size:24px;font-weight:600;color:#111;">'+this._esc(r.posture)+'</div><div style="font-size:15px;color:#666;margin-top:6px;">'+r.findings.length+' findings across '+this._esc(this.industryLabel(r.industry))+' standards</div><div style="font-size:14px;color:#888;margin-top:10px;">'+['Critical','High','Medium','Low'].map(k=>r.findings.filter(f=>f.risk===k).length+' '+k).join('  &middot;  ')+'</div></div></div>');
     const fRows = sortedF.slice(0,8).map(f=>{var rc=f.risk==='Critical'?'#b91c1c':f.risk==='High'?'#92400e':f.risk==='Medium'?'#1a365d':'#166534';return '<div style="margin-bottom:14px;"><div style="font-size:16px;font-weight:600;color:#111;"><span style="font-family:monospace;color:'+rc+';font-size:13px;">'+this._esc(f.risk)+'</span> &nbsp; '+this._esc(f.title||f.control)+' <span style="font-size:12px;color:#888;">('+this._esc(f.standard)+')</span></div><div style="font-size:13px;color:#555;margin-top:2px;">'+this._esc(f.desc)+'</div></div>';}).join('');
     const findings = slide(kicker('Key Gap Findings') + fRows);
     const road = slide(kicker('Priority Remediation Roadmap') + r.roadmap.map(p=>'<div style="margin-bottom:16px;"><div style="font-size:18px;font-weight:700;color:'+p.color+';">'+this._esc(p.phase)+' <span style="font-size:13px;color:#888;font-weight:400;">'+this._esc(p.window||'')+'</span></div>'+p.items.map(it=>'<div style="font-size:14px;color:#444;margin-top:3px;">&bull; '+this._esc(it.action||it)+'</div>').join('')+'</div>').join(''));
-    const closing = slide(kicker('Thank You', '#9ec5b4') + '<div style="font-family:\'EB Garamond\',Georgia,serif;font-size:44px;font-weight:600;color:#fff;">Questions &amp; Next Steps</div><div style="width:4.5in;height:2px;background:var(--accent,#2d6a4f);margin:18px 0;"></div><div style="font-size:14px;color:#9fb3a8;">'+aud+'  |  www.silhouettellc.com</div><div style="font-size:12px;color:#7d9488;font-style:italic;margin-top:8px;">This report is confidential and prepared solely for '+this._esc(r.org)+'.</div>', true);
+    const closing = slide(kicker('Thank You', '#9ec5b4') + '<div style="font-family:\'EB Garamond\',Georgia,serif;font-size:44px;font-weight:600;color:#fff;">Questions &amp; Next Steps</div><div style="width:4.5in;height:2px;background:#2d6a4f;margin:18px 0;"></div><div style="font-size:14px;color:#9fb3a8;">'+aud+'  |  www.silhouettellc.com</div><div style="font-size:12px;color:#7d9488;font-style:italic;margin-top:8px;">This report is confidential and prepared solely for '+this._esc(r.org)+'.</div>', true);
     return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>'+this._esc(r.org)+' - Deck</title><link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet"/><style>'+_rootVars+'*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;color:#111;}@media print{@page{size:landscape;margin:0;}section{min-height:auto!important;height:100vh;}}</style></head><body>'+cover+exec+findings+road+closing+'</body></html>';
   }
 
@@ -791,7 +815,7 @@ class Component extends DCLogic {
       refined: !!rep.preScore,
       refineOpen: !!rep.refineOpen,
       refineBtnStyle: 'border-radius:7px;padding:8px 13px;font-size:11.5px;cursor:' + (used ? 'not-allowed' : 'pointer') + ';font-weight:600;border:1px solid ' +
-        (used ? '#e3e8e5' : 'rgba(45,106,79,.4)') + ';background:' + (used ? '#f3f5f4' : 'rgba(45,106,79,.07)') + ';color:' + (used ? '#aaa' : 'var(--accent,#2d6a4f)') + ';opacity:' + (used ? '.7' : '1') + ';',
+        (used ? 'rgba(91,33,182,.12)' : 'rgba(45,106,79,.4)') + ';background:' + (used ? '#f3f5f4' : 'rgba(45,106,79,.07)') + ';color:' + (used ? '#aaa' : '#7c3aed') + ';opacity:' + (used ? '.7' : '1') + ';',
       onRefine: () => { if (used) return; this.setState(st => ({ assessments: st.assessments.map(x => x.id === rep.id ? { ...x, refineOpen: !x.refineOpen } : x) })); },
       onSubmitRefine: () => {
         this.setState(st => ({ assessments: st.assessments.map(x => {
@@ -812,21 +836,23 @@ class Component extends DCLogic {
     const orgCount = orgs.length;
     const docCount = s.queue.length;
     const total = orgCount * this.rate();
-    const all = s.assessments || this.seedAssessments();
+    const readonlyDemo = !s.role && s.demoView;
+    const inDemo = readonlyDemo || (!!s.role && s.demoMode);
+    const all = inDemo ? this.seedAssessments() : (s.assessments || []);
 
-    const seg = (a) => 'flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid ' + (a ? 'var(--accent,#2d6a4f)' : '#cfd8d3') + ';background:' + (a ? 'var(--accent,#2d6a4f)' : '#fff') + ';color:' + (a ? '#fff' : '#5d5d5d') + ';';
-    const tab = (a) => "font-family:'DM Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:8px 18px;border-radius:7px;border:none;cursor:pointer;background:" + (a ? 'var(--accent,#2d6a4f)' : 'transparent') + ';color:' + (a ? '#fff' : '#888') + ';';
+    const seg = (a) => 'flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid ' + (a ? '#7c3aed' : 'rgba(91,33,182,.22)') + ';background:' + (a ? '#7c3aed' : '#fff') + ';color:' + (a ? '#fff' : '#5d5d5d') + ';';
+    const tab = (a) => "font-family:'DM Mono',monospace;font-size:11.5px;letter-spacing:.04em;padding:8px 18px;border-radius:7px;border:none;cursor:pointer;background:" + (a ? '#7c3aed' : 'transparent') + ';color:' + (a ? '#fff' : '#888') + ';';
 
     const order = ['queue', 'pay', 'gen', 'reports'];
     const labels = { queue: 'Queue', pay: 'Payment', gen: 'Generate', reports: 'Reports' };
     const curIdx = order.indexOf(s.custStep);
     const steps = order.map((k, i) => {
       const done = i < curIdx, active = i === curIdx;
-      const c = done ? '#166534' : active ? 'var(--accent,#2d6a4f)' : '#cfd8d3';
+      const c = done ? '#166534' : active ? '#7c3aed' : 'rgba(91,33,182,.22)';
       return { num: done ? '✓' : String(i + 1), label: labels[k],
         dotStyle: 'width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;background:' + c + ';flex-shrink:0;',
         labelStyle: "font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.04em;margin-left:8px;color:" + (active || done ? '#111' : '#aaa') + ';',
-        barStyle: i < order.length - 1 ? 'width:46px;height:1px;background:#cfd8d3;margin:0 14px;' : 'width:0;' };
+        barStyle: i < order.length - 1 ? 'width:46px;height:1px;background:rgba(91,33,182,.22);margin:0 14px;' : 'width:0;' };
     });
 
     const queue = s.queue.map(r => ({ id: r.id, name: r.name, org: r.org,
@@ -835,9 +861,9 @@ class Component extends DCLogic {
 
     const listRow = (rep) => ({
       id: rep.id, org: rep.org, score: rep.score, posture: rep.posture, industryLabel: this.industryLabel(rep.industry), date: rep.date, gaps: rep.gaps,
-      miniScoreStyle: 'width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:"EB Garamond",Georgia,serif;color:' + this.scoreColor(rep.score) + ';background:' + this.scoreBg(rep.score) + ';',
-      badgeStyle: 'font-family:"DM Mono",monospace;font-size:10px;padding:3px 9px;border-radius:20px;color:' + this.scoreColor(rep.score) + ';background:' + this.scoreBg(rep.score) + ';',
-      onView: () => this.setState({ custNav: 'detail', selectedId: rep.id })
+      miniScoreStyle: 'width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:"EB Garamond",Georgia,serif;color:' + this.scoreColorApp(rep.score) + ';background:' + this.scoreBgApp(rep.score) + ';',
+      badgeStyle: 'font-family:"DM Mono",monospace;font-size:10px;padding:3px 9px;border-radius:20px;color:' + this.scoreColorApp(rep.score) + ';background:' + this.scoreBgApp(rep.score) + ';',
+      onView: () => { if (readonlyDemo) return; this.setState({ custNav: 'detail', selectedId: rep.id }); }
     });
 
     const allReports = all.map(listRow);
@@ -846,7 +872,7 @@ class Component extends DCLogic {
       const rh = this.refineHandlers(rep);
       return Object.assign(listRow(rep), {
         docs: rep.docs, boardCite: rep.boardCite,
-        scoreStyle: 'width:52px;height:52px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;font-family:"EB Garamond",Georgia,serif;color:' + this.scoreColor(rep.score) + ';background:' + this.scoreBg(rep.score) + ';',
+        scoreStyle: 'width:52px;height:52px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;font-family:"EB Garamond",Georgia,serif;color:' + this.scoreColorApp(rep.score) + ';background:' + this.scoreBgApp(rep.score) + ';',
         refineLabel: rh.refineLabel, refineBtnStyle: rh.refineBtnStyle, refineOpen: rh.refineOpen, onRefine: rh.onRefine, onSubmitRefine: rh.onSubmitRefine
       });
     });
@@ -856,11 +882,11 @@ class Component extends DCLogic {
     let detail = null;
     if (sel) {
       const rh = this.refineHandlers(sel);
-      const col = this.scoreColor(sel.score);
+      const col = this.scoreColorApp(sel.score);
       detail = {
         org: sel.org, score: sel.score, scoreColor: col, posture: sel.posture, industryLabel: this.industryLabel(sel.industry), boardCite: sel.boardCite, date: sel.date,
-        ringStyle: 'width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(' + col + ' ' + (sel.score * 3.6) + 'deg,#eef1ef 0);flex-shrink:0;',
-        breakdown: sel.breakdown.map(b => ({ label: b.label, score: b.score, reviewed: b.reviewed, barStyle: 'height:100%;border-radius:4px;width:' + b.score + '%;background:' + this.scoreColor(b.score) + ';' })),
+        ringStyle: 'width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(' + col + ' ' + (sel.score * 3.6) + 'deg,rgba(91,33,182,.08) 0);flex-shrink:0;',
+        breakdown: sel.breakdown.map(b => ({ label: b.label, score: b.score, reviewed: b.reviewed, barStyle: 'height:100%;border-radius:4px;width:' + b.score + '%;background:' + this.scoreColorApp(b.score) + ';' })),
         findings: sel.findings.map(f => { const rc = f.risk === 'Critical' ? '#b91c1c' : f.risk === 'High' ? '#92400e' : f.risk === 'Medium' ? '#1a365d' : '#166534'; const rb = f.risk === 'Critical' ? 'rgba(185,28,28,.1)' : f.risk === 'High' ? 'rgba(146,64,14,.1)' : f.risk === 'Medium' ? 'rgba(26,54,93,.1)' : 'rgba(22,101,52,.1)'; return { control: f.control, standard: f.standard, risk: f.risk, desc: f.desc, riskStyle: 'font-family:"DM Mono",monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:12px;color:' + rc + ';background:' + rb + ';' }; }),
         roadmap: sel.roadmap,
         onExportReport: () => this.exportReport(sel), onExportDeck: () => this.exportDeck(sel), onExportJson: () => this.exportJson(sel),
@@ -881,7 +907,7 @@ class Component extends DCLogic {
       const canPub = b.status === 'Draft';
       return { standard: b.standard, controls: b.controls, version: b.version, status: b.status, date: b.date,
         statusStyle: 'font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:20px;color:' + stCol + ';background:' + stBg + ';',
-        publishStyle: 'border-radius:7px;padding:6px 11px;font-size:11px;cursor:' + (canPub ? 'pointer' : 'not-allowed') + ';border:1px solid ' + (canPub ? 'var(--accent,#2d6a4f)' : '#e3e8e5') + ';background:' + (canPub ? 'var(--accent,#2d6a4f)' : '#f3f5f4') + ';color:' + (canPub ? '#fff' : '#bbb') + ';',
+        publishStyle: 'border-radius:7px;padding:6px 11px;font-size:11px;cursor:' + (canPub ? 'pointer' : 'not-allowed') + ';border:1px solid ' + (canPub ? '#7c3aed' : 'rgba(91,33,182,.12)') + ';background:' + (canPub ? '#7c3aed' : '#f3f5f4') + ';color:' + (canPub ? '#fff' : '#bbb') + ';',
         onFetch: () => { this.setState(st => ({ boards: st.boards.map(x => x.id === b.id ? { ...x, status: 'Draft', date: this.today(), controls: x.controls + Math.floor(Math.random() * 4) } : x) })); this.flash('Fetched latest ' + b.standard + ' controls — review and publish.'); },
         onPublish: () => { if (!canPub) return; const nextV = 'v' + ((parseInt(b.version.slice(1), 10) || 1) + 1); this.setState(st => ({ boards: st.boards.map(x => x.id === b.id ? { ...x, status: 'Published', version: nextV, date: this.today() } : x) })); this.flash(b.standard + ' published as ' + nextV + ' — now live for scoring.'); },
         onExport: () => this.flash('Exported ' + b.standard + ' ' + b.version + ' (' + b.controls + ' controls).') };
@@ -890,22 +916,32 @@ class Component extends DCLogic {
     const acctRuns = 14;
 
     return {
-      signedIn: !!s.role, isSignin: !s.role, isCustomer: s.role === 'customer', isAdmin: s.role === 'admin',
+      signedIn: !!s.role, isSignin: !s.role && !s.demoView,
+      isCustomer: s.role === 'customer' || readonlyDemo, isAdmin: s.role === 'admin',
+      readonlyDemo: readonlyDemo, canNew: !!s.role, noReports: all.length === 0,
+      dashTitle: readonlyDemo ? 'Demo dashboard' : (inDemo ? 'Demo dashboard' : 'Welcome back'),
+      dashSubtitle: inDemo ? 'Sample assessments and remediation roadmaps generated from demo data.' : 'Your compliance assessments and remediation roadmaps.',
+      menuOpen: s.menuOpen, toggleMenu: () => this.setState(st => ({ menuOpen: !st.menuOpen })),
+      modeLive: () => this.setState({ demoMode: false, custNav: 'dashboard', selectedId: null }),
+      modeDemo: () => this.setState({ demoMode: true, custNav: 'dashboard', selectedId: null }),
+      modeLiveStyle: this._modePill(!s.demoMode), modeDemoStyle: this._modePill(!!s.demoMode),
+      viewDemo: () => this.setState({ demoView: true }),
+      exitDemo: () => this.setState({ demoView: false }),
       roleLabel: s.role === 'admin' ? 'Admin' : 'Customer',
       preparedBy: s.preparedBy, setPreparedBy: (e) => this.setState({ preparedBy: e.target.value }),
       accent: s.accent || 'Green',
       accentSwatches: Object.keys(this.ACCENTS).map((name) => ({
         name,
         onPick: () => this.setAccent(name === 'Green' ? '' : name),
-        style: 'width:18px;height:18px;border-radius:50%;cursor:pointer;background:' + this.ACCENTS[name][0] + ';border:2px solid ' + (((s.accent || 'Green') === name) ? '#111' : 'transparent') + ';box-shadow:0 0 0 1px #cfd8d3;'
+        style: 'width:18px;height:18px;border-radius:50%;cursor:pointer;background:' + this.ACCENTS[name][0] + ';border:2px solid ' + (((s.accent || 'Green') === name) ? '#111' : 'transparent') + ';box-shadow:0 0 0 1px rgba(91,33,182,.22);'
       })),
       customerToggleStyle: seg(s.pendingRole === 'customer'), adminToggleStyle: seg(s.pendingRole === 'admin'),
       pickCustomer: () => this.setState({ pendingRole: 'customer' }), pickAdmin: () => this.setState({ pendingRole: 'admin' }),
-      signIn: () => this.setState({ role: s.pendingRole }),
+      signIn: () => this.setState({ role: s.pendingRole, demoView: false, demoMode: false, custNav: 'dashboard', menuOpen: false }),
       signOut: () => this.setState({ role: null, custNav: 'dashboard', custStep: 'queue' }),
       switchRole: () => this.setState(st => ({ role: st.role === 'admin' ? 'customer' : 'admin' })),
 
-      showCustTabs: s.custNav === 'dashboard' || s.custNav === 'new',
+      showCustTabs: (s.custNav === 'dashboard' || s.custNav === 'new') && !readonlyDemo,
       custDashboard: s.custNav === 'dashboard', custNew: s.custNav === 'new', custDetail: s.custNav === 'detail',
       tabDashStyle: tab(s.custNav === 'dashboard'), tabNewStyle: tab(s.custNav === 'new'),
       goDashboard: () => this.setState({ custNav: 'dashboard' }),
@@ -925,7 +961,7 @@ class Component extends DCLogic {
       pay: () => this._runBatch(),
       demoSkip: () => this._runBatch(),
       analyzerUrl: this.analyzerUrl(),
-      progressPct: s.progress, progressStyle: 'height:100%;background:var(--accent,#2d6a4f);border-radius:5px;width:' + s.progress + '%;transition:width .25s ease;',
+      progressPct: s.progress, progressStyle: 'height:100%;background:#7c3aed;border-radius:5px;width:' + s.progress + '%;transition:width .25s ease;',
       batchReports, batchCount: batchReports.length,
       detail,
 

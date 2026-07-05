@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { draftRoadmap } from "@/lib/sra/engine";
+import { isEffectiveAdmin } from "@/lib/view-role";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const guard = await requireSession("customer");
@@ -10,6 +11,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if (!engagement) return NextResponse.json({ error: "Engagement not found" }, { status: 404 });
   const { roadmap, usage } = await draftRoadmap((engagement.findings as any[]) || []);
   await prisma.sraEngagement.update({ where: { id: engagement.id }, data: { roadmap: roadmap as any, stage: "ROADMAP" } });
-  await prisma.usageLedger.create({ data: { accountId: guard.session.user.accountId, kind: "sra_roadmap", status: guard.session.user.role === "admin" ? "admin_comped" : "succeeded", inputTokens: usage.inputTokens, outputTokens: usage.outputTokens } }).catch(() => undefined);
+  await prisma.usageLedger.create({ data: { accountId: guard.session.user.accountId, kind: "sra_roadmap", status: isEffectiveAdmin(guard.session) ? "admin_comped" : "succeeded", inputTokens: usage.inputTokens, outputTokens: usage.outputTokens } }).catch(() => undefined);
   return NextResponse.json({ roadmap });
 }

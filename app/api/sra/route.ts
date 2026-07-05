@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/authz";
 import { consumeEntitlementTx, PaymentRequiredError } from "@/lib/entitlements";
 import { demoOrgName } from "@/lib/demo";
 import { prisma } from "@/lib/prisma";
+import { isEffectiveAdmin } from "@/lib/view-role";
 
 export async function GET() {
   const guard = await requireSession("customer");
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   }
   try {
     const engagement = await prisma.$transaction(async (tx) => {
-      const isAdmin = guard.session.user.role === "admin";
+      const isAdmin = isEffectiveAdmin(guard.session);
       if (!isAdmin) await consumeEntitlementTx(tx, guard.session.user.accountId, EntKind.SRA_CREDIT, 1);
       const e = await tx.sraEngagement.create({ data: { accountId: guard.session.user.accountId, orgName: String(body.orgName || "New engagement"), industry: String(body.industry || "health-center"), scope: body.scope || undefined } });
       await tx.usageLedger.create({ data: { accountId: guard.session.user.accountId, kind: "sra", status: isAdmin ? "admin_comped" : "succeeded", amountCents: Number(process.env.SRA_RATE_CENTS || 150000) } });

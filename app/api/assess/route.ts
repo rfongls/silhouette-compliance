@@ -5,6 +5,7 @@ import { consumeEntitlementTx, PaymentRequiredError } from "@/lib/entitlements";
 import { runGapAnalysis, demoAssessment } from "@/lib/analysis/engine";
 import { defaultStandards } from "@/lib/analysis/standards";
 import { prisma } from "@/lib/prisma";
+import { isEffectiveAdmin } from "@/lib/view-role";
 
 const MAX_DOC_CHARS = 180000;
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
   const totalChars = docs.reduce((n: number, d: any) => n + d.text.length, 0);
   if (totalChars > MAX_DOC_CHARS) return NextResponse.json({ error: "Document payload exceeds cost guard" }, { status: 413 });
   const accountId = guard.session.user.accountId;
-  const isAdmin = guard.session.user.role === "admin";
+  const isAdmin = isEffectiveAdmin(guard.session);
   const industry = String(body.industry || "health-center");
   const standards = Array.isArray(body.standards) && body.standards.length ? body.standards.map(String).slice(0, 6) : defaultStandards(industry);
 

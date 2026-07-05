@@ -4,6 +4,7 @@ import { EntKind } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getEntitlementBalance } from "@/lib/entitlements";
+import { isEffectiveAdmin } from "@/lib/view-role";
 
 function injectCreditGate(html: string, demo: boolean) {
   const script = `<script>
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
   if (!demo) {
     const session = await auth();
     if (!session?.user?.accountId) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    if (session.user.role !== "admin") {
+    if (!isEffectiveAdmin(session)) {
       const balance = await getEntitlementBalance(session.user.accountId, EntKind.PROPOSAL_CREDIT);
       if (balance <= 0) return NextResponse.json({ error: "Confirmed proposal credit required" }, { status: 402 });
     }

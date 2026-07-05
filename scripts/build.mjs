@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { chmodSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
@@ -10,6 +11,16 @@ const env = {
   UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE || "1",
   NEXT_PRIVATE_MAX_WORKER_THREADS: process.env.NEXT_PRIVATE_MAX_WORKER_THREADS || "1",
 };
+
+if (!isWindows && existsSync(binDir)) {
+  for (const entry of readdirSync(binDir)) {
+    try {
+      chmodSync(path.join(binDir, entry), 0o755);
+    } catch {
+      // Keep going; the command runner below will report any remaining executable issue.
+    }
+  }
+}
 
 function bin(name) {
   return path.join(binDir, isWindows ? `${name}.cmd` : name);

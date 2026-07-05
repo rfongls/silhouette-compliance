@@ -15,13 +15,35 @@ body{background:#f7f3ff;font-family:'DM Sans',sans-serif;color:#0f172a;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 input,button{font-family:inherit;}
 input:focus{outline:none;border-color:#5b21b6!important;}
+
+.sil-menu-item:hover{background:rgba(155,107,255,.16) !important;color:#f3efff !important;}
 </style>
 </helmet>
 <div style="min-height:calc(100vh - 45px);background:#f7f3ff;display:flex;flex-direction:column;">
 
   <div style="border-bottom:1px solid rgba(224,210,255,.16);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;background:#110f1d;position:sticky;top:0;z-index:50;">
-    <div style="display:flex;align-items:baseline;gap:12px;">
+    <div style="display:flex;align-items:center;gap:14px;position:relative;">
+      <button onClick="{{ toggleMenu }}" title="Menu" style="display:flex;flex-direction:column;justify-content:center;gap:4px;background:transparent;border:none;cursor:pointer;padding:6px 2px;">
+        <span style="width:20px;height:2px;background:#f3efff;border-radius:2px;display:block;"></span>
+        <span style="width:20px;height:2px;background:#f3efff;border-radius:2px;display:block;"></span>
+        <span style="width:20px;height:2px;background:#f3efff;border-radius:2px;display:block;"></span>
+      </button>
       <div style="font-family:'EB Garamond',Georgia,serif;font-size:21px;font-weight:600;color:#f3efff;letter-spacing:.02em;">Silhouette<span style="color:#9b6bff;">.</span></div>
+      <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:46px;left:2px;background:#130d20;border:1px solid rgba(224,210,255,.14);border-radius:14px;padding:8px;min-width:240px;box-shadow:0 24px 60px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.35);z-index:100;display:flex;flex-direction:column;gap:1px;">
+          <a href="Landing Page.dc.html" class="sil-menu-item" style="display:block;padding:10px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#d7cbed;text-decoration:none;cursor:pointer;width:100%;border:none;background-color:transparent;text-align:left;">Home</a>
+          <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#6b5f8a;padding:10px 12px 5px;margin-top:5px;border-top:1px solid rgba(224,210,255,.1);">Modules</div>
+            <a href="Compliance Portal.dc.html#session" class="sil-menu-item" style="display:block;padding:10px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#d7cbed;text-decoration:none;cursor:pointer;width:100%;border:none;background-color:transparent;text-align:left;">Incident Response Plan</a>
+            <a href="SRA Module.dc.html" class="sil-menu-item" style="display:block;padding:10px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#d7cbed;text-decoration:none;cursor:pointer;width:100%;border:none;background-color:transparent;text-align:left;">Risk Assessment / Pen Test</a>
+            <a href="uploads/silhouette-proposal-template.html" class="sil-menu-item" style="display:block;padding:10px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#d7cbed;text-decoration:none;cursor:pointer;width:100%;border:none;background-color:transparent;text-align:left;">Proposals</a>
+            <div style="border-top:1px solid rgba(224,210,255,.1);margin-top:5px;padding-top:5px;"><button onClick="{{ signOut }}" class="sil-menu-item" style="display:block;padding:10px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#d7cbed;text-decoration:none;cursor:pointer;width:100%;border:none;background-color:transparent;text-align:left;">Sign out</button></div>
+          </sc-if>
+          <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ true }}">
+            <a href="Compliance Suite.dc.html" class="sil-menu-item" style="display:block;padding:10px 12px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#d7cbed;text-decoration:none;cursor:pointer;width:100%;border:none;background-color:transparent;text-align:left;">Sign in</a>
+          </sc-if>
+        </div>
+      </sc-if>
     </div>
     <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex;align-items:center;gap:12px;">
@@ -33,25 +55,18 @@ input:focus{outline:none;border-color:#5b21b6!important;}
 
   <!-- SIGN IN -->
   <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ true }}">
-    <div style="max-width:430px;margin:0 auto;padding:64px 24px;">
-      <div style="background:#ffffff;border:1px solid rgba(91,33,182,.16);border-radius:16px;padding:36px 34px;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:fadeUp .3s ease;">
-        <div style="font-family:'EB Garamond',Georgia,serif;font-size:26px;font-weight:600;color:#0f172a;margin-bottom:6px;">{{ authTitle }}</div>
-        <div style="font-size:13.5px;color:#3f2f6b;line-height:1.55;margin-bottom:24px;">{{ authSubtitle }}</div>
-        <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">Organization</div>
-          <input type="text" value="Your organization" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;color:#0f172a;margin-bottom:16px;background:#f7f3ff;"/>
-        </sc-if>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#6b5a95;margin-bottom:7px;">Work email</div>
-        <input type="text" value="you@organization.org" style="width:100%;padding:11px 13px;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:14px;color:#0f172a;margin-bottom:16px;background:#f7f3ff;"/>
-        <button onClick="{{ signIn }}" style="width:100%;padding:13px;background:#7c3aed;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;">{{ authCta }}</button>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="flex:1;height:1px;background:rgba(91,33,182,.08);"></div><div style="font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#bbb;">or</div><div style="flex:1;height:1px;background:rgba(91,33,182,.08);"></div></div>
-        <div style="display:flex;gap:8px;">
-          <button onClick="{{ ssoGoogle }}" style="flex:1;padding:10px;background:#ffffff;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:12.5px;color:#444;cursor:pointer;font-weight:500;">Continue with Google</button>
-          <button onClick="{{ ssoMs }}" style="flex:1;padding:10px;background:#ffffff;border:1px solid rgba(91,33,182,.22);border-radius:9px;font-size:12.5px;color:#444;cursor:pointer;font-weight:500;">Continue with Microsoft</button>
-        </div>
-        <button onClick="{{ toggleMode }}" style="width:100%;background:transparent;border:none;color:#5b21b6;font-size:12.5px;cursor:pointer;margin-top:16px;font-weight:500;">{{ authToggleText }}</button>
-        <div style="text-align:center;margin-top:10px;font-size:12px;color:#6b5a95;line-height:1.5;">No patient or client data is collected.</div>
+    <div style="flex:1;background:#0b0716;display:flex;align-items:center;justify-content:center;padding:40px 24px;">
+    <div style="max-width:560px;width:100%;">
+      <div style="background:#120d1e;border:1px solid rgba(224,210,255,.14);border-radius:14px;padding:44px 46px;animation:fadeUp .3s ease;">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#a89fc6;margin-bottom:16px;">Secure sign in</div>
+        <div style="font-family:'EB Garamond',Georgia,serif;font-size:42px;font-weight:600;color:#f3efff;margin-bottom:14px;">Access Silhouette</div>
+        <div style="font-size:15px;color:#a89fc6;line-height:1.6;margin-bottom:28px;">Use Google, GitHub, or Microsoft Entra ID. Accounts are scoped to a billing account and server-side role.</div>
+        <button onClick="{{ ssoGoogle }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(135deg,#d2b8ff,#9b6bff);border:none;border-radius:10px;font-size:15px;font-weight:700;color:#140f25;cursor:pointer;margin-bottom:12px;"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path></svg> Google</button>
+        <button onClick="{{ ssoGithub }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;background:transparent;border:1px solid rgba(224,210,255,.2);border-radius:10px;font-size:15px;font-weight:600;color:#f3efff;cursor:pointer;margin-bottom:12px;"><svg width="18" height="18" viewBox="0 0 16 16" fill="#f3efff"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg> GitHub</button>
+        <button onClick="{{ ssoMs }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:transparent;border:1px solid rgba(224,210,255,.12);border-radius:10px;font-size:15px;font-weight:600;color:#6b5f8a;cursor:pointer;"><span style="display:flex;align-items:center;gap:12px;"><svg width="18" height="18" viewBox="0 0 23 23"><rect x="1" y="1" width="10" height="10" fill="#F25022"></rect><rect x="12" y="1" width="10" height="10" fill="#7FBA00"></rect><rect x="1" y="12" width="10" height="10" fill="#00A4EF"></rect><rect x="12" y="12" width="10" height="10" fill="#FFB900"></rect></svg> Microsoft</span><span style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;color:#6b5f8a;white-space:nowrap;flex-shrink:0;">Setup pending</span></button>
+        <div style="text-align:center;margin-top:18px;font-size:12px;color:#6b5f8a;line-height:1.5;">No patient or client data is collected. We never store your uploaded documents.</div>
       </div>
+    </div>
     </div>
   </sc-if>
 
@@ -141,7 +156,7 @@ class Component extends DCLogic {
   };
 
   MODULES = [
-    { key:'gap', name:'Incident Response Plan', icon:'◷', url:'Compliance Portal.dc.html', demoUrl:'Compliance Portal.dc.html#demo',
+    { key:'gap', name:'Incident Response Plan', icon:'◷', url:'Compliance Portal.dc.html#session', demoUrl:'Compliance Portal.dc.html#demo',
       desc:'IRP gap analysis: upload incident-response plans and supporting policies; the engine scores them against industry control sets and produces a gap report, deck, and remediation roadmap.',
       priceNote:'Billed per organization assessed', price:'$250 / org', billing:'Pay-per-assessment at the point of use. Each organization includes one report, all exports, and one refinement.' },
     { key:'sra', name:'Security Risk Assessment / Pen Test', icon:'◆', url:'SRA Module.dc.html',
@@ -191,6 +206,8 @@ class Component extends DCLogic {
 
     return {
       signedIn: s.signedIn, isSignin: !s.signedIn, isLauncher: s.signedIn,
+      menuOpen: !!s.menuOpen,
+      toggleMenu: () => this.setState(st => ({ menuOpen: !st.menuOpen })),
       accountName: s.accountName,
       isSignup: s.mode === 'signup',
       authTitle: s.mode === 'signup' ? 'Create your account' : 'Sign in to the suite',
@@ -200,7 +217,8 @@ class Component extends DCLogic {
       toggleMode: () => this.setState({ mode: s.mode === 'signup' ? 'signin' : 'signup' }),
       signIn: () => this.setState({ signedIn:true }),
       ssoGoogle: () => { this.setState({ signedIn:true, accountName:'you@gmail.com' }); },
-      ssoMs: () => { this.setState({ signedIn:true, accountName:'you@outlook.com' }); },
+      ssoGithub: () => { this.setState({ signedIn:true, accountName:'you@github' }); },
+      ssoMs: () => {},
       signOut: () => this.setState({ signedIn:false }),
 
       modules,

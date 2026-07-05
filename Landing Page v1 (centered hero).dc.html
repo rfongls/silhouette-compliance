@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&family=EB+Garamond:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{overflow:hidden;height:100%;}
+body{background:#fff;font-family:'DM Sans',sans-serif;color:#16201c;}
+a{text-decoration:none;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.fu{animation:fadeUp .6s ease both;}
+</style>
+</helmet>
+<div style="background:#fff;">
+
+  <!-- NAV -->
+  <div style="position:sticky;top:0;z-index:50;background:rgba(248,250,249,.9);backdrop-filter:blur(8px);border-bottom:1px solid #e3e8e5;">
+    <div style="max-width:1080px;margin:0 auto;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-family:'EB Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#1f4e3b;">Silhouette<span style="color:#2d6a4f;">.</span></div>
+      <div style="display:flex;align-items:center;gap:22px;">
+        <a onClick="{{ goModules }}" style="font-size:13.5px;color:#4a5750;font-weight:500;cursor:pointer;">Modules</a>
+        <a onClick="{{ goSecurity }}" style="font-size:13.5px;color:#4a5750;font-weight:500;cursor:pointer;">Security</a>
+        <a onClick="{{ goPricing }}" style="font-size:13.5px;color:#4a5750;font-weight:500;cursor:pointer;">Pricing</a>
+        <a href="Compliance Suite.dc.html" style="font-size:13px;color:#1f4e3b;font-weight:600;padding:8px 14px;border:1px solid #cfd8d3;border-radius:8px;white-space:nowrap;">Sign in</a>
+        <a href="Compliance Suite.dc.html#signup" style="font-size:13px;color:#fff;font-weight:600;padding:9px 16px;background:#2d6a4f;border-radius:8px;white-space:nowrap;">Get started</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="position:fixed;top:62px;left:0;right:0;bottom:0;overflow:hidden;background:#fff;">
+
+  <div data-slide="0" style="position:absolute;inset:0;overflow:auto;transition:transform .65s cubic-bezier(.65,0,.35,1);transform:{{ t0 }};display:flex;background:linear-gradient(150deg,#1f4e3b 0%,#17382c 55%,#122a22 100%);">
+    <div style="max-width:1080px;margin:auto;padding:60px 28px;text-align:center;">
+      <h1 class="fu" style="font-family:'EB Garamond',Georgia,serif;font-size:60px;font-weight:600;line-height:1.06;color:#fff;max-width:840px;margin:0 auto 22px;letter-spacing:-.01em;">Stateless by Design</h1>
+      <p class="fu" style="font-size:17.5px;line-height:1.65;color:#cfe0d8;max-width:620px;margin:0 auto 34px;">AI-assisted compliance, risk, and proposal tools that turn your security documentation into audit-ready assessments without storing your private data.</p>
+      <div class="fu" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="Compliance Suite.dc.html" style="font-size:15px;color:#1f4e3b;font-weight:700;padding:14px 30px;background:#fff;border-radius:10px;white-space:nowrap;">View Demo</a>
+      </div>
+      <div class="fu" style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-top:36px;font-size:12.5px;color:#bcd0c6;">
+        <div style="display:flex;align-items:center;gap:7px;white-space:nowrap;"><span style="color:#9ec5b4;font-size:15px;">✓</span>We store nothing</div>
+        <div style="display:flex;align-items:center;gap:7px;white-space:nowrap;"><span style="color:#9ec5b4;font-size:15px;">✓</span>No PHI / client data collected</div>
+        <div style="display:flex;align-items:center;gap:7px;white-space:nowrap;"><span style="color:#9ec5b4;font-size:15px;">✓</span>Google, Microsoft &amp; GitHub SSO</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULES -->
+  <div id="modules" data-slide="1" style="position:absolute;inset:0;overflow:auto;transition:transform .65s cubic-bezier(.65,0,.35,1);transform:{{ t1 }};display:flex;background:#fff;">
+  <div style="max-width:1080px;margin:auto;padding:60px 28px;width:100%;">
+    <div style="text-align:center;margin-bottom:44px;">
+      <h2 style="font-family:'EB Garamond',Georgia,serif;font-size:36px;font-weight:600;color:#111;">Try Our Demo!</h2>
+      <p style="font-size:14.5px;color:#5d6b63;margin-top:10px;">Every module includes a demo. Click below to demo.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+      <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+        <a href="{{ m.demoUrl }}" style="background:#fff;border:1px solid #e1e8e4;border-radius:16px;padding:26px;display:flex;flex-direction:column;cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .18s;" style-hover="border-color:#2d6a4f;box-shadow:0 10px 28px rgba(31,78,59,.14);transform:translateY(-3px);">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(45,106,79,.1);border:1px solid rgba(45,106,79,.22);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">{{ m.icon }}</div>
+          <div style="font-size:18px;font-weight:600;color:#111;margin-bottom:7px;">{{ m.name }}</div>
+          <div style="font-size:13.5px;color:#5d6b63;line-height:1.6;flex:1;">{{ m.desc }}</div>
+          <div style="margin-top:18px;padding-top:16px;border-top:1px solid #eef1ef;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;">
+            <div>
+              <div style="font-family:'EB Garamond',Georgia,serif;font-size:22px;font-weight:600;color:#1f4e3b;">{{ m.price }}</div>
+              <div style="font-size:11.5px;color:#999;margin-top:2px;">{{ m.priceNote }}</div>
+            </div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+  </div>
+
+  <!-- SECURITY -->
+  <div id="security" data-slide="2" style="position:absolute;inset:0;overflow:auto;transition:transform .65s cubic-bezier(.65,0,.35,1);transform:{{ t2 }};display:flex;background:#1f2c26;">
+    <div style="max-width:1080px;margin:auto;padding:44px 28px;color:#e6efe9;width:100%;">
+      <div style="text-align:center;max-width:680px;margin:0 auto 40px;">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9ec5b4;margin-bottom:14px;">Stateless by design</div>
+        <h2 style="font-family:'EB Garamond',Georgia,serif;font-size:38px;font-weight:600;line-height:1.12;margin-bottom:16px;color:#fff;">Your documents are never stored</h2>
+        <p style="font-size:15px;line-height:1.7;color:#bcd0c6;">Your policies and evidence are held in memory for a single analysis, then discarded. Here is exactly where the line sits:</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;max-width:880px;margin:0 auto;border:1px solid rgba(255,255,255,.14);border-radius:16px;overflow:hidden;">
+        <div style="padding:28px 30px;border-right:1px solid rgba(255,255,255,.14);">
+          <div style="font-family:'DM Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#d9a3a3;margin-bottom:18px;">Never stored</div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="color:#d9a3a3;font-size:14px;margin-top:1px;">✕</span><div><div style="font-size:14px;font-weight:600;color:#fff;">Your source documents</div><div style="font-size:12.5px;color:#bcd0c6;line-height:1.55;margin-top:2px;">Held in memory for one run, then discarded. Never written to disk.</div></div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="color:#d9a3a3;font-size:14px;margin-top:1px;">✕</span><div><div style="font-size:14px;font-weight:600;color:#fff;">Patient &amp; client records</div><div style="font-size:12.5px;color:#bcd0c6;line-height:1.55;margin-top:2px;">Never collected. Assessments read policies and configurations, not records.</div></div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="color:#d9a3a3;font-size:14px;margin-top:1px;">✕</span><div><div style="font-size:14px;font-weight:600;color:#fff;">Your data for AI training</div><div style="font-size:12.5px;color:#bcd0c6;line-height:1.55;margin-top:2px;">Analysis runs on a zero-retention tier. Prompts and outputs are not kept.</div></div></div>
+          </div>
+        </div>
+        <div style="padding:28px 30px;background:rgba(158,197,180,.07);">
+          <div style="font-family:'DM Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#9ec5b4;margin-bottom:18px;">What we keep</div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="color:#9ec5b4;font-size:14px;margin-top:1px;">✓</span><div><div style="font-size:14px;font-weight:600;color:#fff;">Your account</div><div style="font-size:12.5px;color:#bcd0c6;line-height:1.55;margin-top:2px;">SSO identity and role, so your access and history follow you.</div></div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="color:#9ec5b4;font-size:14px;margin-top:1px;">✓</span><div><div style="font-size:14px;font-weight:600;color:#fff;">Entitlements &amp; billing ledger</div><div style="font-size:12.5px;color:#bcd0c6;line-height:1.55;margin-top:2px;">What you purchased and what each run cost - your audit trail.</div></div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="color:#9ec5b4;font-size:14px;margin-top:1px;">✓</span><div><div style="font-size:14px;font-weight:600;color:#fff;">The results you generate</div><div style="font-size:12.5px;color:#bcd0c6;line-height:1.55;margin-top:2px;">Assessment scores, findings, and exports stay available to you.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div data-slide="3" style="position:absolute;inset:0;overflow:auto;transition:transform .65s cubic-bezier(.65,0,.35,1);transform:{{ t3 }};display:flex;background:#fff;">
+  <div style="max-width:1080px;margin:auto;padding:60px 28px;width:100%;">
+    <div style="text-align:center;margin-bottom:44px;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#2d6a4f;margin-bottom:12px;">How it works</div>
+      <h2 style="font-family:'EB Garamond',Georgia,serif;font-size:36px;font-weight:600;color:#111;">From documents to roadmap</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+        <div style="text-align:center;padding:0 8px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:#2d6a4f;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'EB Garamond',serif;font-size:18px;font-weight:600;margin:0 auto 14px;">{{ st.n }}</div>
+          <div style="font-size:15px;font-weight:600;color:#111;margin-bottom:5px;">{{ st.title }}</div>
+          <div style="font-size:12.5px;color:#5d6b63;line-height:1.55;">{{ st.body }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </div>
+
+  <!-- PRICING -->
+  <div id="pricing" data-slide="4" style="position:absolute;inset:0;overflow:auto;transition:transform .65s cubic-bezier(.65,0,.35,1);transform:{{ t4 }};display:flex;background:#f8faf9;">
+    <div style="max-width:1080px;margin:auto;padding:60px 28px;width:100%;">
+      <div style="text-align:center;margin-bottom:44px;">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#2d6a4f;margin-bottom:12px;">Pricing</div>
+        <h2 style="font-family:'EB Garamond',Georgia,serif;font-size:36px;font-weight:600;color:#111;">Pay for what you use</h2>
+        <p style="font-size:15px;color:#5d6b63;margin-top:10px;max-width:540px;margin-left:auto;margin-right:auto;line-height:1.6;">Demo every module free with sample data. Activate a module to run it on your own documents.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+        <sc-for list="{{ modules }}" as="m" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e1e8e4;border-radius:16px;padding:28px;text-align:center;">
+            <div style="font-size:15px;font-weight:600;color:#111;margin-bottom:12px;">{{ m.name }}</div>
+            <div style="font-family:'EB Garamond',Georgia,serif;font-size:34px;font-weight:600;color:#1f4e3b;">{{ m.price }}</div>
+            <div style="font-size:12px;color:#999;margin-top:4px;margin-bottom:20px;">{{ m.priceNote }}</div>
+            <a href="Compliance Suite.dc.html#signup" style="display:block;font-size:13.5px;color:#fff;font-weight:600;padding:11px;background:#2d6a4f;border-radius:9px;">Get started</a>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA + FOOTER -->
+  <div data-slide="5" style="position:absolute;inset:0;overflow:auto;transition:transform .65s cubic-bezier(.65,0,.35,1);transform:{{ t5 }};display:flex;flex-direction:column;background:#fff;">
+  <div style="max-width:1080px;margin:0 auto;padding:80px 28px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h2 style="font-family:'EB Garamond',Georgia,serif;font-size:40px;font-weight:600;color:#111;line-height:1.15;max-width:680px;margin:0 auto 18px;">Run your first assessment today</h2>
+    <p style="font-size:16px;color:#5d6b63;max-width:540px;margin:0 auto 30px;line-height:1.6;">Sign in with your Google, Microsoft, or GitHub account. Try any module in demo mode before you pay.</p>
+    <div><a href="Compliance Suite.dc.html" style="display:inline-block;font-size:16px;color:#fff;font-weight:600;padding:15px 30px;background:#2d6a4f;border-radius:11px;">Sign in to get started</a></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="background:#16201c;color:#9fb3a8;">
+    <div style="max-width:1080px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-family:'EB Garamond',Georgia,serif;font-size:18px;font-weight:600;color:#fff;">Silhouette<span style="color:#9ec5b4;">.</span></div>
+        <div style="font-size:12px;color:#7d9488;margin-top:3px;">AI-assisted compliance, risk &amp; proposal tooling.</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#7d9488;">© 2026 Silhouette LLC · We store nothing.</div>
+    </div>
+  </div>
+  </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1080,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { cur: 0, axis: 'y' };
+  N = 6;
+  _go(dir, axis){
+    const now = Date.now();
+    if(this._lockUntil && now < this._lockUntil) return;
+    const next = Math.max(0, Math.min(this.N - 1, this.state.cur + dir));
+    if(next === this.state.cur) return;
+    this._lockUntil = now + 720;
+    this.setState({ cur: next, axis: axis });
+  }
+  _goTo(i){
+    if(i === this.state.cur) return;
+    this._lockUntil = Date.now() + 720;
+    this.setState({ cur: i, axis: 'y' });
+  }
+  _activeEl(){
+    return document.querySelector('[data-slide="' + this.state.cur + '"]');
+  }
+  _innerScrollHandles(delta){
+    const el = this._activeEl();
+    if(!el || el.scrollHeight <= el.clientHeight + 4) return false;
+    const atTop = el.scrollTop <= 2;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    return (delta > 0 && !atBottom) || (delta < 0 && !atTop);
+  }
+  componentDidMount(){
+    this._onWheel = (e) => {
+      if(this._innerScrollHandles(e.deltaY)) return;
+      e.preventDefault();
+      if(Math.abs(e.deltaY) < 12) return;
+      this._go(e.deltaY > 0 ? 1 : -1, 'y');
+    };
+    this._onKey = (e) => {
+      if(e.key === 'ArrowDown' || e.key === 'PageDown'){ e.preventDefault(); this._go(1, 'y'); }
+      else if(e.key === 'ArrowUp' || e.key === 'PageUp'){ e.preventDefault(); this._go(-1, 'y'); }
+      else if(e.key === 'ArrowRight'){ e.preventDefault(); this._go(1, 'x'); }
+      else if(e.key === 'ArrowLeft'){ e.preventDefault(); this._go(-1, 'x'); }
+    };
+    this._onTouchStart = (e) => { const t = e.touches[0]; this._tx = t.clientX; this._ty = t.clientY; };
+    this._onTouchEnd = (e) => {
+      if(this._tx == null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - this._tx, dy = t.clientY - this._ty;
+      this._tx = null;
+      if(Math.abs(dx) > Math.abs(dy)){
+        if(Math.abs(dx) > 50) this._go(dx < 0 ? 1 : -1, 'x');
+      } else if(Math.abs(dy) > 50){
+        if(this._innerScrollHandles(-dy)) return;
+        this._go(dy < 0 ? 1 : -1, 'y');
+      }
+    };
+    window.addEventListener('wheel', this._onWheel, { passive: false });
+    window.addEventListener('keydown', this._onKey);
+    window.addEventListener('touchstart', this._onTouchStart, { passive: true });
+    window.addEventListener('touchend', this._onTouchEnd, { passive: true });
+  }
+  componentWillUnmount(){
+    window.removeEventListener('wheel', this._onWheel);
+    window.removeEventListener('keydown', this._onKey);
+    window.removeEventListener('touchstart', this._onTouchStart);
+    window.removeEventListener('touchend', this._onTouchEnd);
+  }
+  _tf(i){
+    const cur = this.state.cur, axis = this.state.axis;
+    if(i === cur) return 'translate(0,0)';
+    const off = i < cur ? '-102%' : '102%';
+    return axis === 'x' ? 'translateX(' + off + ')' : 'translateY(' + off + ')';
+  }
+  _icon(paths){
+    return React.createElement('svg', { width:24, height:24, viewBox:'0 0 24 24', fill:'none', stroke:'#1f4e3b', strokeWidth:1.7, strokeLinecap:'round', strokeLinejoin:'round' },
+      paths.map((d,i)=>React.createElement('path',{key:i,d:d})));
+  }
+  renderVals(){
+    const shield = this._icon(['M12 3l7 2.6v5.1c0 4.4-2.9 7.4-7 9.3-4.1-1.9-7-4.9-7-9.3V5.6L12 3z','M9 11.5l2 2 4-4.5']);
+    const scope = this._icon(['M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z','M15.9 15.9L20.5 20.5','M11 8v3l2 2']);
+    const doc = this._icon(['M7 3h7l4 4v14H7V3z','M14 3v4h4','M10 12h5M10 15.5h5']);
+    return {
+      t0: this._tf(0), t1: this._tf(1), t2: this._tf(2), t3: this._tf(3), t4: this._tf(4), t5: this._tf(5),
+      goModules: () => this._goTo(1),
+      goSecurity: () => this._goTo(2),
+      goPricing: () => this._goTo(4),
+      modules: [
+        { icon: shield, name:'Incident Response Plan', price:'$250', priceNote:'per organization assessed', demoUrl:'Compliance Portal.dc.html#demo',
+          desc:'IRP gap analysis: score incident-response plans against industry control sets. Get a gap report, deck, and remediation roadmap.' },
+        { icon: scope, name:'Security Risk Assessment / Pen Test', price:'$1,500', priceNote:'per engagement', demoUrl:'SRA Module.dc.html',
+          desc:'Guided scope, inventory, evidence import, AI-drafted findings with risk ratings, and a 30/60/90 remediation roadmap.' },
+        { icon: doc, name:'Proposals', price:'$99', priceNote:'per proposal', demoUrl:'uploads/silhouette-proposal-template.html',
+          desc:'Generate or reformat RFP proposals into your branded template with pricing, project plans, and AI synthesis.' }
+      ],
+
+      steps: [
+        { n:'1', title:'Sign in', body:'Sign in with your Google, Microsoft, or GitHub account.' },
+        { n:'2', title:'Pick a module', body:'Demo free, or activate to run on your own documents.' },
+        { n:'3', title:'Upload & run', body:'Import policies and tool output; the engine drafts findings.' },
+        { n:'4', title:'Export', body:'Download the report, deck, and remediation roadmap.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

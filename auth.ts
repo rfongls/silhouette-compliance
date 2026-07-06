@@ -11,6 +11,7 @@ bootstrapComplianceEnv();
 const hasGoogleAuth = hasEnvPair("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET");
 const hasGitHubAuth = hasEnvPair("GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET");
 const hasMicrosoftAuth = hasEnvPair("MICROSOFT_ENTRA_ID_CLIENT_ID", "MICROSOFT_ENTRA_ID_CLIENT_SECRET");
+const microsoftIssuer = "https://login.microsoftonline.com/common/v2.0";
 const adminEmails = envList("ADMIN_EMAILS");
 const adminGitHubLogins = envList("ADMIN_GITHUB_LOGINS");
 
@@ -48,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           MicrosoftEntraID({
             clientId: env("MICROSOFT_ENTRA_ID_CLIENT_ID"),
             clientSecret: env("MICROSOFT_ENTRA_ID_CLIENT_SECRET"),
-            issuer: env("MICROSOFT_ENTRA_ID_ISSUER") || undefined
+            issuer: microsoftIssuer
           })
         ]
       : [])

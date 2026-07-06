@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { bootstrapComplianceEnv } from "@/lib/env";
+
+bootstrapComplianceEnv();
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 

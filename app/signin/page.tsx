@@ -1,5 +1,6 @@
 import { signIn } from "@/auth";
 import { Nav } from "@/components/Nav";
+import { hasEnvPair } from "@/lib/env";
 
 function ProviderIcon({ provider }: { provider: "google" | "github" | "microsoft" }) {
   if (provider === "github") {
@@ -66,11 +67,9 @@ function ProviderButton({ provider, label, primary = false, enabled = true }: { 
 }
 
 export default function SignInPage() {
-  const hasGoogleAuth = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-  const hasGitHubAuth = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
-  const hasMicrosoftAuth = Boolean(
-    process.env.MICROSOFT_ENTRA_ID_CLIENT_ID && process.env.MICROSOFT_ENTRA_ID_CLIENT_SECRET
-  );
+  const hasGoogleAuth = hasEnvPair("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET");
+  const hasGitHubAuth = hasEnvPair("GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET");
+  const hasMicrosoftAuth = hasEnvPair("MICROSOFT_ENTRA_ID_CLIENT_ID", "MICROSOFT_ENTRA_ID_CLIENT_SECRET");
 
   return (
     <main>

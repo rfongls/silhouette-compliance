@@ -3,18 +3,14 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { bootstrapComplianceEnv, env, envList, hasEnvPair } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
-const hasGoogleAuth = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-const hasGitHubAuth = Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
-const hasMicrosoftAuth = Boolean(
-  process.env.MICROSOFT_ENTRA_ID_CLIENT_ID && process.env.MICROSOFT_ENTRA_ID_CLIENT_SECRET
-);
+bootstrapComplianceEnv();
 
-function envList(name: string) {
-  return new Set((process.env[name] || "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
-}
-
+const hasGoogleAuth = hasEnvPair("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET");
+const hasGitHubAuth = hasEnvPair("GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET");
+const hasMicrosoftAuth = hasEnvPair("MICROSOFT_ENTRA_ID_CLIENT_ID", "MICROSOFT_ENTRA_ID_CLIENT_SECRET");
 const adminEmails = envList("ADMIN_EMAILS");
 const adminGitHubLogins = envList("ADMIN_GITHUB_LOGINS");
 
@@ -34,25 +30,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...(hasGoogleAuth
       ? [
           Google({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!
+            clientId: env("GOOGLE_CLIENT_ID"),
+            clientSecret: env("GOOGLE_CLIENT_SECRET")
           })
         ]
       : []),
     ...(hasGitHubAuth
       ? [
           GitHub({
-            clientId: process.env.GITHUB_CLIENT_ID!,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET!
+            clientId: env("GITHUB_CLIENT_ID"),
+            clientSecret: env("GITHUB_CLIENT_SECRET")
           })
         ]
       : []),
     ...(hasMicrosoftAuth
       ? [
           MicrosoftEntraID({
-            clientId: process.env.MICROSOFT_ENTRA_ID_CLIENT_ID!,
-            clientSecret: process.env.MICROSOFT_ENTRA_ID_CLIENT_SECRET!,
-            issuer: process.env.MICROSOFT_ENTRA_ID_ISSUER || undefined
+            clientId: env("MICROSOFT_ENTRA_ID_CLIENT_ID"),
+            clientSecret: env("MICROSOFT_ENTRA_ID_CLIENT_SECRET"),
+            issuer: env("MICROSOFT_ENTRA_ID_ISSUER") || undefined
           })
         ]
       : [])

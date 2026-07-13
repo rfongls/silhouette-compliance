@@ -14,12 +14,28 @@ const hasMicrosoftAuth = hasEnvPair("MICROSOFT_ENTRA_ID_CLIENT_ID", "MICROSOFT_E
 const microsoftIssuer = "https://login.microsoftonline.com/common/v2.0";
 const adminEmails = envList("ADMIN_EMAILS");
 const adminGitHubLogins = envList("ADMIN_GITHUB_LOGINS");
+const allowedEmails = envList("ALLOWED_EMAILS");
+const allowedGitHubLogins = envList("ALLOWED_GITHUB_LOGINS");
+
+function getGitHubLogin(account?: { provider?: string } | null, profile?: unknown) {
+  if (account?.provider !== "github") return "";
+  return typeof profile === "object" && profile && "login" in profile
+    ? String((profile as { login?: unknown }).login || "").toLowerCase()
+    : "";
+}
+
+function isAllowedUser(user: { email?: string | null }, account?: { provider?: string } | null, profile?: unknown) {
+  if (!allowedEmails.size && !allowedGitHubLogins.size) return true;
+  const email = user.email?.toLowerCase();
+  if (email && allowedEmails.has(email)) return true;
+  const login = getGitHubLogin(account, profile);
+  return Boolean(login && allowedGitHubLogins.has(login));
+}
 
 function isBootstrapAdmin(user: { email?: string | null }, account?: { provider?: string } | null, profile?: unknown) {
   const email = user.email?.toLowerCase();
   if (email && adminEmails.has(email)) return true;
-  if (account?.provider !== "github") return false;
-  const login = typeof profile === "object" && profile && "login" in profile ? String((profile as { login?: unknown }).login || "").toLowerCase() : "";
+  const login = getGitHubLogin(account, profile);
   return Boolean(login && adminGitHubLogins.has(login));
 }
 
@@ -56,6 +72,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
+      if (!isAllowedUser(user, account, profile)) return false;
       if (user.id && isBootstrapAdmin(user, account, profile)) {
         await prisma.user.update({ where: { id: user.id }, data: { role: "admin" } }).catch(() => undefined);
       }

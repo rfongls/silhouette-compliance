@@ -28,7 +28,9 @@ export function bootstrapComplianceEnv() {
     "MICROSOFT_ENTRA_ID_CLIENT_SECRET",
     "MICROSOFT_ENTRA_ID_ISSUER",
     "ADMIN_EMAILS",
-    "ADMIN_GITHUB_LOGINS"
+    "ADMIN_GITHUB_LOGINS",
+    "ALLOWED_EMAILS",
+    "ALLOWED_GITHUB_LOGINS"
   ];
 
   for (const name of names) {

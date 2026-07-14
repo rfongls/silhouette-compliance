@@ -1,6 +1,9 @@
 name: Deploy to Hostinger
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -13,11 +16,12 @@ jobs:
     timeout-minutes: 20
 
     env:
-      DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH }}
-      SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-      SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
-      SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+      DEPLOY_PATH: ${{ secrets.COMPLIANCE_HOSTINGER_DEPLOY_PATH }}
+      SSH_HOST: ${{ secrets.COMPLIANCE_HOSTINGER_SSH_HOST }}
+      SSH_PORT: ${{ secrets.COMPLIANCE_HOSTINGER_SSH_PORT }}
+      SSH_USER: ${{ secrets.COMPLIANCE_HOSTINGER_SSH_USER }}
       ARCHIVE_NAME: compliance-deploy.tar.gz
+      HEALTHCHECK_URL: ${{ vars.COMPLIANCE_HOSTINGER_HEALTHCHECK_URL || 'https://complianceapp.silhouettellc.com/' }}
 
     steps:
       - name: Check out repository
@@ -64,30 +68,49 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}" > ~/.ssh/hostinger_deploy_key
+          printf '%s\n' "${{ secrets.COMPLIANCE_HOSTINGER_SSH_PRIVATE_KEY }}" > ~/.ssh/hostinger_deploy_key
           chmod 600 ~/.ssh/hostinger_deploy_key
-          {
-            echo "[82.112.248.74]:65002 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGoS6GX5xC1+1FcbLiTqzf4IaBr+7QLPDAGi7JoPYRLG"
-            echo "[82.112.248.74]:65002 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGGEVjMoRmxDq+/BttPSglzYLWsgVh95ne2JSplp/xa3G5UySsfb4CxZP7Tmjb0YlFEJnYqxnaOKyuCyNuwM9sk="
-          } >> ~/.ssh/known_hosts
+          for attempt in 1 2 3; do
+            if ssh-keyscan -T 15 -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts; then
+              exit 0
+            fi
+            echo "ssh-keyscan attempt $attempt failed; retrying..."
+            sleep 5
+          done
+          echo "::warning::Unable to prefetch Hostinger SSH host key; continuing with the deploy SSH connection."
+
+      - name: Verify SSH deploy target
+        run: |
+          ssh -i ~/.ssh/hostinger_deploy_key \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ServerAliveInterval=20 \
+            -o ServerAliveCountMax=6 \
+            -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "set -e
+             echo 'SSH auth succeeded.'
+             test -d '$DEPLOY_PATH'
+             test -w '$DEPLOY_PATH'
+             case '$DEPLOY_PATH' in
+               */domains/complianceapp.silhouettellc.com/public_html) ;;
+               *) echo 'Unexpected deploy path: $DEPLOY_PATH' >&2; exit 1 ;;
+             esac
+             echo 'Deploy path verified.'"
 
       - name: Upload deploy artifact
         run: |
-          printf 'cd %s\nput "%s" "%s"\nbye\n' "$DEPLOY_PATH" "$ARCHIVE_NAME" "$ARCHIVE_NAME" > sftp.batch
-          for attempt in 1 2 3 4 5; do
-            echo "SFTP archive upload attempt ${attempt}/5"
-            if sftp \
-              -b sftp.batch \
-              -oBatchMode=yes \
-              -oConnectTimeout=30 \
+          for attempt in 1 2 3; do
+            if scp -i ~/.ssh/hostinger_deploy_key \
+              -o StrictHostKeyChecking=accept-new \
+              -o UserKnownHostsFile=~/.ssh/known_hosts \
               -oServerAliveInterval=15 \
               -oServerAliveCountMax=4 \
-              -i ~/.ssh/hostinger_deploy_key \
               -P "$SSH_PORT" \
-              "$SSH_USER@$SSH_HOST"; then
+              "$ARCHIVE_NAME" "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/$ARCHIVE_NAME"; then
               exit 0
             fi
-            sleep $((attempt * 20))
+            echo "Upload attempt $attempt failed; retrying..."
+            sleep 10
           done
           exit 1
 
@@ -110,10 +133,22 @@ jobs:
              rm -rf .next app components lib prisma scripts
              tar -xzf '$ARCHIVE_NAME'
              rm -f '$ARCHIVE_NAME'
+             export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/opt/alt/alt-nodejs20/root/usr/bin:/usr/local/bin:/usr/bin:/bin
+             echo 'Installing production dependencies'
+             npm ci --omit=dev --no-audit --no-fund
+             echo 'Generating Prisma client'
+             npx prisma generate
+             if [ '${{ vars.COMPLIANCE_HOSTINGER_RUN_MIGRATIONS || 'false' }}' = 'true' ]; then
+               echo 'Applying Prisma migrations'
+               npx prisma migrate deploy
+             else
+               echo 'Skipping Prisma migrations because COMPLIANCE_HOSTINGER_RUN_MIGRATIONS is not true.'
+             fi
              mkdir -p tmp
              printf 'restart=%s\ncommit=${GITHUB_SHA}\n' \"\$(date -u +%FT%TZ)\" > tmp/restart.txt"
 
       - name: Smoke test
         run: |
           sleep 12
-          curl --fail --location --max-redirs 4 https://complianceapp.silhouettellc.com/
+          curl --fail --location --max-redirs 4 "$HEALTHCHECK_URL"
+          curl --fail --location --max-redirs 4 https://complianceapp.silhouettellc.com/api/auth/providers

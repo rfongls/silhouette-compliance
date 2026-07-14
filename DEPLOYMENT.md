@@ -81,19 +81,23 @@ acceptance checks in AGENTS.md §9 and §13.
 
 ## Ongoing
 
-- Target state: work in feature branches; merging to `main` auto-deploys the running app through
-  Hostinger's Git-connected Node.js app, using app-level hPanel environment variables.
-- Transitional state: `.github/workflows/deploy-hostinger.yml` still exists for the old manual
-  Passenger/public_html recovery path. Disable or remove that workflow once the hPanel Node app
-  deployment is confirmed, otherwise the old archive deploy can overwrite the managed app output.
-- Hostinger managed app must run the repo build on every deployment:
-  - Build command: `npm run build`
-  - Root directory: `./`
-  - Output directory: `.next`
-  - Node version: `22.x`
-- The old GitHub Actions deploy builds in GitHub, uploads one compressed deploy archive over SFTP,
-  extracts it in `public_html`, and writes `tmp/restart.txt` to restart Passenger. Keep this only as
-  a rollback path until the managed app is verified.
+- Target state: work in feature branches; merging to `main` auto-deploys production through
+  `.github/workflows/deploy-hostinger.yml`.
+- GitHub Actions is the deployment authority for this repo. Hostinger hPanel remains the runtime
+  host/configuration surface, but hPanel Git auto-deploy should not be used as the primary deploy
+  path for this app.
+- The workflow builds in GitHub, uploads one compressed deploy archive over SSH/SCP, extracts it in
+  `public_html`, installs production dependencies, generates the Prisma client, and writes
+  `tmp/restart.txt` to restart Passenger.
+- Required GitHub Actions secrets:
+  - `COMPLIANCE_HOSTINGER_DEPLOY_PATH`
+  - `COMPLIANCE_HOSTINGER_SSH_HOST`
+  - `COMPLIANCE_HOSTINGER_SSH_PORT`
+  - `COMPLIANCE_HOSTINGER_SSH_USER`
+  - `COMPLIANCE_HOSTINGER_SSH_PRIVATE_KEY`
+- Optional GitHub Actions vars:
+  - `COMPLIANCE_HOSTINGER_HEALTHCHECK_URL`
+  - `COMPLIANCE_HOSTINGER_RUN_MIGRATIONS` (`true` only when the deploy shell has `DATABASE_URL`)
 - Keep Silhouette Orchestrator deployments pointed at the orchestrator domain/path only. Do not
   deploy orchestrator artifacts, build output, or release archives into this compliance app's
   Hostinger `public_html` directory.

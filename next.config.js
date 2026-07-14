@@ -1,3 +1,5 @@
+const path = require("node:path");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   trailingSlash: true,
@@ -5,6 +7,10 @@ const nextConfig = {
     instrumentationHook: true,
     cpus: 1,
     workerThreads: false
+  },
+  webpack(config) {
+    config.resolve.alias["@"] = path.resolve(__dirname);
+    return config;
   }
 };
 

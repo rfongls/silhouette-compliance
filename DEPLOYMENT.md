@@ -49,15 +49,25 @@ acceptance checks in AGENTS.md §9 and §13.
 - [ ] hPanel → **Websites → + Add website → Node.js Web App**.
 - [ ] **Deploy from GitHub** → select `silhouette-compliance`, branch `main`. Framework
       auto-detects as Next.js; confirm build settings.
-- [ ] Domain: enter `app.silhouettellc.com` — hPanel creates the subdomain, DNS, and SSL
-      automatically. (The WordPress site at `silhouettellc.com` is unaffected.)
-- [ ] Add every `.env` value as **environment variables** in the app's hPanel settings
-      (still Stripe test keys). Never commit `.env`.
+- [ ] Domain: use `complianceapp.silhouettellc.com`. If hPanel currently shows this site as a
+      legacy/manual hosting entry, migrate or recreate it as a Git-connected Node.js app so the
+      app-level **Environment variables** screen appears like Orchestrator and HPCA.
+- [ ] Confirm build settings:
+  - Framework preset: `Next.js`
+  - Branch: `main`
+  - Root directory: `./`
+  - Node version: `22.x`
+  - Build command: `npm run build`
+  - Output directory: `.next`
+- [ ] Import every value from `.env.hostinger.production` into the app-level hPanel environment
+      variables screen. Never commit `.env` files or paste secrets into public docs.
 - [ ] Stripe dashboard → add webhook endpoint `https://app.silhouettellc.com/api/webhooks/stripe`;
       put its signing secret in the hPanel env.
 - [ ] Add production OAuth callbacks:
-      `https://app.silhouettellc.com/api/auth/callback/google` and `.../callback/azure-ad`.
-- [ ] Set `NEXTAUTH_URL` / `APP_BASE_URL` to `https://app.silhouettellc.com`.
+      `https://complianceapp.silhouettellc.com/api/auth/callback/google`,
+      `https://complianceapp.silhouettellc.com/api/auth/callback/github`, and
+      `https://complianceapp.silhouettellc.com/api/auth/callback/microsoft-entra-id`.
+- [ ] Set `NEXTAUTH_URL` / `APP_BASE_URL` to `https://complianceapp.silhouettellc.com`.
 - [ ] Re-run the Phase 3 verification list against the live subdomain (test cards).
 
 ## Phase 5 — Go live
@@ -71,22 +81,19 @@ acceptance checks in AGENTS.md §9 and §13.
 
 ## Ongoing
 
-- Work in feature branches; merging to `main` auto-deploys the running app through GitHub Actions.
-- Hostinger's native GitHub integration is currently only publishing source files and preserving
-  `.next`; its deploy log shows Composer, not npm. Until the hPanel deployment type is corrected to
-  a true Node.js/Next.js build, the GitHub Actions archive deploy is the production source of truth.
-- Hostinger must run the repo build on every deployment:
+- Target state: work in feature branches; merging to `main` auto-deploys the running app through
+  Hostinger's Git-connected Node.js app, using app-level hPanel environment variables.
+- Transitional state: `.github/workflows/deploy-hostinger.yml` still exists for the old manual
+  Passenger/public_html recovery path. Disable or remove that workflow once the hPanel Node app
+  deployment is confirmed, otherwise the old archive deploy can overwrite the managed app output.
+- Hostinger managed app must run the repo build on every deployment:
   - Build command: `npm run build`
-  - Startup file: `server.js`
-  - App root/webroot: `public_html` for this Hostinger site
+  - Root directory: `./`
+  - Output directory: `.next`
   - Node version: `22.x`
-- The `npm run build` command also runs `postbuild`, which writes `tmp/restart.txt`. Passenger uses
-  that marker to restart the Node app after the new `.next` build is created. If Hostinger shows a
-  new commit but the live site still shows old UI, the build command did not run or the app did not
-  restart.
-- The GitHub Actions deploy builds in GitHub, uploads one compressed deploy archive over SFTP, extracts
-  it in `public_html`, and writes `tmp/restart.txt` to restart Passenger. This avoids Hostinger's
-  current skipped-build behavior.
+- The old GitHub Actions deploy builds in GitHub, uploads one compressed deploy archive over SFTP,
+  extracts it in `public_html`, and writes `tmp/restart.txt` to restart Passenger. Keep this only as
+  a rollback path until the managed app is verified.
 - Keep Silhouette Orchestrator deployments pointed at the orchestrator domain/path only. Do not
   deploy orchestrator artifacts, build output, or release archives into this compliance app's
   Hostinger `public_html` directory.

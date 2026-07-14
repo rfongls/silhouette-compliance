@@ -3,8 +3,10 @@ node_modules
 .env
 .env.local
 .env.*.local
+.env.hostinger.production
 coverage
 tmp/
 .vercel
 *.tsbuildinfo
 HOSTINGER_SILHOUETTE_RUNBOOK.md
+hostinger-backups/

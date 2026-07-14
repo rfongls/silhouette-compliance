@@ -95,6 +95,7 @@ acceptance checks in AGENTS.md §9 and §13.
   - `COMPLIANCE_HOSTINGER_SSH_PORT`
   - `COMPLIANCE_HOSTINGER_SSH_USER`
   - `COMPLIANCE_HOSTINGER_SSH_PRIVATE_KEY`
+  - `COMPLIANCE_HOSTINGER_ENV_FILE` (full production `.env` content)
 - Optional GitHub Actions vars:
   - `COMPLIANCE_HOSTINGER_HEALTHCHECK_URL`
   - `COMPLIANCE_HOSTINGER_RUN_MIGRATIONS` (`true` only when the deploy shell has `DATABASE_URL`)

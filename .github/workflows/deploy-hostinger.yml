@@ -39,6 +39,14 @@ jobs:
       - name: Build app
         run: npm run build
 
+      - name: Create production env file
+        env:
+          COMPLIANCE_HOSTINGER_ENV_FILE: ${{ secrets.COMPLIANCE_HOSTINGER_ENV_FILE }}
+        run: |
+          test -n "$COMPLIANCE_HOSTINGER_ENV_FILE"
+          printf '%s\n' "$COMPLIANCE_HOSTINGER_ENV_FILE" > .env
+          chmod 600 .env
+
       - name: Pack deploy artifact
         run: |
           tar \
@@ -47,6 +55,7 @@ jobs:
             --exclude='tmp' \
             --exclude='.git' \
             -czf "$ARCHIVE_NAME" \
+            .env \
             .env.example \
             .htaccess \
             app \

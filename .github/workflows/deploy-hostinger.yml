@@ -143,8 +143,8 @@ jobs:
              tar -xzf '$ARCHIVE_NAME'
              rm -f '$ARCHIVE_NAME'
              export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/opt/alt/alt-nodejs20/root/usr/bin:/usr/local/bin:/usr/bin:/bin
-             echo 'Installing production dependencies'
-             npm ci --omit=dev --no-audit --no-fund
+             echo 'Installing deployment dependencies'
+             npm ci --no-audit --no-fund
              echo 'Generating Prisma client'
              npx prisma generate
              if [ '${{ vars.COMPLIANCE_HOSTINGER_RUN_MIGRATIONS || 'false' }}' = 'true' ]; then

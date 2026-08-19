@@ -43,6 +43,12 @@ export async function POST(req: Request) {
   }
   const industry = String(body.industry || "health-center");
   const standards = Array.isArray(body.standards) && body.standards.length ? body.standards.map(String).slice(0, 6) : defaultStandards(industry);
+  const boards = await prisma.controlBoard.findMany({ where: { industry, standardKey: { in: standards }, status: "PUBLISHED" } });
+  const controls = boards.flatMap((b) => Array.isArray(b.controls) ? b.controls as any[] : []);
+  if (!controls.length) {
+    return NextResponse.json({ error: "No published control board is available for this domain and standard set. Fetch or upload controls in Admin before running IRP scoring." }, { status: 409 });
+  }
+  const boardCite = boards.map((b) => `${b.standardKey} v${b.version}`).join("; ");
 
   try {
     const created = await prisma.$transaction(async (tx) => {
@@ -53,9 +59,6 @@ export async function POST(req: Request) {
       return { assessment, ledger };
     });
 
-    const boards = await prisma.controlBoard.findMany({ where: { industry, standardKey: { in: standards }, status: "PUBLISHED" } });
-    const controls = boards.flatMap((b) => Array.isArray(b.controls) ? b.controls as any[] : []);
-    const boardCite = boards.length ? boards.map((b) => `${b.standardKey} v${b.version}`).join("; ") : "No published board - direct standard prompt";
     const { result, usage } = await runGapAnalysis({ orgName: body.orgName, industry, standards, documents: docs, controls, boardCite });
     const saved = await prisma.assessment.update({ where: { id: created.assessment.id }, data: { status: "DELIVERED", score: result.compliance_score, posture: result.overall_posture, result, boardCite } });
     await prisma.usageLedger.update({ where: { id: created.ledger.id }, data: { assessmentId: saved.id, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens } });

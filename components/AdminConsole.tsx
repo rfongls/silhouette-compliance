@@ -33,6 +33,7 @@ type Props = {
   boards: BoardRow[];
   ledgers: LedgerRow[];
   standards: string[];
+  standardsByIndustry: Record<string, { key: string; label: string; default: boolean }[]>;
   aiConfig: {
     provider: string;
     model: string;
@@ -93,7 +94,7 @@ async function readError(res: Response) {
   }
 }
 
-export function AdminConsole({ users: initialUsers, boards, ledgers, standards, aiConfig }: Props) {
+export function AdminConsole({ users: initialUsers, boards, ledgers, standards, standardsByIndustry, aiConfig }: Props) {
   const [users, setUsers] = useState(initialUsers);
   const [provider, setProvider] = useState(aiConfig.provider);
   const [model, setModel] = useState(aiConfig.model);
@@ -104,10 +105,12 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [apiKey, setApiKey] = useState("");
   const [hasApiKey, setHasApiKey] = useState(aiConfig.hasApiKey);
   const [industry, setIndustry] = useState(industries[0].value);
-  const [standardKey, setStandardKey] = useState(standards[0] || "HIPAA");
+  const [standardKey, setStandardKey] = useState(standardsByIndustry[industries[0].value]?.[0]?.key || standards[0] || "HIPAA");
+  const [controlsJson, setControlsJson] = useState("");
   const [status, setStatus] = useState("");
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
+  const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
 
   function changeProvider(nextProvider: string) {
     setProvider(nextProvider);
@@ -130,6 +133,14 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   function changeCustomModel(nextModel: string) {
     setCustomModel(nextModel);
     setModel(nextModel);
+  }
+
+  function changeIndustry(nextIndustry: string) {
+    setIndustry(nextIndustry);
+    const nextStandards = standardsByIndustry[nextIndustry] || [];
+    if (!nextStandards.some((standard) => standard.key === standardKey)) {
+      setStandardKey(nextStandards[0]?.key || standards[0] || "HIPAA");
+    }
   }
 
   async function updateRole(userId: string, role: string) {
@@ -178,6 +189,26 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     });
     if (!res.ok) return setStatus(await readError(res));
     setStatus("Draft board created.");
+    window.location.reload();
+  }
+
+  async function readControlsFile(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setStatus("Reading control import...");
+    setControlsJson(await file.text());
+    setStatus(`Loaded ${file.name}.`);
+  }
+
+  async function uploadBoard() {
+    setStatus("Creating control board draft from uploaded JSON...");
+    const res = await fetch("/api/admin/boards/upload", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ industry, standardKey, controlsJson })
+    });
+    if (!res.ok) return setStatus(await readError(res));
+    setStatus("Uploaded draft board created.");
     window.location.reload();
   }
 
@@ -247,15 +278,32 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       <section className="card">
         <div className="mono">Control Boards</div>
         <h2>Fetch & Publish</h2>
+        <p className="muted">Fetch uses the configured AI provider to create a draft. Upload accepts a JSON array or an object with a controls array. Publish a draft before IRP scoring can use it.</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-          <select className="select" value={industry} onChange={(event) => setIndustry(event.target.value)} style={{ maxWidth: 260 }}>
+          <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <select className="select" value={standardKey} onChange={(event) => setStandardKey(event.target.value)} style={{ maxWidth: 220 }}>
-            {standards.map((standard) => <option key={standard} value={standard}>{standard}</option>)}
+            {selectedStandards.map((standard) => <option key={standard.key} value={standard.key}>{standard.label}</option>)}
           </select>
-          <button className="btn" onClick={fetchBoard}>Fetch draft</button>
+          <button className="btn" onClick={fetchBoard}>Fetch controls</button>
           <a className="btn secondary" href="/api/admin/boards/export" target="_blank">Export published</a>
+        </div>
+        <div className="card" style={{ padding: 14, background: "rgba(255,255,255,.55)", marginBottom: 18 }}>
+          <div className="mono">Manual control upload</div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(260px,1fr) 160px", gap: 12, alignItems: "end", marginTop: 10 }}>
+            <label>
+              Control JSON
+              <textarea className="textarea" value={controlsJson} onChange={(event) => setControlsJson(event.target.value)} placeholder='[{"id":"IR-4","standard":"NIST","category":"Incident Response","requirement":"Incident response plan is developed and tested","risk_level":"High"}]' style={{ minHeight: 150 }} />
+            </label>
+            <div style={{ display: "grid", gap: 10 }}>
+              <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
+                Load file
+                <input type="file" accept=".json,.txt" onChange={(event) => readControlsFile(event.target.files)} style={{ display: "none" }} />
+              </label>
+              <button className="btn" onClick={uploadBoard} disabled={!controlsJson.trim()}>Upload draft</button>
+            </div>
+          </div>
         </div>
         <table className="table">
           <thead><tr><th>Industry</th><th>Standard</th><th>Version</th><th>Status</th><th>Controls</th><th>Action</th></tr></thead>

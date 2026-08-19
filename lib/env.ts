@@ -30,7 +30,8 @@ export function bootstrapComplianceEnv() {
     "ADMIN_EMAILS",
     "ADMIN_GITHUB_LOGINS",
     "ALLOWED_EMAILS",
-    "ALLOWED_GITHUB_LOGINS"
+    "ALLOWED_GITHUB_LOGINS",
+    "OWNER_ONLY_LOCKDOWN"
   ];
 
   for (const name of names) {

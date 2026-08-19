@@ -4,9 +4,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EXTRA_CB_BATCHES } from "@/lib/analysis/prompts";
 import { getAIConfigForAdmin } from "@/lib/settings";
+import { isComplianceEmailAllowed } from "@/lib/access-gate";
 
 export default async function AdminPage() {
   const session = await auth();
+  if (!isComplianceEmailAllowed(session?.user.email)) return <main><Nav/><section className="wrap"><div className="card"><h1>Access restricted</h1><p className="muted">Compliance suite access is temporarily limited to approved owner accounts.</p></div></section></main>;
   if (session?.user.role !== "admin") return <main><Nav/><section className="wrap"><div className="card"><h1>Forbidden</h1><p className="muted">Admin role required.</p></div></section></main>;
   const [boards, ledgers, users, aiConfig] = await Promise.all([
     prisma.controlBoard.findMany({ orderBy:[{industry:"asc"},{standardKey:"asc"},{version:"desc"}], select:{ id:true, industry:true, standardKey:true, version:true, status:true, controlCount:true } }).catch(()=>[]),

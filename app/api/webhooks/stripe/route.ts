@@ -17,9 +17,11 @@ export async function POST(req: Request) {
     const accountId = session.metadata?.accountId;
     const kind = session.metadata?.kind as EntKind | undefined;
     const quantity = Math.max(1, Number(session.metadata?.quantity || 1));
+    const quoteId = session.metadata?.quoteId || undefined;
     if (accountId && kind) {
       await grantEntitlement(accountId, kind, quantity, session.id);
-      await prisma.usageLedger.create({ data: { accountId, kind: "purchase", status: "succeeded", amountCents: Number(session.metadata?.amountCents || session.amount_total || 0), stripeRef: session.id, orgsBilled: kind === "ASSESSMENT_CREDIT" ? quantity : undefined } });
+      if (quoteId) await prisma.runQuote.updateMany({ where: { id: quoteId, accountId }, data: { status: "PAID", stripeRef: session.id, acceptedAt: new Date() } });
+      await prisma.usageLedger.create({ data: { accountId, kind: "purchase", status: "succeeded", amountCents: Number(session.metadata?.amountCents || session.amount_total || 0), stripeRef: session.id, quoteId, orgsBilled: kind === "ASSESSMENT_CREDIT" ? quantity : undefined } });
     }
   }
   return NextResponse.json({ received: true });

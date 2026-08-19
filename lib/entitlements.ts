@@ -17,6 +17,13 @@ export async function grantEntitlement(accountId: string, kind: EntKind, quantit
   return prisma.entitlement.create({ data: { accountId, kind, balance: quantity, stripeRef, status: "ACTIVE" } });
 }
 
+export async function restoreEntitlement(accountId: string, kind: EntKind, quantity = 1, reference?: string) {
+  if (process.env.BYPASS_PAYMENT_GATE === "true") return;
+  await prisma.entitlement.create({
+    data: { accountId, kind, balance: quantity, stripeRef: reference ? `refund:${reference}` : undefined, status: "ACTIVE" }
+  });
+}
+
 export async function consumeEntitlementTx(tx: Prisma.TransactionClient | PrismaClient, accountId: string, kind: EntKind, quantity = 1) {
   if (process.env.BYPASS_PAYMENT_GATE === "true") return;
   const rows = await tx.entitlement.findMany({

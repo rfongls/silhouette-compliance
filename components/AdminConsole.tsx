@@ -18,6 +18,9 @@ type BoardRow = {
   version: number;
   status: string;
   controlCount: number;
+  sourceTitle: string | null;
+  sourceVersion: string | null;
+  reviewedBy: string | null;
 };
 
 type LedgerRow = {
@@ -107,6 +110,10 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [industry, setIndustry] = useState(industries[0].value);
   const [standardKey, setStandardKey] = useState(standardsByIndustry[industries[0].value]?.[0]?.key || standards[0] || "HIPAA");
   const [controlsJson, setControlsJson] = useState("");
+  const [sourceTitle, setSourceTitle] = useState("");
+  const [sourceVersion, setSourceVersion] = useState("");
+  const [sourceUrls, setSourceUrls] = useState("");
+  const [reviewNotes, setReviewNotes] = useState("");
   const [status, setStatus] = useState("");
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
@@ -205,7 +212,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     const res = await fetch("/api/admin/boards/upload", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ industry, standardKey, controlsJson })
+      body: JSON.stringify({ industry, standardKey, controlsJson, sourceTitle, sourceVersion, sourceUrls, reviewNotes })
     });
     if (!res.ok) return setStatus(await readError(res));
     setStatus("Uploaded draft board created.");
@@ -213,11 +220,14 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   }
 
   async function publishBoard(id: string) {
+    if (!window.confirm("Confirm that you reviewed the control text against the listed authoritative source and approve this board for scoring.")) return;
+    const reviewNotes = window.prompt("Record what you reviewed before publishing this board:");
+    if (!reviewNotes?.trim()) return setStatus("Publishing canceled. Review notes are required.");
     setStatus("Publishing board...");
     const res = await fetch("/api/admin/boards/publish", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id })
+      body: JSON.stringify({ id, reviewConfirmed: true, reviewNotes })
     });
     if (!res.ok) return setStatus(await readError(res));
     setStatus("Board published.");
@@ -278,7 +288,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       <section className="card">
         <div className="mono">Control Boards</div>
         <h2>Fetch & Publish</h2>
-        <p className="muted">Fetch uses the configured AI provider to create a draft. Upload accepts a JSON array or an object with a controls array. Publish a draft before IRP scoring can use it.</p>
+        <p className="muted">Fetch retrieves an allowlisted official source and creates a grounded draft. Standards without a configured public source require a reviewed manual JSON upload. Publishing requires human confirmation and records the reviewer.</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -291,34 +301,40 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
         </div>
         <div className="card" style={{ padding: 14, background: "rgba(255,255,255,.55)", marginBottom: 18 }}>
           <div className="mono">Manual control upload</div>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(260px,1fr) 160px", gap: 12, alignItems: "end", marginTop: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(260px,1fr) 200px", gap: 12, alignItems: "end", marginTop: 10 }}>
             <label>
               Control JSON
               <textarea className="textarea" value={controlsJson} onChange={(event) => setControlsJson(event.target.value)} placeholder='[{"id":"IR-4","standard":"NIST","category":"Incident Response","requirement":"Incident response plan is developed and tested","risk_level":"High"}]' style={{ minHeight: 150 }} />
             </label>
             <div style={{ display: "grid", gap: 10 }}>
+              <label>Source title<input className="input" value={sourceTitle} onChange={(event) => setSourceTitle(event.target.value)} placeholder="Official publication title" /></label>
+              <label>Source version<input className="input" value={sourceVersion} onChange={(event) => setSourceVersion(event.target.value)} placeholder="Revision or effective date" /></label>
+              <label>Source URL(s)<textarea className="textarea" value={sourceUrls} onChange={(event) => setSourceUrls(event.target.value)} placeholder="One authoritative URL per line" style={{ minHeight: 80 }} /></label>
+              <label>Review notes<textarea className="textarea" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} placeholder="What was checked before publishing" style={{ minHeight: 80 }} /></label>
               <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
                 Load file
                 <input type="file" accept=".json,.txt" onChange={(event) => readControlsFile(event.target.files)} style={{ display: "none" }} />
               </label>
-              <button className="btn" onClick={uploadBoard} disabled={!controlsJson.trim()}>Upload draft</button>
+              <button className="btn" onClick={uploadBoard} disabled={!controlsJson.trim() || !sourceTitle.trim() || !sourceVersion.trim() || !sourceUrls.trim() || !reviewNotes.trim()}>Upload draft</button>
             </div>
           </div>
         </div>
         <table className="table">
-          <thead><tr><th>Industry</th><th>Standard</th><th>Version</th><th>Status</th><th>Controls</th><th>Action</th></tr></thead>
+          <thead><tr><th>Industry</th><th>Standard</th><th>Version</th><th>Source</th><th>Status</th><th>Controls</th><th>Reviewer</th><th>Action</th></tr></thead>
           <tbody>
             {boards.map((board) => (
               <tr key={board.id}>
                 <td>{board.industry}</td>
                 <td>{board.standardKey}</td>
                 <td>v{board.version}</td>
+                <td>{board.sourceTitle || "Missing"}<br/><span className="muted">{board.sourceVersion || "No version"}</span></td>
                 <td><span className={board.status === "PUBLISHED" ? "badge" : "badge locked"}>{board.status}</span></td>
                 <td>{board.controlCount}</td>
+                <td>{board.reviewedBy || "-"}</td>
                 <td>{board.status === "DRAFT" ? <button className="btn secondary" onClick={() => publishBoard(board.id)}>Publish</button> : "-"}</td>
               </tr>
             ))}
-            {!boards.length ? <tr><td colSpan={6}>No boards yet.</td></tr> : null}
+            {!boards.length ? <tr><td colSpan={8}>No boards yet.</td></tr> : null}
           </tbody>
         </table>
         {drafts.length ? <p className="muted">{drafts.length} draft board{drafts.length === 1 ? "" : "s"} pending.</p> : null}

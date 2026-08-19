@@ -12,6 +12,10 @@ export type RunQuote = {
   customerAmountCents: number;
   marginCents: number;
   marginPercent: number;
+  charCountByOrg: Record<string, number>;
+  maxCharsPerOrg: number;
+  characterLimitPerOrg: number;
+  costLimitCents: number;
   withinGuard: boolean;
   warning?: string;
 };
@@ -31,7 +35,10 @@ export function RunQuoteSummary({ quote }: { quote: RunQuote }) {
         <div><b>{quote.marginPercent}%</b><p className="muted" style={{ margin: 0 }}>estimated margin</p></div>
       </div>
       <p className="muted" style={{ fontSize: 13, margin: "12px 0 0" }}>
-        {quote.documentCount} document{quote.documentCount === 1 ? "" : "s"} | {quote.charCount.toLocaleString()} characters | {(quote.estimatedInputTokens + quote.estimatedOutputTokens).toLocaleString()} estimated tokens.
+        {quote.documentCount} document{quote.documentCount === 1 ? "" : "s"} | {quote.charCount.toLocaleString()} characters total | {(quote.estimatedInputTokens + quote.estimatedOutputTokens).toLocaleString()} estimated tokens.
+      </p>
+      <p className="muted" style={{ fontSize: 13, margin: "8px 0 0" }}>
+        Largest organization: {quote.maxCharsPerOrg.toLocaleString()} of {quote.characterLimitPerOrg.toLocaleString()} characters. Accepted text is analyzed in full and is never silently truncated.
       </p>
       {quote.orgNames?.length ? <p className="muted" style={{ fontSize: 13, margin: "8px 0 0" }}>Invoice line items: {quote.orgNames.join(", ")}</p> : null}
       {quote.warning ? <p className="badge locked" style={{ display: "inline-flex", margin: "12px 0 0" }}>{quote.warning}</p> : null}

@@ -8,8 +8,10 @@ export type QuoteInput = {
   module: QuoteModule;
   orgCount?: number;
   orgNames?: string[];
-  documents?: { name?: string; text?: string }[];
+  documents?: { name?: string; text?: string; orgName?: string }[];
   text?: string;
+  analysisPasses?: number;
+  analysisRequestCount?: number;
 };
 
 export type QuoteEstimate = {
@@ -25,6 +27,10 @@ export type QuoteEstimate = {
   customerAmountCents: number;
   marginCents: number;
   marginPercent: number;
+  charCountByOrg: Record<string, number>;
+  maxCharsPerOrg: number;
+  characterLimitPerOrg: number;
+  costLimitCents: number;
   withinGuard: boolean;
   warning?: string;
 };
@@ -38,6 +44,14 @@ function moduleOutputBuffer(module: QuoteModule) {
   if (module === "sra") return numberEnv("QUOTE_SRA_OUTPUT_TOKENS", 12000);
   if (module === "proposal") return numberEnv("QUOTE_PROPOSAL_OUTPUT_TOKENS", 10000);
   return numberEnv("QUOTE_IRP_OUTPUT_TOKENS", 8000);
+}
+
+export function irpCharacterLimitPerOrg() {
+  return Math.max(1000, numberEnv("IRP_MAX_CHARS_PER_ORG", 2000000));
+}
+
+export function irpCharacterLimitPerDocument() {
+  return Math.max(1000, numberEnv("IRP_MAX_CHARS_PER_DOCUMENT", 2000000));
 }
 
 export function normalizeOrgCount(value: unknown) {
@@ -65,8 +79,14 @@ export function estimateRunQuote(input: QuoteInput): QuoteEstimate {
   const documentCount = documents.length || (text ? 1 : 0);
   const charsPerToken = Math.max(1, numberEnv("QUOTE_CHARS_PER_TOKEN", 4));
   const promptOverheadTokens = numberEnv("QUOTE_PROMPT_OVERHEAD_TOKENS", 6000);
-  const estimatedInputTokens = Math.ceil(charCount / charsPerToken) + promptOverheadTokens;
-  const estimatedOutputTokens = moduleOutputBuffer(module);
+  const analysisPasses = module === "irp"
+    ? Math.max(1, Math.ceil(input.analysisPasses || numberEnv("QUOTE_IRP_ANALYSIS_PASSES", 4)))
+    : 1;
+  const analysisRequestCount = module === "irp"
+    ? Math.max(analysisPasses, Math.ceil(input.analysisRequestCount || analysisPasses))
+    : 1;
+  const estimatedInputTokens = Math.ceil(charCount / charsPerToken) * analysisPasses + promptOverheadTokens * analysisRequestCount;
+  const estimatedOutputTokens = moduleOutputBuffer(module) * Math.max(orgCount, analysisRequestCount);
   const inputPerMillionCents = numberEnv("QUOTE_INPUT_1M_CENTS", 300);
   const outputPerMillionCents = numberEnv("QUOTE_OUTPUT_1M_CENTS", 1500);
   const estimatedModelCostCents = Math.ceil(
@@ -75,13 +95,25 @@ export function estimateRunQuote(input: QuoteInput): QuoteEstimate {
   const customerAmountCents = centsForKind(kind) * orgCount;
   const marginCents = customerAmountCents - estimatedModelCostCents;
   const marginPercent = customerAmountCents > 0 ? Math.round((marginCents / customerAmountCents) * 1000) / 10 : 0;
-  const minMarginPercent = numberEnv("QUOTE_MIN_MARGIN_PERCENT", 75);
-  const maxDocumentChars = numberEnv("QUOTE_MAX_DOCUMENT_CHARS", 180000);
-  const withinGuard = marginPercent >= minMarginPercent && charCount <= maxDocumentChars;
-  const warning = charCount > maxDocumentChars
-    ? "Document set is larger than the current processing guard."
-    : marginPercent < minMarginPercent
-      ? "Estimated provider cost is too close to the configured customer price."
+  const characterLimitPerOrg = module === "irp" ? irpCharacterLimitPerOrg() : numberEnv("QUOTE_MAX_DOCUMENT_CHARS", 240000);
+  const charCountByOrg = documents.reduce<Record<string, number>>((counts, document) => {
+    const orgName = module === "irp" ? String(document.orgName || orgNames[0] || "Organization 1") : "engagement";
+    counts[orgName] = (counts[orgName] || 0) + String(document.text || "").length;
+    return counts;
+  }, {});
+  if (!documents.length && text) charCountByOrg[module === "irp" ? orgNames[0] : "engagement"] = text.length;
+  const maxCharsPerOrg = Math.max(0, ...Object.values(charCountByOrg));
+  const maxCharsPerDocument = Math.max(0, ...documents.map((document) => String(document.text || "").length));
+  const characterLimitPerDocument = module === "irp" ? irpCharacterLimitPerDocument() : characterLimitPerOrg;
+  const maxProviderCostRatio = Math.min(1, Math.max(0.01, numberEnv("QUOTE_MAX_PROVIDER_COST_RATIO", 0.5)));
+  const costLimitCents = Math.floor(customerAmountCents * maxProviderCostRatio);
+  const withinGuard = estimatedModelCostCents <= costLimitCents && maxCharsPerOrg <= characterLimitPerOrg && maxCharsPerDocument <= characterLimitPerDocument;
+  const warning = maxCharsPerDocument > characterLimitPerDocument
+    ? `One file exceeds the ${characterLimitPerDocument.toLocaleString("en-US")} character file-size guard. No text will be truncated.`
+    : maxCharsPerOrg > characterLimitPerOrg
+    ? `One organization exceeds the ${characterLimitPerOrg.toLocaleString("en-US")} character processing limit. No text will be truncated.`
+    : estimatedModelCostCents > costLimitCents
+      ? "Estimated provider cost exceeds the configured 50% processing-cost ceiling."
       : undefined;
 
   return {
@@ -97,6 +129,10 @@ export function estimateRunQuote(input: QuoteInput): QuoteEstimate {
     customerAmountCents,
     marginCents,
     marginPercent,
+    charCountByOrg,
+    maxCharsPerOrg,
+    characterLimitPerOrg,
+    costLimitCents,
     withinGuard,
     warning
   };

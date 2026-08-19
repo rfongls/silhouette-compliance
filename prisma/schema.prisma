@@ -111,6 +111,14 @@ model ControlBoard {
   status       BoardStatus
   controls     Json
   controlCount Int
+  sourceTitle  String?
+  sourceVersion String?
+  sourceUrls   Json?
+  sourceHash   String?
+  retrievedAt  DateTime?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  reviewNotes  String?
   publishedAt  DateTime?
   createdAt    DateTime    @default(now())
 
@@ -128,6 +136,20 @@ model Assessment {
   posture    String?
   result     Json?
   boardCite  String?
+  boardSnapshot Json?
+  modelProvider String?
+  modelName String?
+  promptVersion String?
+  documentCount Int?
+  sourceCharCount Int?
+  documentHashes Json?
+  sourceSetHash String?
+  phiAttested Boolean @default(false)
+  phiAttestedAt DateTime?
+  dataHandlingFlags Json?
+  reviewStatus String @default("AI_DRAFT")
+  reviewedBy String?
+  reviewedAt DateTime?
   refineUsed Boolean      @default(false)
   ledgerId   String?      @unique
   createdAt  DateTime     @default(now())
@@ -136,6 +158,7 @@ model Assessment {
 
   @@index([accountId, createdAt])
   @@index([accountId, status])
+  @@index([accountId, orgId, sourceSetHash, status])
 }
 
 model UsageLedger {
@@ -167,6 +190,7 @@ model RunQuote {
   orgCount                Int      @default(1)
   documentCount           Int      @default(0)
   charCount               Int      @default(0)
+  sourceDigest            String?
   estimatedInputTokens    Int      @default(0)
   estimatedOutputTokens   Int      @default(0)
   estimatedModelCostCents Int      @default(0)

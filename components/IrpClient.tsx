@@ -26,13 +26,13 @@ function orgDocuments(orgs: ReviewedOrg[]) {
   return orgs.flatMap((org) => {
     const label = org.name || "Unnamed organization";
     if (org.documents.length) {
-      return org.documents.map((doc) => ({ name: `${label} / ${doc.name}`, text: `Organization: ${label}\n\n${doc.text}` }));
+        return org.documents.map((doc) => ({ name: `${label} / ${doc.name}`, orgName: label, text: `Organization: ${label}\n\n${doc.text}` }));
     }
-    return org.text.trim() ? [{ name: `${label} policy text`, text: `Organization: ${label}\n\n${org.text}` }] : [];
+    return org.text.trim() ? [{ name: `${label} policy text`, orgName: label, text: `Organization: ${label}\n\n${org.text}` }] : [];
   });
 }
 
-export function IrpClient({ demo }: { demo: boolean }) {
+export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; characterLimitPerOrg: number }) {
   const [clientName, setClientName] = useState(demo ? "Demo Client Group" : "");
   const [industry, setIndustry] = useState("health-center");
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
@@ -41,6 +41,7 @@ export function IrpClient({ demo }: { demo: boolean }) {
   }] : [newOrg("")]);
   const [loading, setLoading] = useState(false);
   const [quoting, setQuoting] = useState(false);
+  const [phiAttested, setPhiAttested] = useState(demo);
   const [acceptedQuote, setAcceptedQuote] = useState<RunQuote | null>(demo ? {
     id: "demo",
     orgNames: [demoOrgName("health-center")],
@@ -53,10 +54,15 @@ export function IrpClient({ demo }: { demo: boolean }) {
     customerAmountCents: 25000,
     marginCents: 24986,
     marginPercent: 99.9,
+    charCountByOrg: { [demoOrgName("health-center")]: 35 },
+    maxCharsPerOrg: 35,
+    characterLimitPerOrg,
+    costLimitCents: 12500,
     withinGuard: true
   } : null);
   const [result, setResult] = useState<any>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
+  const [assessments, setAssessments] = useState<Array<{ assessmentId: string; orgName: string; result: any; reused?: boolean }>>([]);
 
   function clearQuote() {
     if (!demo) setAcceptedQuote(null);
@@ -110,11 +116,12 @@ export function IrpClient({ demo }: { demo: boolean }) {
     if (!validOrgs.length) return alert("Add at least one organization being reviewed.");
     const documents = orgDocuments(validOrgs);
     if (!documents.length) return alert("Upload or paste policy text for at least one reviewed organization.");
+    if (!phiAttested) return alert("Confirm that you reviewed the files and removed PHI before creating an estimate.");
     setQuoting(true);
     const res = await fetch("/api/run-quotes", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ module: "irp", orgNames: validOrgs.map((org) => org.name), documents })
+      body: JSON.stringify({ module: "irp", industry, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
     });
     const data = await res.json();
     setQuoting(false);
@@ -128,6 +135,7 @@ export function IrpClient({ demo }: { demo: boolean }) {
     const validOrgs = orgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
     const documents = orgDocuments(validOrgs);
     if (!documents.length) return alert("Upload or paste policy text before running.");
+    if (!demo && !phiAttested) return alert("Confirm that you reviewed the files and removed PHI before running.");
     setLoading(true);
     const res = await fetch("/api/assess", {
       method: "POST",
@@ -139,6 +147,7 @@ export function IrpClient({ demo }: { demo: boolean }) {
         orgNames: validOrgs.map((org) => org.name),
         orgCount: validOrgs.length,
         quoteId: acceptedQuote?.id,
+        phiAttested,
         documents
       })
     });
@@ -147,6 +156,7 @@ export function IrpClient({ demo }: { demo: boolean }) {
     if (!res.ok) return alert(data.error || "Assessment failed");
     setResult(data.result);
     setAssessmentId(data.assessmentId || null);
+    setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || clientName, result: data.result }] : []);
   }
 
   return (
@@ -190,6 +200,9 @@ export function IrpClient({ demo }: { demo: boolean }) {
                   <input className="input" type="file" multiple accept=".txt,.md,.csv,.json,.html,.xml" onChange={(e) => readFiles(org.id, e.target.files)} />
                 </label>
                 {org.status ? <p className="muted" style={{ fontSize: 13, margin: 0 }}>{org.status}</p> : null}
+                <p className="muted" style={{ fontSize: 13, margin: "6px 0 0" }}>
+                  {(org.documents.length ? org.documents.reduce((sum, doc) => sum + doc.text.length, 0) : org.text.length).toLocaleString()} of {characterLimitPerOrg.toLocaleString()} characters. Oversized submissions are blocked before checkout and are never truncated.
+                </p>
                 {org.documents.length ? (
                   <div style={{ marginTop: 8 }}>
                     {org.documents.map((doc) => <span className="badge" key={`${org.id}-${doc.name}`} style={{ marginRight: 6, marginBottom: 6 }}>{doc.name}</span>)}
@@ -204,13 +217,33 @@ export function IrpClient({ demo }: { demo: boolean }) {
             ))}
           </div>
 
-          {!demo ? <button className="btn secondary" onClick={estimate} disabled={quoting}>{quoting ? "Estimating..." : "Estimate run"}</button> : null}
+          {!demo ? (
+            <label className="card" style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 14, background: "rgba(255,255,255,.68)" }}>
+              <input
+                type="checkbox"
+                checked={phiAttested}
+                onChange={(event) => {
+                  setPhiAttested(event.target.checked);
+                  clearQuote();
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span>
+                <b>Uploader data review</b>
+                <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 4 }}>
+                  I confirm that I reviewed these files and removed protected health information (PHI). Silhouette does not inspect, classify, or certify uploads for PHI. This attestation will appear in the assessment report.
+                </span>
+              </span>
+            </label>
+          ) : null}
+
+          {!demo ? <button className="btn secondary" onClick={estimate} disabled={quoting || !phiAttested}>{quoting ? "Estimating..." : "Estimate run"}</button> : null}
           {acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
           {!demo && acceptedQuote ? (
             <CheckoutButton module="irp" quantity={acceptedQuote.orgCount} quoteId={acceptedQuote.id}>Purchase {acceptedQuote.orgCount} org credit{acceptedQuote.orgCount === 1 ? "" : "s"}</CheckoutButton>
           ) : null}
-          <button className="btn" onClick={run} disabled={loading || (!demo && !acceptedQuote)}>{loading ? "Generating..." : demo ? "Run demo" : "Run assessment"}</button>
-          <p className="muted" style={{ fontSize: 13 }}>Payment is verified server-side before any model call. Uploaded source text is used in memory for this request only. IRP billing is fixed at $250 per organization assessed.</p>
+          <button className="btn" onClick={run} disabled={loading || (!demo && (!acceptedQuote || !phiAttested))}>{loading ? "Generating..." : demo ? "Run demo" : "Run assessment"}</button>
+          <p className="muted" style={{ fontSize: 13 }}>Payment is verified server-side before any model call. Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
         </div>
       </div>
       <div className="card">
@@ -226,18 +259,31 @@ export function IrpClient({ demo }: { demo: boolean }) {
               </div>
             </div>
             <h3>Findings</h3>
+            {result.data_handling ? (
+              <div className="card" style={{ padding: 12, marginBottom: 12, background: "rgba(255,255,255,.62)" }}>
+                <b>Data handling</b>
+                <p className="muted" style={{ margin: "5px 0 0", fontSize: 13 }}>{result.data_handling.message}</p>
+              </div>
+            ) : null}
             <table className="table">
               <tbody>{(result.findings || []).map((finding: any) => <tr key={finding.control_id + finding.finding}><td>{finding.control_id}</td><td>{finding.status}</td><td>{finding.risk_level}</td><td>{finding.finding}</td></tr>)}</tbody>
             </table>
-            <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-              {assessmentId ? (
-                <>
-                  <a className="btn secondary" href={`/api/assessments/${assessmentId}/export?format=report`} target="_blank">Report</a>
-                  <a className="btn secondary" href={`/api/assessments/${assessmentId}/export?format=deck`} target="_blank">Deck</a>
-                  <a className="btn secondary" href={`/api/assessments/${assessmentId}/export?format=json`} target="_blank">JSON</a>
-                </>
-              ) : <span className="badge">Demo exports disabled</span>}
-            </div>
+            {assessments.length ? (
+              <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
+                {assessments.map((assessment) => (
+                  <div className="card" key={assessment.assessmentId} style={{ padding: 12, background: "rgba(255,255,255,.62)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                      <div><b>{assessment.orgName}</b>{assessment.reused ? <span className="badge" style={{ marginLeft: 8 }}>Existing result reused</span> : null}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=report`} target="_blank">Report</a>
+                        <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=deck`} target="_blank">Deck</a>
+                        <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=json`} target="_blank">JSON</a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : assessmentId ? null : <span className="badge">Demo exports disabled</span>}
           </>
         ) : <p className="muted">Generated reports appear here. Demo mode returns static sample data and never calls the model.</p>}
       </div>

@@ -1,19 +1,17 @@
-import { buildSystemPrompt, buildUserPrompt } from "@/lib/analysis/prompts";
-import { callAnthropicJson, type ModelUsage } from "@/lib/analysis/anthropic";
+import type { ModelUsage } from "@/lib/analysis/anthropic";
 import { defaultStandards } from "@/lib/analysis/standards";
+import { scoreControlSet } from "@/lib/analysis/scoring";
+import type { NormalizedControl } from "@/lib/control-boards";
 import { demoOrgName } from "@/lib/demo";
 import { sanitizeForExport } from "@/lib/sanitize";
 
-export type AssessInput = { orgName?: string; industry: string; standards?: string[]; documents: { name: string; text: string }[]; controls: unknown[]; boardCite?: string };
+export type AssessInput = { orgName?: string; industry: string; standards?: string[]; documents: { name: string; text: string }[]; controls: NormalizedControl[]; boardCite?: string };
 
 export async function runGapAnalysis(input: AssessInput): Promise<{ result: any; usage: ModelUsage }> {
   const standards = input.standards?.length ? input.standards : defaultStandards(input.industry);
-  const text = input.documents.map((d) => `FILE: ${d.name}\n${d.text}`).join("\n\n---\n\n");
   const scope = { industry: input.industry, standards };
-  const system = buildSystemPrompt(scope);
-  const prompt = buildUserPrompt({ orgName: input.orgName, fileNames: input.documents.map((d) => d.name), text, scope, controls: input.controls, boardCite: input.boardCite });
-  const { json, usage } = await callAnthropicJson(system, prompt);
-  return { result: normalizeResult(json, input.orgName), usage };
+  const { result, usage } = await scoreControlSet({ orgName: input.orgName || "Unknown Organization", scope, controls: input.controls, documents: input.documents, boardCite: input.boardCite || "" });
+  return { result: normalizeResult(result, input.orgName), usage };
 }
 
 export function normalizeResult(raw: unknown, fallbackOrg?: string) {

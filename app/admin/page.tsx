@@ -12,7 +12,7 @@ export default async function AdminPage() {
   if (!isComplianceEmailAllowed(session?.user.email)) return <main><Nav/><section className="wrap"><div className="card"><h1>Access restricted</h1><p className="muted">Compliance suite access is temporarily limited to approved owner accounts.</p></div></section></main>;
   if (session?.user.role !== "admin") return <main><Nav/><section className="wrap"><div className="card"><h1>Forbidden</h1><p className="muted">Admin role required.</p></div></section></main>;
   const [boards, ledgers, users, aiConfig] = await Promise.all([
-    prisma.controlBoard.findMany({ orderBy:[{industry:"asc"},{standardKey:"asc"},{version:"desc"}], select:{ id:true, industry:true, standardKey:true, version:true, status:true, controlCount:true } }).catch(()=>[]),
+    prisma.controlBoard.findMany({ orderBy:[{industry:"asc"},{standardKey:"asc"},{version:"desc"}], select:{ id:true, industry:true, standardKey:true, version:true, status:true, controlCount:true, sourceTitle:true, sourceVersion:true, reviewedBy:true } }).catch(()=>[]),
     prisma.usageLedger.findMany({ orderBy:{createdAt:"desc"}, take:10, select:{ id:true, kind:true, status:true, amountCents:true, stripeRef:true } }).catch(()=>[]),
     prisma.user.findMany({ orderBy:[{role:"asc"},{email:"asc"}], select:{ id:true, name:true, email:true, role:true, accountId:true, createdAt:true } }).catch(()=>[]),
     getAIConfigForAdmin()

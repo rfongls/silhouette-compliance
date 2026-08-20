@@ -55,7 +55,8 @@ function sourceFingerprint(sourceHashes: Record<string, string>) {
 export async function acquireControlExtractionRun(
   industry: string,
   startedBy: string,
-  sourceHashes: Record<string, string>
+  sourceHashes: Record<string, string>,
+  forceNew = false
 ) {
   const key = keyFor(industry);
   const setting = await prisma.appSetting.findUnique({ where: { key } });
@@ -68,7 +69,8 @@ export async function acquireControlExtractionRun(
   }
 
   const now = new Date().toISOString();
-  const resumable = Boolean(existing
+  const resumable = Boolean(!forceNew
+    && existing
     && existing.status !== "COMPLETED"
     && sourceFingerprint(existing.sourceHashes || {}) === sourceFingerprint(sourceHashes));
   const run: ControlExtractionRun = resumable ? {

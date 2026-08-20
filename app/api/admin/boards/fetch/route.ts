@@ -244,7 +244,8 @@ export async function POST(req: Request) {
       const acquired = await acquireControlExtractionRun(
         industry,
         guard.session.user.email || guard.session.user.id || "admin",
-        Object.fromEntries(Object.entries(body.sourceHashes).map(([key, value]) => [key, String(value)]))
+        Object.fromEntries(Object.entries(body.sourceHashes).map(([key, value]) => [key, String(value)])),
+        body.restart === true
       );
       run = acquired.run;
       resumed = acquired.resumed;
@@ -315,6 +316,18 @@ export async function POST(req: Request) {
     const notReady = pendingPlans.find((plan) => !plan.ready);
     if (notReady) throw new Error(`${notReady.label} is not ready for extraction. ${notReady.readinessMessage}`);
     if (!pendingPlans.length && !preservedPlans.length) throw new Error("No new or changed automatic control sources were found.");
+
+    if (body.restart === true) {
+      await prisma.controlExtractionCheckpoint.deleteMany({
+        where: {
+          industry,
+          OR: automaticPlans.map((plan) => ({
+            standardKey: plan.standardKey,
+            sourceHash: plan.source.sourceHash
+          }))
+        }
+      });
+    }
 
     await updateControlExtractionRun(industry, run.id, (current) => ({
       ...current,

@@ -368,7 +368,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setStatus("Domain source preflight complete. No AI request was made.");
   }
 
-  async function extractBoard(onlyStandardKey?: string, resume = false) {
+  async function extractBoard(onlyStandardKey?: string, resume = false, restart = false) {
     if (!domainPlan || extractionIsRunning) return;
     const targetPlans = resume && extractionRun
       ? domainPlan.standards.filter((plan) => extractionRun.sourceHashes[plan.standardKey] === plan.sourceHash)
@@ -377,6 +377,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     const paidRequests = targetPlans.filter((plan) => plan.needsDraft).reduce((total, plan) => total + plan.requestCount, 0);
     const action = resume
       ? `Resume this control-board run from its saved checkpoints? Completed drafts and validated AI batches will be reused. Up to ${paidRequests} remaining paid AI request${paidRequests === 1 ? "" : "s"} may run.`
+      : restart
+        ? `Start a new control-board run? Incomplete AI-batch checkpoints will be cleared. Completed review drafts will be kept, and up to ${paidRequests} paid AI request${paidRequests === 1 ? "" : "s"} may run.`
       : `Create ${targetPlans.length} reviewable control-board draft${targetPlans.length === 1 ? "" : "s"}? This will run ${paidRequests} paid AI request${paidRequests === 1 ? "" : "s"}. Current bases remain active until an admin reviews and publishes each draft.`;
     if (!window.confirm(action)) return;
     const sourceHashes = resume && extractionRun
@@ -411,7 +413,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       error: null,
       sourceHashes
     });
-    setStatus(resume ? "Resuming from saved standard and AI-batch checkpoints." : "Control extraction started. This page will update as each standard completes.");
+    setStatus(resume ? "Resuming from saved standard and AI-batch checkpoints." : restart ? "Starting a new run. Incomplete checkpoints are being cleared." : "Control extraction started. This page will update as each standard completes.");
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -420,7 +422,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
         industry,
         standardKey: onlyStandardKey,
         sourceHashes,
-        confirmExtraction: true
+        confirmExtraction: true,
+        restart
       })
     });
     if (!res.ok) {
@@ -632,7 +635,10 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
                 <td>{item.message}{typeof item.controlCount === "number" ? ` (${item.controlCount} controls)` : ""}</td>
               </tr>)}</tbody>
             </table> : null}
-            {runCanResume ? <button className="btn" onClick={() => extractBoard(undefined, true)}>Resume unfinished run</button> : null}
+            {runCanResume ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="btn" onClick={() => extractBoard(undefined, true)}>Resume unfinished run</button>
+              <button className="btn secondary" onClick={() => extractBoard(undefined, false, true)}>Start new run</button>
+            </div> : null}
             {extractionRun.status === "COMPLETED" ? <button className="btn secondary" onClick={() => window.location.reload()}>Review created drafts</button> : null}
           </div> : null}
         <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>

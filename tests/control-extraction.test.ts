@@ -58,6 +58,28 @@ test("grounded controls require an exact quote and allowlisted source URL", () =
   assert.throws(() => validateGroundedControls({ controls: [control], standardKey: "RULE", sourceText: source.sourceText, sourceUrls: source.urls, batch: { ...batch, requiredIdentifiers: ["2"] } }), /incomplete/);
 });
 
+test("grounded quote matching tolerates source typography without accepting paraphrases", () => {
+  const batch = { label: "First", prompt: "Extract" };
+  const control = {
+    id: "1",
+    standard: "RULE",
+    category: "Incident response",
+    requirement: "Document the response.",
+    risk_level: "High",
+    source_url: source.urls[0],
+    source_section: "Section 1",
+    source_quote: "The organization must maintain a \"tested\" incident-response plan.",
+    extraction_batch: "First"
+  };
+  const sourceText = "The organization must maintain a \u201ctested\u201d incident\u2011response plan.";
+  assert.equal(validateGroundedControls({ controls: [control], standardKey: "RULE", sourceText, sourceUrls: source.urls, batch }).length, 1);
+  assert.throws(() => validateGroundedControls({ controls: [{ ...control, source_quote: "The organization should probably maintain a tested plan." }], standardKey: "RULE", sourceText, sourceUrls: source.urls, batch }), /exact source quote/);
+});
+
+test("official markup parsing decodes numeric XML entities before grounded extraction", () => {
+  assert.equal(officialSourceParsers.readableMarkup("<P>&#167; 164.308 &#x2014; Security &amp; Privacy</P>"), "\u00a7 164.308 \u2014 Security & Privacy");
+});
+
 test("batch merging rejects conflicting versions of the same control", () => {
   const base = { id: "1", standard: "RULE", category: "IR", requirement: "Requirement one", risk_level: "High" };
   assert.equal(mergeControlBatches([[base], [base]]).length, 1);

@@ -63,6 +63,15 @@ function collapsed(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function groundedComparable(value: string) {
+  return collapsed(value
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, "\"")
+    .replace(/[\u2010-\u2015\u2212]/g, "-"));
+}
+
 export function buildControlExtractionPlan(
   standardKey: string,
   source: ControlSourceSnapshot,
@@ -123,7 +132,7 @@ Each control must contain exactly: id, standard, category, requirement, risk_lev
 - standard must be ${input.standardKey}.
 - source_url must be one of the supplied official source URLs.
 - source_section must identify the source heading, CFR section, control family, or equivalent location.
-- source_quote must be an exact supporting quote from the supplied source text.
+- source_quote must be one contiguous, exact supporting quote copied from the supplied source text. Do not paraphrase, ellipsize, add words, or omit words inside the quote.
 - extraction_batch must be ${JSON.stringify(input.batch.label)}.
 - risk_level is the Silhouette IRP scoring priority, not a claim that the publisher assigned a score. Use Critical for requirements whose absence can directly prevent required incident reporting, command, containment, continuity, or recovery; High for core risk analysis, detection, escalation, testing, access, evidence, and third-party response duties; Medium for supporting governance and operational requirements; Low for supplemental or tangential IRP requirements. An administrator must review these priorities before publication.
 - If a requested requirement is not present in the supplied source, do not invent it.
@@ -143,12 +152,12 @@ export function validateGroundedControls(input: {
   batch: ControlExtractionBatch;
 }) {
   if (!input.controls.length) throw new Error(`${input.batch.label} returned no controls.`);
-  const normalizedSource = collapsed(input.sourceText);
+  const normalizedSource = groundedComparable(input.sourceText);
   for (const control of input.controls) {
     if (control.standard !== input.standardKey) {
       throw new Error(`${input.batch.label} returned control ${control.id} with standard ${control.standard || "missing"}.`);
     }
-    if (!control.source_quote || !normalizedSource.includes(collapsed(control.source_quote))) {
+    if (!control.source_quote || !normalizedSource.includes(groundedComparable(control.source_quote))) {
       throw new Error(`${input.batch.label} returned control ${control.id} without an exact source quote.`);
     }
     if (!control.source_url || !input.sourceUrls.includes(control.source_url)) {

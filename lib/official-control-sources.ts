@@ -142,6 +142,8 @@ function readableMarkup(raw: string) {
     .replace(/&amp;/gi, "&")
     .replace(/&#39;|&apos;/gi, "'")
     .replace(/&quot;/gi, "\"")
+    .replace(/&#x([0-9a-f]+);/gi, (_match, value) => String.fromCodePoint(Number.parseInt(value, 16)))
+    .replace(/&#([0-9]+);/g, (_match, value) => String.fromCodePoint(Number.parseInt(value, 10)))
     .replace(/\s+/g, " ")
     .trim();
 }

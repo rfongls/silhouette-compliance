@@ -138,7 +138,7 @@ Extract only requirements that are explicitly supported by the supplied official
 Return every in-scope requirement for this batch in an object with a controls array. Do not summarize multiple separately identified requirements into one control.
 Each control must contain exactly: id, standard, category, requirement, risk_level, source_url, source_section, source_quote, extraction_batch.
 - standard must be ${input.standardKey}.
-- id must use the exact official control or section identifier. For CFR requirements, begin with the CFR section and paragraph (for example, 164.308(a)(1)(i)); do not create generic sequential IDs.
+- id must use the exact official control or section identifier when one is present. For CFR requirements, begin with the CFR section and paragraph (for example, 164.308(a)(1)(i)). If the source has no formal identifier, create a stable unique id using ${input.standardKey}, the source section, and a numeric sequence (for example, ${input.standardKey}-EMERGENCY-PLAN-01). Never use a heading such as Purpose as the complete id, and never reuse an id for different requirements.
 - source_url must be one of the supplied official source URLs.
 - source_section must identify the source heading, CFR section, control family, or equivalent location.
 - source_quote must be one contiguous, exact supporting quote copied from the supplied source text. Do not paraphrase, ellipsize, add words, or omit words inside the quote.
@@ -178,6 +178,16 @@ export function validateGroundedControls(input: {
     if (control.extraction_batch !== input.batch.label) {
       throw new Error(`${input.batch.label} returned control ${control.id} with the wrong extraction batch.`);
     }
+  }
+  const requirementsById = new Map<string, string>();
+  for (const control of input.controls) {
+    const key = control.id.toLocaleUpperCase();
+    const requirement = collapsed(control.requirement);
+    const existing = requirementsById.get(key);
+    if (existing && existing !== requirement) {
+      throw new Error(`${input.batch.label} returned duplicate id ${control.id} for different requirements. Every distinct requirement needs a unique official or stable generated id.`);
+    }
+    requirementsById.set(key, requirement);
   }
   const missingIdentifiers = (input.batch.requiredIdentifiers || []).filter((identifier) =>
     !input.controls.some((control) => includesOfficialIdentifier(control, identifier))

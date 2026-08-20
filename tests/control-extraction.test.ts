@@ -118,6 +118,28 @@ test("required CFR sections accept official identifier prefixes and source-secti
   }), /164\.312/);
 });
 
+test("grounded batches reject duplicate ids with conflicting requirements before checkpointing", () => {
+  const batch = { label: "CMS Emergency Preparedness", prompt: "Extract" };
+  const base = {
+    id: "Purpose",
+    standard: "EP",
+    category: "Emergency planning",
+    requirement: "Maintain an emergency plan.",
+    risk_level: "Critical",
+    source_url: source.urls[0],
+    source_section: "Purpose",
+    source_quote: "The organization must document incident response procedures.",
+    extraction_batch: batch.label
+  };
+  assert.throws(() => validateGroundedControls({
+    controls: [base, { ...base, requirement: "Maintain a communication plan." }],
+    standardKey: "EP",
+    sourceText: source.sourceText,
+    sourceUrls: source.urls,
+    batch
+  }), /duplicate id Purpose/);
+});
+
 test("official markup parsing decodes numeric XML entities before grounded extraction", () => {
   assert.equal(officialSourceParsers.readableMarkup("<P>&#167; 164.308 &#x2014; Security &amp; Privacy</P>"), "\u00a7 164.308 \u2014 Security & Privacy");
 });

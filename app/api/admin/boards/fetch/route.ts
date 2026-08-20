@@ -140,9 +140,24 @@ async function extractControls(
     const batchKey = `${index + 1}:${batch.label}`;
     const checkpoint = checkpointByBatch.get(batchKey);
     if (checkpoint) {
-      await onProgress?.(`Reusing saved AI request ${index + 1} of ${batches.length}: ${batch.label}`);
-      extractedBatches.push(normalizeControlImport(checkpoint.controls, standardKey));
-      continue;
+      try {
+        const checkpointControls = normalizeControlImport(checkpoint.controls, standardKey);
+        const validatedCheckpoint = validateGroundedControls({
+          controls: checkpointControls,
+          standardKey,
+          sourceText: source.sourceText,
+          sourceUrls: source.urls,
+          batch
+        });
+        await onProgress?.(`Reusing validated AI request ${index + 1} of ${batches.length}: ${batch.label}`);
+        extractedBatches.push(validatedCheckpoint);
+        continue;
+      } catch {
+        await onProgress?.(`${batch.label} saved checkpoint no longer passes validation and will be rerun.`);
+        await prisma.controlExtractionCheckpoint.deleteMany({
+          where: { industry, standardKey, sourceHash: source.sourceHash, batchKey }
+        });
+      }
     }
 
     const basePrompt = buildGroundedControlPrompt({ standardKey, batch, source });

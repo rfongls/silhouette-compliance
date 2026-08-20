@@ -70,6 +70,73 @@ export function calculateComplianceScore(statuses: Status[]) {
   return Math.round((points / statuses.length) * 100);
 }
 
+export const SCORING_POLICY_VERSION = "hierarchical-risk-v1";
+export const PRIORITY_WEIGHTS = { Critical: 4, High: 3, Medium: 2, Low: 1 } as const;
+
+type ScoredControl = {
+  status: Status;
+  risk_level: string;
+  category?: string;
+};
+
+function statusPoints(status: Status) {
+  return status === "Yes" ? 1 : status === "Partial" ? 0.5 : 0;
+}
+
+export function normalizePriority(value: string): keyof typeof PRIORITY_WEIGHTS {
+  const normalized = value.trim().toLocaleLowerCase();
+  if (normalized === "critical") return "Critical";
+  if (normalized === "high") return "High";
+  if (normalized === "low") return "Low";
+  return "Medium";
+}
+
+export function controlPriorityWeight(value: string) {
+  return PRIORITY_WEIGHTS[normalizePriority(value)];
+}
+
+export function calculateWeightedComplianceScore(rows: ScoredControl[]) {
+  if (!rows.length) return 0;
+  const possible = rows.reduce((total, row) => total + controlPriorityWeight(row.risk_level), 0);
+  const earned = rows.reduce((total, row) => total + statusPoints(row.status) * controlPriorityWeight(row.risk_level), 0);
+  return possible ? Math.round((earned / possible) * 100) : 0;
+}
+
+export function calculateStandardComplianceScore(rows: ScoredControl[]) {
+  if (!rows.length) return { score: 0, categories: {}, priority_tiers: {} };
+  const byCategory = new Map<string, ScoredControl[]>();
+  const byPriority = new Map<keyof typeof PRIORITY_WEIGHTS, ScoredControl[]>();
+  for (const row of rows) {
+    const category = row.category?.trim() || "General";
+    byCategory.set(category, [...(byCategory.get(category) || []), row]);
+    const priority = normalizePriority(row.risk_level);
+    byPriority.set(priority, [...(byPriority.get(priority) || []), row]);
+  }
+  const categories = Object.fromEntries([...byCategory.entries()].map(([category, controls]) => {
+    return [category, {
+      score: calculateWeightedComplianceScore(controls),
+      controls_reviewed: controls.length
+    }];
+  }));
+  const priorityTiers = Object.fromEntries([...byPriority.entries()].map(([priority, controls]) => [
+    priority.toLocaleLowerCase(),
+    {
+      score: calculateComplianceScore(controls.map((control) => control.status)),
+      weight: PRIORITY_WEIGHTS[priority],
+      controls_reviewed: controls.length
+    }
+  ]));
+  const tiers = Object.values(priorityTiers);
+  const possible = tiers.reduce((total, tier) => total + tier.weight, 0);
+  const earned = tiers.reduce((total, tier) => total + tier.score * tier.weight, 0);
+  return { score: possible ? Math.round(earned / possible) : 0, categories, priority_tiers: priorityTiers };
+}
+
+export function calculateOverallComplianceScore(standardScores: number[]) {
+  if (!standardScores.length) return 0;
+  return Math.round(standardScores.reduce((total, standardScore) => total + standardScore, 0) / standardScores.length);
+}
+
 function roadmap(findings: any[]) {
   const phases = [
     { name: "Immediate", timeframe: "Within 30 days", color: "critical", risks: new Set(["Critical"]) },
@@ -154,6 +221,7 @@ export async function scoreControlSet(input: {
       requirement: control.requirement,
       status: evaluation.status,
       risk_level: control.risk_level,
+      priority_weight: controlPriorityWeight(control.risk_level),
       evidence: evaluation.status === "No" ? "Not addressed" : `${evaluation.document}: \"${evaluation.quote}\"`,
       evidence_document: evaluation.document,
       evidence_quote: evaluation.quote,
@@ -166,12 +234,26 @@ export async function scoreControlSet(input: {
     const met = rows.filter((row) => row.status === "Yes").length;
     const partial = rows.filter((row) => row.status === "Partial").length;
     const failed = rows.filter((row) => row.status === "No").length;
-    const score = calculateComplianceScore(rows.map((row) => row.status));
-    return [standard.toLocaleLowerCase(), { score, controls_reviewed: rows.length, controls_met: met, controls_partial: partial, controls_failed: failed }];
+    const weighted = calculateStandardComplianceScore(rows);
+    const priorities = Object.fromEntries(Object.keys(PRIORITY_WEIGHTS).map((priority) => [
+      priority.toLocaleLowerCase(),
+      rows.filter((row) => normalizePriority(row.risk_level) === priority).length
+    ]));
+    return [standard.toLocaleLowerCase(), {
+      score: weighted.score,
+      controls_reviewed: rows.length,
+      controls_met: met,
+      controls_partial: partial,
+      controls_failed: failed,
+      priority_counts: priorities,
+      priority_tier_scores: weighted.priority_tiers,
+      category_scores: weighted.categories
+    }];
   }));
   const met = findings.filter((row) => row.status === "Yes").length;
   const partial = findings.filter((row) => row.status === "Partial").length;
-  const score = calculateComplianceScore(findings.map((finding) => finding.status));
+  const standardScores = Object.values(scoreBreakdown).map((standard) => standard.score);
+  const score = calculateOverallComplianceScore(standardScores);
   const gaps = findings.filter((row) => row.status !== "Yes");
   const counts = {
     total: findings.length,
@@ -190,11 +272,19 @@ export async function scoreControlSet(input: {
       overall_posture: posture(score),
       compliance_score: score,
       score_breakdown: scoreBreakdown,
+      scoring_policy_version: SCORING_POLICY_VERSION,
+      scoring_summary: {
+        selected_standards: input.scope.standards.length,
+        points_possible: input.scope.standards.length * 100,
+        points_earned: standardScores.reduce((total, standardScore) => total + standardScore, 0),
+        overall_score: score,
+        standard_weighting: "Each selected standard contributes equally to the overall 100-point score."
+      },
       posture_summary: `${met} of ${findings.length} controls were fully evidenced; ${partial} were partially evidenced and ${findings.length - met - partial} were not evidenced.`,
       counts,
       findings,
       remediation_roadmap: roadmap(findings),
-      scoring_method: "Server-calculated: Yes=1, Partial=0.5, No=0; all published controls remain in the denominator."
+      scoring_method: "Server-calculated hierarchical risk score: Yes=1, Partial=0.5, No=0; controls are averaged inside approved Critical, High, Medium, and Low priority tiers; present tiers are combined at weights 4, 3, 2, and 1 so raw control counts cannot make a lower-priority tier dominate a higher-priority tier; each selected standard is normalized to 100 points and selected standard scores are averaged equally into the overall 100-point score."
     },
     usage
   };

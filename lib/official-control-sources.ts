@@ -53,6 +53,7 @@ const SOURCES: Record<string, SourceDefinition> = {
 
 const ALLOWED_HOSTS = new Set(["raw.githubusercontent.com", "www.hhs.gov", "www.cms.gov"]);
 const MAX_SOURCE_BYTES = 15_000_000;
+export const CONTROL_BOARD_BUILD_VERSION = "irp-control-library-v2";
 
 function sourceHash(value: string) {
   return crypto.createHash("sha256").update(value, "utf8").digest("hex");
@@ -73,7 +74,7 @@ function nistControls(raw: string): NormalizedControl[] {
       standard: "NIST",
       category: String(group.title || group.id || ""),
       requirement: [control.title, textFromParts(control.parts || [])].filter(Boolean).join(": "),
-      risk_level: String(group.id || "").toLocaleLowerCase() === "ir" ? "High" : "Medium"
+      risk_level: ({ ir: "Critical", cp: "High", au: "High", ra: "High", si: "High", ac: "Medium" } as Record<string, string>)[String(group.id || "").toLocaleLowerCase()] || "Medium"
     })))
     .filter((control: NormalizedControl) => control.id && control.requirement);
 }
@@ -111,7 +112,7 @@ export async function fetchOfficialControlSource(standardKey: string) {
   const combined = sourceDocuments.map((document, index) => `${source.urls[index]}\n${document}`).join("\n\n");
   return {
     ...source,
-    sourceHash: sourceHash(combined),
+    sourceHash: sourceHash(`${CONTROL_BOARD_BUILD_VERSION}\n${combined}`),
     retrievedAt: new Date(),
     controls: source.format === "oscal" ? nistControls(rawDocuments[0]) : null,
     sourceText: source.format === "html" ? sourceDocuments.join("\n\n") : null

@@ -2,7 +2,7 @@ import { EntKind } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { runGapAnalysis, demoAssessment } from "@/lib/analysis/engine";
 import { IRP_PROMPT_VERSION } from "@/lib/analysis/prompts";
-import { IRP_CONTROL_BATCH_SIZE, scoringPassCount } from "@/lib/analysis/scoring";
+import { IRP_CONTROL_BATCH_SIZE, SCORING_POLICY_VERSION, scoringPassCount } from "@/lib/analysis/scoring";
 import { normalizeStandards } from "@/lib/analysis/standards";
 import { requireSession } from "@/lib/authz";
 import { loadPublishedControlSet } from "@/lib/control-boards";
@@ -103,7 +103,7 @@ export async function handleIrpAssessment(req: Request) {
   for (const orgName of orgNames) {
     const rows = groupedDocuments.get(orgName)!;
     const integrity = documentSetIntegrity(rows);
-    const assessmentHash = assessmentFingerprint(integrity.sourceSetHash, controlSet.snapshot, IRP_PROMPT_VERSION);
+    const assessmentHash = assessmentFingerprint(integrity.sourceSetHash, controlSet.snapshot, IRP_PROMPT_VERSION, SCORING_POLICY_VERSION);
     const orgId = organizationKey(orgName);
     const prior = await prisma.assessment.findFirst({
       where: { accountId, orgId, sourceSetHash: assessmentHash, status: "DELIVERED" },
@@ -184,6 +184,7 @@ export async function handleIrpAssessment(req: Request) {
           citation: controlSet.cite,
           snapshot: controlSet.snapshot,
           prompt_version: IRP_PROMPT_VERSION,
+          scoring_policy_version: SCORING_POLICY_VERSION,
           model_provider: aiConfig.provider,
           model_name: aiConfig.model
         }

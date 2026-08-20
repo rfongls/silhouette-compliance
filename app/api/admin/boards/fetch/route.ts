@@ -34,10 +34,10 @@ async function buildDomainPlan(industry: string) {
   }
 
   const plans = await Promise.all(domain.standards.map(async (standard) => {
+    const activeBase = activeByStandard.get(standard.key);
     try {
       const source = await fetchOfficialControlSource(standard.key);
       const extraction = buildControlExtractionPlan(standard.key, source, EXTRA_CB_BATCHES[standard.key] || []);
-      const activeBase = activeByStandard.get(standard.key);
       const refresh = controlRefreshStatus({
         currentSourceHash: source.sourceHash,
         baselineSourceHash: activeBase?.sourceHash,
@@ -45,6 +45,7 @@ async function buildDomainPlan(industry: string) {
         refreshCadenceDays: source.refreshCadenceDays
       });
       const ready = extraction.method === "deterministic" || aiConfig.hasApiKey;
+      const needsDraft = !activeBase || refresh.sourceChanged;
       return {
         ...extraction,
         label: standard.label,
@@ -54,6 +55,8 @@ async function buildDomainPlan(industry: string) {
         provider: extraction.method === "grounded-ai" ? aiConfig.provider : null,
         model: extraction.method === "grounded-ai" ? aiConfig.model : null,
         ready,
+        needsDraft,
+        updateStatus: !activeBase ? "NEW" : refresh.sourceChanged ? "CHANGED" : "CURRENT",
         readinessMessage: extraction.method === "deterministic"
           ? `${extraction.deterministicControlCount} controls will be parsed without an AI call.`
           : aiConfig.hasApiKey
@@ -80,7 +83,9 @@ async function buildDomainPlan(industry: string) {
         estimatedInputTokens: 0,
         sourceHash: null,
         sourceUrls: [] as string[],
-        source: null
+        source: null,
+        needsDraft: false,
+        updateStatus: activeBase ? "MANUAL" : "MISSING"
       };
     }
   }));
@@ -132,13 +137,15 @@ export async function POST(req: Request) {
 
   const publicPlans = domainPlan.plans.map(({ source: _source, ...plan }) => plan);
   const availablePlans = domainPlan.plans.filter((plan) => plan.available);
+  const updatePlans = availablePlans.filter((plan) => plan.needsDraft);
   const aggregate = {
     standardCount: domainPlan.plans.length,
     automaticCount: availablePlans.length,
     manualCount: domainPlan.plans.length - availablePlans.length,
-    requestCount: availablePlans.reduce((total, plan) => total + plan.requestCount, 0),
-    estimatedInputTokens: availablePlans.reduce((total, plan) => total + plan.estimatedInputTokens, 0),
-    ready: availablePlans.length > 0 && availablePlans.every((plan) => plan.ready)
+    updateCount: updatePlans.length,
+    requestCount: updatePlans.reduce((total, plan) => total + plan.requestCount, 0),
+    estimatedInputTokens: updatePlans.reduce((total, plan) => total + plan.estimatedInputTokens, 0),
+    ready: updatePlans.length > 0 && updatePlans.every((plan) => plan.ready)
   };
 
   if (body.action !== "extract") {
@@ -156,7 +163,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Domain extraction requires confirmation of every current official source." }, { status: 409 });
   }
   if (!aggregate.ready) {
-    return NextResponse.json({ error: "The complete automatic domain extraction is not ready. Resolve the listed provider or source issues first." }, { status: 409 });
+    return NextResponse.json({ error: updatePlans.length ? "The changed domain sources are not ready for extraction. Resolve the listed provider or source issues first." : "No new or changed automatic control sources were found." }, { status: 409 });
   }
   const hashMismatch = availablePlans.find((plan) => String(body.sourceHashes[plan.standardKey] || "") !== plan.sourceHash);
   if (hashMismatch) {
@@ -165,7 +172,7 @@ export async function POST(req: Request) {
 
   try {
     const extracted = [];
-    for (const plan of availablePlans) {
+    for (const plan of updatePlans) {
       const controls = await extractControls(plan.standardKey, plan.source);
       extracted.push({ plan, controls });
     }

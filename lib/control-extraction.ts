@@ -125,6 +125,7 @@ Each control must contain exactly: id, standard, category, requirement, risk_lev
 - source_section must identify the source heading, CFR section, control family, or equivalent location.
 - source_quote must be an exact supporting quote from the supplied source text.
 - extraction_batch must be ${JSON.stringify(input.batch.label)}.
+- risk_level is the Silhouette IRP scoring priority, not a claim that the publisher assigned a score. Use Critical for requirements whose absence can directly prevent required incident reporting, command, containment, continuity, or recovery; High for core risk analysis, detection, escalation, testing, access, evidence, and third-party response duties; Medium for supporting governance and operational requirements; Low for supplemental or tangential IRP requirements. An administrator must review these priorities before publication.
 - If a requested requirement is not present in the supplied source, do not invent it.
 
 OFFICIAL_SOURCE_URLS_JSON:

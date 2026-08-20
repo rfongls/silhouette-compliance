@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
+import { normalizeControlImport, validateControlBoardForPublication } from "@/lib/control-boards";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
@@ -13,6 +14,11 @@ export async function POST(req: Request) {
   const sourceUrls = Array.isArray(draft.sourceUrls) ? draft.sourceUrls : [];
   if (!draft.sourceTitle || !draft.sourceVersion || !draft.sourceHash || !sourceUrls.length) {
     return NextResponse.json({ error: "Board provenance is incomplete. Add source title, version, URL, and source hash before publishing." }, { status: 409 });
+  }
+  try {
+    validateControlBoardForPublication(normalizeControlImport(draft.controls, draft.standardKey));
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 409 });
   }
   await prisma.$transaction([
     prisma.controlBoard.updateMany({ where: { industry: draft.industry, standardKey: draft.standardKey, status: "PUBLISHED" }, data: { status: "ARCHIVED" } }),

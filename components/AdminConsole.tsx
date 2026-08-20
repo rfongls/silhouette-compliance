@@ -51,6 +51,8 @@ type DomainStandardPlan = {
   provider?: string | null;
   model?: string | null;
   ready: boolean;
+  needsDraft: boolean;
+  updateStatus: "NEW" | "CHANGED" | "CURRENT" | "MANUAL" | "MISSING";
   readinessMessage: string;
   activeBase?: {
     version: number | null;
@@ -70,6 +72,7 @@ type DomainPlan = {
     standardCount: number;
     automaticCount: number;
     manualCount: number;
+    updateCount: number;
     requestCount: number;
     estimatedInputTokens: number;
     ready: boolean;
@@ -175,6 +178,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [sourceVersion, setSourceVersion] = useState("");
   const [sourceUrls, setSourceUrls] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
+  const [backupJson, setBackupJson] = useState("");
+  const [draftReview, setDraftReview] = useState<{ id: string; label: string; controlsJson: string; saved: boolean } | null>(null);
   const [status, setStatus] = useState("");
   const [domainPlan, setDomainPlan] = useState<DomainPlan | null>(null);
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
@@ -267,9 +272,9 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
 
   async function extractBoard() {
     if (!domainPlan) return;
-    const action = `Create ${domainPlan.aggregate.automaticCount} domain control-board draft${domainPlan.aggregate.automaticCount === 1 ? "" : "s"}? This will run ${domainPlan.aggregate.requestCount} paid AI request${domainPlan.aggregate.requestCount === 1 ? "" : "s"}. Standards marked for reviewed upload will remain pending.`;
+    const action = `Create ${domainPlan.aggregate.updateCount} new or changed control-board draft${domainPlan.aggregate.updateCount === 1 ? "" : "s"}? This will run ${domainPlan.aggregate.requestCount} paid AI request${domainPlan.aggregate.requestCount === 1 ? "" : "s"}. Current bases will remain active until an admin reviews and publishes each draft.`;
     if (!window.confirm(action)) return;
-    setStatus("Retrieving the complete domain library and validating each control board...");
+    setStatus("Retrieving new and changed domain sources and validating each control board...");
     const sourceHashes = Object.fromEntries(domainPlan.standards.filter((plan) => plan.available && plan.sourceHash).map((plan) => [plan.standardKey, plan.sourceHash]));
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
@@ -277,7 +282,29 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       body: JSON.stringify({ action: "extract", industry, sourceHashes, confirmExtraction: true })
     });
     if (!res.ok) return setStatus(await readError(res));
-    setStatus("Validated domain draft boards created.");
+    setStatus("Validated update drafts created. Existing base boards remain active pending review.");
+    window.location.reload();
+  }
+
+  async function readBackupFile(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setStatus("Reading control-board backup...");
+    setBackupJson(await file.text());
+    setStatus(`Loaded ${file.name}. Restore will create reviewable drafts only.`);
+  }
+
+  async function restoreBackup() {
+    if (!backupJson.trim() || !window.confirm("Restore every board in this backup as a new draft? Existing base boards will remain active until each restored draft is reviewed and published.")) return;
+    setStatus("Restoring control-board backup as drafts...");
+    const res = await fetch("/api/admin/boards/upload", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode: "restore", backupJson })
+    });
+    if (!res.ok) return setStatus(await readError(res));
+    const data = await res.json();
+    setStatus(`${data.boards.length} control-board draft${data.boards.length === 1 ? "" : "s"} restored.`);
     window.location.reload();
   }
 
@@ -314,6 +341,33 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     if (!res.ok) return setStatus(await readError(res));
     setStatus("Base control updated.");
     window.location.reload();
+  }
+
+  async function reviewDraft(board: BoardRow) {
+    setStatus(`Loading ${board.standardKey} v${board.version} for priority review...`);
+    const res = await fetch(`/api/admin/boards?id=${encodeURIComponent(board.id)}`);
+    if (!res.ok) return setStatus(await readError(res));
+    const data = await res.json();
+    setDraftReview({
+      id: board.id,
+      label: `${board.industry} / ${board.standardKey} v${board.version}`,
+      controlsJson: JSON.stringify(data.board.controls, null, 2),
+      saved: false
+    });
+    setStatus("Review every category and priority before publishing this draft.");
+  }
+
+  async function saveDraftReview() {
+    if (!draftReview) return;
+    setStatus("Validating and saving reviewed control priorities...");
+    const res = await fetch("/api/admin/boards", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: draftReview.id, controlsJson: draftReview.controlsJson })
+    });
+    if (!res.ok) return setStatus(await readError(res));
+    setDraftReview({ ...draftReview, saved: true });
+    setStatus("Draft categories and priorities saved. It is ready for final publication review.");
   }
 
   return (
@@ -370,13 +424,13 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       <section className="card">
         <div className="mono">Control Boards</div>
         <h2>Retrieve, Review & Set Base</h2>
-        <p className="muted">Only administrators can retrieve official sources, create drafts, and set the reviewed base control used for scoring. Each configured source is checked annually and fingerprinted so source changes are visible before extraction.</p>
+        <p className="muted">Only administrators can check official sources, create drafts, restore backups, and set the reviewed base controls used for scoring. A source check never changes the active base.</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <button className="btn" onClick={preflightBoard}>Check all domain sources</button>
-          <a className="btn secondary" href="/api/admin/boards/export" target="_blank">Export base controls</a>
+          <button className="btn" onClick={preflightBoard}>Check for control updates</button>
+          <a className="btn secondary" href="/api/admin/boards/export">Download base control backup</a>
         </div>
         {domainPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
           <div className="mono">Domain extraction preflight</div>
@@ -386,23 +440,36 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             <div><b>Standards</b><br/><span className="muted">{domainPlan.aggregate.standardCount}</span></div>
             <div><b>Automatic</b><br/><span className="muted">{domainPlan.aggregate.automaticCount}</span></div>
             <div><b>Reviewed upload</b><br/><span className="muted">{domainPlan.aggregate.manualCount}</span></div>
+            <div><b>New or changed</b><br/><span className="muted">{domainPlan.aggregate.updateCount}</span></div>
             <div><b>AI requests</b><br/><span className="muted">{domainPlan.aggregate.requestCount}</span></div>
             <div><b>Estimated input</b><br/><span className="muted">{domainPlan.aggregate.estimatedInputTokens.toLocaleString()} tokens</span></div>
           </div>
           <table className="table" style={{ marginBottom: 14 }}>
-            <thead><tr><th>Standard</th><th>Retrieval</th><th>Requests</th><th>Current base</th><th>Readiness</th></tr></thead>
+            <thead><tr><th>Standard</th><th>Retrieval</th><th>Update check</th><th>Current base</th><th>Readiness</th></tr></thead>
             <tbody>{domainPlan.standards.map((plan) => (
               <tr key={plan.standardKey}>
                 <td><b>{plan.label}</b><br/><span className="muted">{plan.standardKey}{plan.default ? " / default" : ""}</span></td>
                 <td>{plan.available ? (plan.method === "deterministic" ? "Deterministic" : "Grounded AI") : "Reviewed upload"}</td>
-                <td>{plan.requestCount}</td>
+                <td>{plan.updateStatus === "CHANGED" ? "Update available" : plan.updateStatus === "NEW" ? "New board required" : plan.updateStatus === "CURRENT" ? "Current" : plan.updateStatus === "MANUAL" ? "Check manually" : "Base missing"}</td>
                 <td>{plan.activeBase?.hasBaseControl ? `v${plan.activeBase.version}` : "Not set"}</td>
                 <td><span className={plan.ready ? "badge" : "badge locked"}>{plan.ready ? "Ready" : plan.manualUploadRequired ? "Upload required" : "Blocked"}</span><br/><span className="muted">{plan.readinessMessage}</span></td>
               </tr>
             ))}</tbody>
           </table>
-          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready}>Create all automatic drafts</button>
+          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready}>Create new and updated drafts</button>
         </div> : null}
+        <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
+          <div className="mono">Control-board backup</div>
+          <h3 style={{ marginBottom: 6 }}>Restore saved base controls</h3>
+          <p className="muted">A downloaded Silhouette backup restores each saved board as a new draft. It cannot replace a published base without admin review.</p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
+              Select backup
+              <input type="file" accept=".json" onChange={(event) => readBackupFile(event.target.files)} style={{ display: "none" }} />
+            </label>
+            <button className="btn" onClick={restoreBackup} disabled={!backupJson.trim()}>Restore as drafts</button>
+          </div>
+        </div>
         <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
           <div className="mono">Manual control upload</div>
           <label style={{ display: "block", maxWidth: 360, margin: "12px 0" }}>
@@ -429,6 +496,17 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             </div>
           </div>
         </div>
+        {draftReview ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
+          <div className="mono">Draft priority review</div>
+          <h3 style={{ marginBottom: 6 }}>{draftReview.label}</h3>
+          <p className="muted">The publisher does not assign a universal cross-framework score. Confirm each control category and Silhouette IRP priority before this draft becomes a scoring base. Valid priorities are Critical, High, Medium, and Low.</p>
+          <textarea className="textarea" value={draftReview.controlsJson} onChange={(event) => setDraftReview({ ...draftReview, controlsJson: event.target.value, saved: false })} style={{ minHeight: 420 }} />
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+            <button className="btn secondary" onClick={saveDraftReview}>Save reviewed priorities</button>
+            <button className="btn" onClick={() => publishBoard(draftReview.id)} disabled={!draftReview.saved}>Set reviewed draft as base</button>
+            <button className="btn secondary" onClick={() => setDraftReview(null)}>Close</button>
+          </div>
+        </div> : null}
         <table className="table">
           <thead><tr><th>Industry</th><th>Standard</th><th>Version</th><th>Source</th><th>Status</th><th>Controls</th><th>Reviewer</th><th>Action</th></tr></thead>
           <tbody>
@@ -441,7 +519,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
                 <td><span className={board.status === "PUBLISHED" ? "badge" : "badge locked"}>{board.status === "PUBLISHED" ? "BASE" : board.status}</span></td>
                 <td>{board.controlCount}</td>
                 <td>{board.reviewedBy || "-"}</td>
-                <td>{board.status === "DRAFT" ? <button className="btn secondary" onClick={() => publishBoard(board.id)}>Set as base</button> : "-"}</td>
+                <td>{board.status === "DRAFT" ? <button className="btn secondary" onClick={() => reviewDraft(board)}>Review draft</button> : "-"}</td>
               </tr>
             ))}
             {!boards.length ? <tr><td colSpan={8}>No boards yet.</td></tr> : null}

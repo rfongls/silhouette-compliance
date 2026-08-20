@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildControlExtractionPlan, controlRefreshStatus, mergeControlBatches, validateGroundedControls } from "../lib/control-extraction";
+import { validateControlBoardForPublication } from "../lib/control-boards";
 
 const source = {
   title: "Official rule",
@@ -60,4 +61,11 @@ test("batch merging rejects conflicting versions of the same control", () => {
   const base = { id: "1", standard: "RULE", category: "IR", requirement: "Requirement one", risk_level: "High" };
   assert.equal(mergeControlBatches([[base], [base]]).length, 1);
   assert.throws(() => mergeControlBatches([[base], [{ ...base, requirement: "Different requirement" }]]), /Conflicting extracted requirements/);
+});
+
+test("publication requires an approved priority and category for every control", () => {
+  const valid = { id: "IR-4", standard: "NIST", category: "Incident Response", requirement: "Handle incidents.", risk_level: "Critical" };
+  assert.equal(validateControlBoardForPublication([valid]).length, 1);
+  assert.throws(() => validateControlBoardForPublication([{ ...valid, category: "" }]), /needs a category/);
+  assert.throws(() => validateControlBoardForPublication([{ ...valid, risk_level: "Urgent" }]), /invalid priority/);
 });

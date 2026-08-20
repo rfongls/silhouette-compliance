@@ -26,8 +26,8 @@ export function quoteSourceDigest(documents: IntegrityDocument[], context = "") 
   return digest(context ? `${context}\n${sources}` : sources);
 }
 
-export function assessmentFingerprint(sourceSetHash: string, boardSnapshot: unknown, promptVersion: string) {
-  return digest(`${sourceSetHash}\n${JSON.stringify(boardSnapshot)}\n${promptVersion}`);
+export function assessmentFingerprint(sourceSetHash: string, boardSnapshot: unknown, promptVersion: string, scoringPolicyVersion = "") {
+  return digest(`${sourceSetHash}\n${JSON.stringify(boardSnapshot)}\n${promptVersion}\n${scoringPolicyVersion}`);
 }
 
 export function groupDocumentsByOrg(documents: IntegrityDocument[], orgNames: string[]) {

@@ -13,6 +13,18 @@ export type NormalizedControl = {
   extraction_batch?: string;
 };
 
+const CONTROL_PRIORITIES = new Set(["Critical", "High", "Medium", "Low"]);
+
+export function validateControlBoardForPublication(controls: NormalizedControl[]) {
+  for (const control of controls) {
+    if (!control.category.trim()) throw new Error(`Control ${control.id} needs a category before publication.`);
+    if (!CONTROL_PRIORITIES.has(control.risk_level)) {
+      throw new Error(`Control ${control.id} has invalid priority ${control.risk_level || "(blank)"}. Use Critical, High, Medium, or Low.`);
+    }
+  }
+  return controls;
+}
+
 export function standardBelongsToIndustry(industry: string, standardKey: string) {
   return Boolean(INDUSTRY_STANDARDS[industry]?.standards.some((standard) => standard.key === standardKey));
 }
@@ -75,7 +87,11 @@ export async function loadPublishedControlSet(industry: string, standards: strin
   if (unreviewed.length) {
     throw new Error(`Published control boards are missing source or reviewer provenance: ${unreviewed.map((board) => board.standardKey).join(", ")}`);
   }
-  const controls = selectedBoards.flatMap((board) => normalizeControlImport(board.controls, board.standardKey));
+  const controls = selectedBoards.flatMap((board) =>
+    validateControlBoardForPublication(
+      normalizeControlImport(board.controls, board.standardKey).map((control) => ({ ...control, standard: board.standardKey }))
+    )
+  );
   if (!controls.length) throw new Error("Published control boards do not contain valid controls.");
 
   return {

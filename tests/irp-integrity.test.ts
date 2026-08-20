@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateComplianceScore, chunkEvidenceDocuments, scoringPassCount, validateEvidenceStatus } from "../lib/analysis/scoring";
+import {
+  calculateComplianceScore,
+  calculateOverallComplianceScore,
+  calculateStandardComplianceScore,
+  calculateWeightedComplianceScore,
+  chunkEvidenceDocuments,
+  scoringPassCount,
+  validateEvidenceStatus
+} from "../lib/analysis/scoring";
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest } from "../lib/document-integrity";
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
 import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
@@ -16,6 +24,28 @@ test("server scoring uses Yes=1, Partial=0.5, No=0", () => {
   assert.equal(calculateComplianceScore(["Yes", "Partial", "No"]), 50);
   assert.equal(calculateComplianceScore(["No", "No"]), 0);
   assert.equal(calculateComplianceScore(["Yes", "Yes"]), 100);
+});
+
+test("priority weighting makes a failed critical control matter more than a met low control", () => {
+  assert.equal(calculateWeightedComplianceScore([
+    { status: "Yes", risk_level: "Low" },
+    { status: "No", risk_level: "Critical" }
+  ]), 20);
+});
+
+test("large low-priority control sets do not overwhelm a critical control in the same category", () => {
+  const routineControls = Array.from({ length: 100 }, () => ({ status: "Yes" as const, risk_level: "Low", category: "Incident response" }));
+  const score = calculateStandardComplianceScore([
+    ...routineControls,
+    { status: "No", risk_level: "Critical", category: "Incident response" }
+  ]);
+  assert.equal(score.score, 20);
+  assert.equal(Object.keys(score.categories).length, 1);
+});
+
+test("selected standards contribute equally to the overall 100-point score", () => {
+  assert.equal(calculateOverallComplianceScore([100, 50, 0]), 50);
+  assert.equal(calculateOverallComplianceScore([92, 48]), 70);
 });
 
 test("positive evidence requires an exact quote from the supplied chunk", () => {
@@ -61,8 +91,10 @@ test("assessment reuse changes when the reviewed board snapshot changes", () => 
   const first = assessmentFingerprint(sourceSetHash, [{ id: "board-1", version: 1 }], "prompt-v1");
   const same = assessmentFingerprint(sourceSetHash, [{ id: "board-1", version: 1 }], "prompt-v1");
   const updated = assessmentFingerprint(sourceSetHash, [{ id: "board-2", version: 2 }], "prompt-v1");
+  const rescored = assessmentFingerprint(sourceSetHash, [{ id: "board-1", version: 1 }], "prompt-v1", "scoring-v2");
   assert.equal(first, same);
   assert.notEqual(first, updated);
+  assert.notEqual(first, rescored);
 });
 
 test("every named organization must have readable evidence", () => {

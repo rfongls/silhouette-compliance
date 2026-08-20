@@ -33,10 +33,16 @@ function orgDocuments(orgs: ReviewedOrg[]) {
   });
 }
 
-export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; characterLimitPerOrg: number }) {
+function availableDefaults(industry: string, available: Record<string, string[]>, demo: boolean) {
+  const deployed = demo ? (INDUSTRY_STANDARDS[industry]?.standards || []).map((standard) => standard.key) : (available[industry] || []);
+  const defaults = defaultStandards(industry).filter((standard) => deployed.includes(standard));
+  return defaults.length ? defaults : deployed.slice(0, 1);
+}
+
+export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
   const [clientName, setClientName] = useState(demo ? "Demo Client Group" : "");
   const [industry, setIndustry] = useState("health-center");
-  const [standards, setStandards] = useState(defaultStandards("health-center"));
+  const [standards, setStandards] = useState(availableDefaults("health-center", availableStandardsByIndustry, demo));
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
     ...newOrg(demoOrgName("health-center")),
     documents: [{ name: "demo-irp.txt", text: "Demo incident response policy text." }]
@@ -65,7 +71,8 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
   const [result, setResult] = useState<any>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Array<{ assessmentId: string; orgName: string; result: any; reused?: boolean }>>([]);
-  const standardOptions = INDUSTRY_STANDARDS[industry]?.standards || [];
+  const deployedStandards = demo ? null : new Set(availableStandardsByIndustry[industry] || []);
+  const standardOptions = (INDUSTRY_STANDARDS[industry]?.standards || []).filter((standard) => !deployedStandards || deployedStandards.has(standard.key));
   const allStandardsSelected = standardOptions.length > 0 && standardOptions.every((standard) => standards.includes(standard.key));
 
   function clearQuote() {
@@ -110,13 +117,13 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
 
   function changeIndustry(nextIndustry: string) {
     setIndustry(nextIndustry);
-    setStandards(defaultStandards(nextIndustry));
+    setStandards(availableDefaults(nextIndustry, availableStandardsByIndustry, demo));
     if (demo) setOrgs((rows) => rows.map((org, index) => index === 0 ? { ...org, name: demoOrgName(nextIndustry) } : org));
     clearQuote();
   }
 
   function toggleAllStandards() {
-    setStandards(allStandardsSelected ? defaultStandards(industry) : standardOptions.map((standard) => standard.key));
+    setStandards(allStandardsSelected ? availableDefaults(industry, availableStandardsByIndustry, demo) : standardOptions.map((standard) => standard.key));
     clearQuote();
   }
 
@@ -132,6 +139,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
     const validOrgs = orgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
     if (!clientName.trim()) return alert("Enter the client or umbrella organization name.");
     if (!validOrgs.length) return alert("Add at least one organization being reviewed.");
+    if (!standards.length) return alert("No published base control board is available for this domain. An administrator must publish one before an assessment can run.");
     const documents = orgDocuments(validOrgs);
     if (!documents.length) return alert("Upload or paste policy text for at least one reviewed organization.");
     if (!phiAttested) return alert("Confirm that you reviewed the files and removed PHI before creating an estimate.");
@@ -202,10 +210,10 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
 
           <fieldset className="card subcard" style={{ padding: 14, margin: 0 }}>
             <legend style={{ padding: "0 6px" }}>Standards used for scoring</legend>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            {standardOptions.length ? <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <input type="checkbox" checked={allStandardsSelected} onChange={toggleAllStandards} />
               <b>All {INDUSTRY_STANDARDS[industry]?.label || "domain"} standards</b>
-            </label>
+            </label> : <div className="badge locked">No published base controls are available for this domain.</div>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
               {standardOptions.map((standard) => (
                 <label key={standard.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -294,6 +302,21 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
                 <p className="muted" style={{ margin: 0 }}>{result.posture_summary}</p>
               </div>
             </div>
+            {result.score_breakdown ? (
+              <div style={{ marginTop: 16 }}>
+                <div className="mono">Selected standard scores</div>
+                <p className="muted" style={{ margin: "5px 0 10px", fontSize: 13 }}>Each selected standard is normalized to 100 points. The overall score is the equal average of these standard scores, with critical and high-priority controls weighted more heavily inside each standard.</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+                  {Object.entries(result.score_breakdown).map(([standard, breakdown]: [string, any]) => (
+                    <div className="card subcard" key={standard} style={{ padding: 12 }}>
+                      <b>{standard.toLocaleUpperCase()}</b>
+                      <div className="stat" style={{ fontSize: 30 }}>{breakdown.score}<span style={{ fontSize: 14 }}>/100</span></div>
+                      <span className="muted" style={{ fontSize: 12 }}>{breakdown.controls_reviewed} controls reviewed</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <h3>Findings</h3>
             {result.data_handling ? (
               <div className="card subcard" style={{ padding: 12, marginBottom: 12 }}>

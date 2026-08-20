@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildControlExtractionPlan, controlRefreshStatus, mergeControlBatches, validateGroundedControls } from "../lib/control-extraction";
 import { validateControlBoardForPublication } from "../lib/control-boards";
+import { __test__ as officialSourceParsers } from "../lib/official-control-sources";
 
 const source = {
   title: "Official rule",
@@ -68,4 +69,34 @@ test("publication requires an approved priority and category for every control",
   assert.equal(validateControlBoardForPublication([valid]).length, 1);
   assert.throws(() => validateControlBoardForPublication([{ ...valid, category: "" }]), /needs a category/);
   assert.throws(() => validateControlBoardForPublication([{ ...valid, risk_level: "Urgent" }]), /invalid priority/);
+});
+
+test("CSF OSCAL parsing emits every nested subcategory outcome", () => {
+  const raw = JSON.stringify({ catalog: { groups: [{
+    id: "RS",
+    title: "RESPOND",
+    controls: [{
+      id: "RS.MA",
+      title: "Incident Management",
+      controls: [
+        { id: "RS.MA-01", parts: [{ prose: "The incident response plan is executed." }] },
+        { id: "RS.MA-02", parts: [{ prose: "Incident reports are triaged and validated." }] }
+      ]
+    }]
+  }] } });
+  const controls = officialSourceParsers.csfControls(raw);
+  assert.deepEqual(controls.map((control) => control.id), ["RS.MA-01", "RS.MA-02"]);
+  assert.ok(controls.every((control) => control.standard === "CSF" && control.risk_level === "Critical"));
+});
+
+test("HITECH parsing excludes unrelated statute text and keeps sections 13400 through 13424", () => {
+  const text = [
+    "Table of contents SEC. 13400 definitions SEC. 13424 studies",
+    "Unrelated appropriations",
+    "SEC. 13400 DEFINITIONS actual statute SEC. 13401 APPLICATION SEC. 13424 STUDIES final requirement SEC. 14001 NEXT TITLE"
+  ].join(" ");
+  const scoped = officialSourceParsers.hitechStatutoryText(text);
+  assert.match(scoped, /^SEC\. 13400 DEFINITIONS/);
+  assert.match(scoped, /SEC\. 13424 STUDIES final requirement/);
+  assert.doesNotMatch(scoped, /Unrelated appropriations|SEC\. 14001/);
 });

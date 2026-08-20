@@ -229,6 +229,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       domainPlan.standards.some((plan) => plan.standardKey === key && plan.sourceHash === hash)));
   const runCanResume = Boolean(extractionRun && extractionMatchesPlan
     && (extractionRun.status === "FAILED" || extractionIsStale));
+  const runNeedsRecovery = Boolean(extractionRun
+    && (extractionRun.status === "FAILED" || extractionIsStale));
   const pendingPlanHashes = domainPlan?.standards
     .filter((plan) => plan.needsDraft && plan.sourceHash)
     .map((plan) => [plan.standardKey, plan.sourceHash] as const) || [];
@@ -355,24 +357,34 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setStatus("API key is active and verified.");
   }
 
-  async function preflightBoard() {
-    setStatus("Checking every official source configured for this domain...");
+  async function loadDomainPlan() {
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "preflight", industry })
     });
-    if (!res.ok) return setStatus(await readError(res));
+    if (!res.ok) {
+      setStatus(await readError(res));
+      return null;
+    }
     const data = await res.json();
     setDomainPlan(data.plan);
+    return data.plan as DomainPlan;
+  }
+
+  async function preflightBoard() {
+    setStatus("Checking every official source configured for this domain...");
+    const plan = await loadDomainPlan();
+    if (!plan) return;
     setStatus("Domain source preflight complete. No AI request was made.");
   }
 
-  async function extractBoard(onlyStandardKey?: string, resume = false, restart = false) {
-    if (!domainPlan || extractionIsRunning) return;
+  async function extractBoard(onlyStandardKey?: string, resume = false, restart = false, planOverride?: DomainPlan) {
+    const activePlan = planOverride || domainPlan;
+    if (!activePlan || extractionIsRunning) return;
     const targetPlans = resume && extractionRun
-      ? domainPlan.standards.filter((plan) => extractionRun.sourceHashes[plan.standardKey] === plan.sourceHash)
-      : domainPlan.standards.filter((plan) => plan.needsDraft && (!onlyStandardKey || plan.standardKey === onlyStandardKey));
+      ? activePlan.standards.filter((plan) => extractionRun.sourceHashes[plan.standardKey] === plan.sourceHash)
+      : activePlan.standards.filter((plan) => plan.needsDraft && (!onlyStandardKey || plan.standardKey === onlyStandardKey));
     if (!targetPlans.length) return setStatus("No new, changed, or resumable standards were found for this action.");
     const paidRequests = targetPlans.filter((plan) => plan.needsDraft).reduce((total, plan) => total + plan.requestCount, 0);
     const action = resume
@@ -434,6 +446,29 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     const data = await res.json();
     setExtractionRun(data.run || null);
     setStatus(data.resumed ? "The unfinished run resumed and its reviewable drafts are ready." : "Validated update drafts created. Existing base boards remain active pending review.");
+  }
+
+  async function continueFailedRun() {
+    if (!extractionRun || extractionIsRunning) return;
+    setStatus("Rechecking official sources before continuing the failed run...");
+    const plan = domainPlan || await loadDomainPlan();
+    if (!plan) return;
+    const sourcesStillMatch = Object.keys(extractionRun.sourceHashes || {}).length > 0
+      && Object.entries(extractionRun.sourceHashes || {}).every(([key, hash]) =>
+        plan.standards.some((item) => item.standardKey === key && item.sourceHash === hash));
+    if (!sourcesStillMatch) {
+      setStatus("One or more official sources changed after the failed run. Saved checkpoints cannot be reused; start a new run with the current sources.");
+      return;
+    }
+    await extractBoard(undefined, true, false, plan);
+  }
+
+  async function startNewExtractionRun() {
+    if (extractionIsRunning) return;
+    setStatus("Checking current official sources before starting a new run...");
+    const plan = domainPlan || await loadDomainPlan();
+    if (!plan) return;
+    await extractBoard(undefined, false, true, plan);
   }
 
   async function readBackupFile(files: FileList | null) {
@@ -611,7 +646,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
               </tr>
             ))}</tbody>
           </table>
-          {!runCanResume ? <button className="btn" onClick={() => extractBoard()} disabled={!domainPlan.aggregate.ready || extractionIsRunning || extractionAlreadyCompleted}>{extractionIsRunning ? "Creating drafts..." : extractionAlreadyCompleted ? "Drafts already created" : "Create new and updated drafts"}</button> : null}
+          {!runNeedsRecovery ? <button className="btn" onClick={() => extractBoard()} disabled={!domainPlan.aggregate.ready || extractionIsRunning || extractionAlreadyCompleted}>{extractionIsRunning ? "Creating drafts..." : extractionAlreadyCompleted ? "Drafts already created" : "Create new and updated drafts"}</button> : null}
         </div> : null}
         {extractionRun ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -635,9 +670,9 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
                 <td>{item.message}{typeof item.controlCount === "number" ? ` (${item.controlCount} controls)` : ""}</td>
               </tr>)}</tbody>
             </table> : null}
-            {runCanResume ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button className="btn" onClick={() => extractBoard(undefined, true)}>Resume unfinished run</button>
-              <button className="btn secondary" onClick={() => extractBoard(undefined, false, true)}>Start new run</button>
+            {runNeedsRecovery ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="btn" onClick={continueFailedRun}>{runCanResume ? "Continue from last failed item" : "Check and continue failed run"}</button>
+              <button className="btn secondary" onClick={startNewExtractionRun}>Start new run</button>
             </div> : null}
             {extractionRun.status === "COMPLETED" ? <button className="btn secondary" onClick={() => window.location.reload()}>Review created drafts</button> : null}
           </div> : null}

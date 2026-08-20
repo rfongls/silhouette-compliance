@@ -158,6 +158,19 @@ jobs:
 
       - name: Smoke test
         run: |
-          sleep 12
-          curl --fail --location --max-redirs 4 "$HEALTHCHECK_URL"
-          curl --fail --location --max-redirs 4 https://complianceapp.silhouettellc.com/api/auth/providers
+          check_url() {
+            local url="$1"
+            for attempt in $(seq 1 24); do
+              if curl --fail --silent --show-error --location --max-redirs 4 --output /dev/null "$url"; then
+                echo "Ready: $url"
+                return 0
+              fi
+              echo "Readiness check $attempt failed for $url; retrying in 5 seconds..."
+              sleep 5
+            done
+            echo "Application did not become ready: $url" >&2
+            return 1
+          }
+
+          check_url "$HEALTHCHECK_URL"
+          check_url https://complianceapp.silhouettellc.com/api/auth/providers

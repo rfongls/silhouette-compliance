@@ -88,6 +88,15 @@ const modelOptions: Record<string, { label: string; value: string }[]> = {
     { label: "Claude 3 Opus", value: "claude-3-opus-latest" }
   ],
   openai: [
+    { label: "GPT-5.6 Sol - highest quality", value: "gpt-5.6-sol" },
+    { label: "GPT-5.6 Terra - balanced", value: "gpt-5.6-terra" },
+    { label: "GPT-5.6 Luna - lowest cost", value: "gpt-5.6-luna" },
+    { label: "GPT-5.4", value: "gpt-5.4" },
+    { label: "GPT-5.4 mini", value: "gpt-5.4-mini" },
+    { label: "GPT-5.4 nano", value: "gpt-5.4-nano" },
+    { label: "GPT-5", value: "gpt-5" },
+    { label: "GPT-5 mini", value: "gpt-5-mini" },
+    { label: "GPT-5 nano", value: "gpt-5-nano" },
     { label: "GPT-4o mini", value: "gpt-4o-mini" },
     { label: "GPT-4o", value: "gpt-4o" },
     { label: "GPT-4.1 mini", value: "gpt-4.1-mini" },
@@ -105,6 +114,13 @@ const modelOptions: Record<string, { label: string; value: string }[]> = {
     { label: "Llama 3.1 70B Instruct", value: "llama-3.1-70b-instruct" },
     { label: "Qwen 2.5 72B Instruct", value: "qwen-2.5-72b-instruct" }
   ]
+};
+
+const providerBaseUrls: Record<string, string> = {
+  anthropic: "",
+  openai: "https://api.openai.com/v1/responses",
+  deepseek: "https://api.deepseek.com/chat/completions",
+  "openai-compatible": ""
 };
 
 function optionsFor(provider: string) {
@@ -153,6 +169,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setModel(nextModel);
     setModelChoice(nextModel);
     setCustomModel("");
+    setBaseUrl(providerBaseUrls[nextProvider] || "");
     setBoardPlan(null);
   }
 
@@ -324,7 +341,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             <option value="__custom">Custom model</option>
           </select></label>
           {modelChoice === "__custom" ? <label>Custom model<input className="input" value={customModel} onChange={(event) => changeCustomModel(event.target.value)} placeholder="provider-specific-model-id" /></label> : null}
-          <label>Base URL<input className="input" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://.../chat/completions" /></label>
+          <label>Base URL<input className="input" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="Provider API endpoint" /></label>
           <label>API Key<input className="input" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={hasApiKey ? "Stored key active" : "Environment fallback or new key"} /></label>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 14, flexWrap: "wrap" }}>
@@ -347,7 +364,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
           <button className="btn" onClick={preflightBoard}>Check official source</button>
           <a className="btn secondary" href="/api/admin/boards/export" target="_blank">Export base controls</a>
         </div>
-        {boardPlan ? <div className="card" style={{ padding: 16, background: "rgba(255,255,255,.55)", marginBottom: 18 }}>
+        {boardPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
           <div className="mono">Extraction preflight</div>
           <h3 style={{ marginBottom: 6 }}>{boardPlan.sourceTitle}</h3>
           <p className="muted" style={{ marginTop: 0 }}>{boardPlan.sourceVersion}</p>
@@ -368,12 +385,12 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
           <p>{boardPlan.readinessMessage}</p>
           <button className="btn" onClick={extractBoard} disabled={!boardPlan.ready}>{boardPlan.method === "deterministic" ? "Create parsed draft" : "Run confirmed extraction"}</button>
         </div> : null}
-        <div className="card" style={{ padding: 14, background: "rgba(255,255,255,.55)", marginBottom: 18 }}>
+        <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
           <div className="mono">Manual control upload</div>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(260px,1fr) 200px", gap: 12, alignItems: "end", marginTop: 10 }}>
+          <div className="control-upload-grid">
             <label>
               Control JSON
-              <textarea className="textarea" value={controlsJson} onChange={(event) => setControlsJson(event.target.value)} placeholder='[{"id":"IR-4","standard":"NIST","category":"Incident Response","requirement":"Incident response plan is developed and tested","risk_level":"High"}]' style={{ minHeight: 150 }} />
+              <textarea className="textarea" value={controlsJson} onChange={(event) => setControlsJson(event.target.value)} placeholder='[{"id":"IR-4","standard":"NIST","category":"Incident Response","requirement":"Incident response plan is developed and tested","risk_level":"High"}]' style={{ minHeight: 320 }} />
             </label>
             <div style={{ display: "grid", gap: 10 }}>
               <label>Source title<input className="input" value={sourceTitle} onChange={(event) => setSourceTitle(event.target.value)} placeholder="Official publication title" /></label>

@@ -13,7 +13,7 @@ export const SETTING_KEYS = {
 
 const providerDefaults: Record<AIProvider, { model: string; baseUrl: string }> = {
   anthropic: { model: "claude-3-5-sonnet-latest", baseUrl: "" },
-  openai: { model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1/chat/completions" },
+  openai: { model: "gpt-5.6-terra", baseUrl: "https://api.openai.com/v1/responses" },
   deepseek: { model: "deepseek-chat", baseUrl: "https://api.deepseek.com/chat/completions" },
   "openai-compatible": { model: "gpt-4o-mini", baseUrl: "" }
 };
@@ -83,12 +83,20 @@ function envBaseUrlFor(provider: AIProvider) {
   return providerDefaults[provider].baseUrl;
 }
 
+function normalizedBaseUrl(provider: AIProvider, value: string) {
+  if (provider === "openai" && /^https:\/\/api\.openai\.com\/v1\/chat\/completions\/?$/i.test(value)) {
+    return providerDefaults.openai.baseUrl;
+  }
+  return value;
+}
+
 export async function getAIConfig() {
   const storedProvider = await getSetting(SETTING_KEYS.aiProvider, process.env.AI_PROVIDER || "anthropic");
   const provider: AIProvider = validProvider(storedProvider) ? storedProvider : "anthropic";
   const legacyModel = await getSetting(SETTING_KEYS.anthropicModel, "");
   const model = await getSetting(SETTING_KEYS.aiModel, legacyModel || envModelFor(provider));
-  const baseUrl = await getSetting(SETTING_KEYS.aiBaseUrl, envBaseUrlFor(provider));
+  const configuredBaseUrl = await getSetting(SETTING_KEYS.aiBaseUrl, envBaseUrlFor(provider));
+  const baseUrl = normalizedBaseUrl(provider, configuredBaseUrl);
   const encrypted = await getSetting(SETTING_KEYS.aiApiKey, "");
   const apiKey = encrypted ? decryptSecret(encrypted) : envKeyFor(provider);
   return { provider, model, baseUrl, apiKey };

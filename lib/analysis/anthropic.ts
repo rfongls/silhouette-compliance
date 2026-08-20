@@ -27,7 +27,7 @@ async function callAnthropic(system: string, prompt: string, apiKey: string, mod
   return { json: sanitizeForExport(extractJson(text)), usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } };
 }
 
-async function callOpenAICompatible(system: string, prompt: string, apiKey: string, model: string, baseUrl: string, options?: JsonCallOptions, officialOpenAI = false) {
+async function callOpenAICompatible(system: string, prompt: string, apiKey: string, model: string, baseUrl: string) {
   if (!baseUrl) throw new Error("AI base URL is required for this provider");
   const res = await fetch(baseUrl, {
     method: "POST",
@@ -38,13 +38,6 @@ async function callOpenAICompatible(system: string, prompt: string, apiKey: stri
     body: JSON.stringify({
       model,
       temperature: 0.1,
-      ...(officialOpenAI ? { store: false } : {}),
-      ...(officialOpenAI && options?.schema ? {
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: options.schemaName || "structured_response", strict: true, schema: options.schema }
-        }
-      } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt }
@@ -60,11 +53,56 @@ async function callOpenAICompatible(system: string, prompt: string, apiKey: stri
   };
 }
 
+function responseOutputText(data: any) {
+  if (typeof data?.output_text === "string") return data.output_text;
+  for (const item of data?.output || []) {
+    for (const content of item?.content || []) {
+      if (content?.type === "output_text" && typeof content.text === "string") return content.text;
+    }
+  }
+  return "";
+}
+
+async function callOpenAIResponses(system: string, prompt: string, apiKey: string, model: string, baseUrl: string, options?: JsonCallOptions) {
+  const endpoint = baseUrl || "https://api.openai.com/v1/responses";
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      store: false,
+      input: [
+        { role: "system", content: system },
+        { role: "user", content: prompt }
+      ],
+      ...(options?.schema ? {
+        text: {
+          format: {
+            type: "json_schema",
+            name: options.schemaName || "structured_response",
+            strict: true,
+            schema: options.schema
+          }
+        }
+      } : {})
+    })
+  });
+  if (!res.ok) throw new Error(`OpenAI API error ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const text = responseOutputText(data);
+  if (!text) throw new Error("OpenAI response did not contain output text");
+  return {
+    json: sanitizeForExport(extractJson(text)),
+    usage: { inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens }
+  };
+}
+
 export async function callAIJson(system: string, prompt: string, options?: JsonCallOptions): Promise<{ json: unknown; usage: ModelUsage }> {
   const config = await getAIConfig();
   if (!config.apiKey) throw new Error(`${config.provider} API key is not configured`);
   if (config.provider === "anthropic") return callAnthropic(system, prompt, config.apiKey, config.model);
-  return callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl, options, config.provider === "openai");
+  if (config.provider === "openai") return callOpenAIResponses(system, prompt, config.apiKey, config.model, config.baseUrl, options);
+  return callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl);
 }
 
 export const callAnthropicJson = callAIJson;

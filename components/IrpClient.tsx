@@ -181,7 +181,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
             </select>
           </label>
 
-          <div className="card" style={{ padding: 14, background: "rgba(255,255,255,.58)" }}>
+          <div className="card subcard" style={{ padding: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 12 }}>
               <div>
                 <div className="mono">Organizations reviewed</div>
@@ -190,7 +190,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
               <button className="btn secondary" type="button" onClick={addOrg}>Add org</button>
             </div>
             {orgs.map((org, index) => (
-              <div key={org.id} className="card" style={{ padding: 12, marginTop: 10, background: "rgba(255,255,255,.68)" }}>
+              <div key={org.id} className="card nested-card" style={{ padding: 12, marginTop: 10 }}>
                 <label>
                   Organization {index + 1}
                   <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder="Organization being assessed" />
@@ -218,7 +218,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
           </div>
 
           {!demo ? (
-            <label className="card" style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 14, background: "rgba(255,255,255,.68)" }}>
+            <label className="card subcard" style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 14 }}>
               <input
                 type="checkbox"
                 checked={phiAttested}
@@ -260,7 +260,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
             </div>
             <h3>Findings</h3>
             {result.data_handling ? (
-              <div className="card" style={{ padding: 12, marginBottom: 12, background: "rgba(255,255,255,.62)" }}>
+              <div className="card subcard" style={{ padding: 12, marginBottom: 12 }}>
                 <b>Data handling</b>
                 <p className="muted" style={{ margin: "5px 0 0", fontSize: 13 }}>{result.data_handling.message}</p>
               </div>
@@ -271,7 +271,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
             {assessments.length ? (
               <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
                 {assessments.map((assessment) => (
-                  <div className="card" key={assessment.assessmentId} style={{ padding: 12, background: "rgba(255,255,255,.62)" }}>
+                  <div className="card subcard" key={assessment.assessmentId} style={{ padding: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                       <div><b>{assessment.orgName}</b>{assessment.reused ? <span className="badge" style={{ marginLeft: 8 }}>Existing result reused</span> : null}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

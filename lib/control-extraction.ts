@@ -33,23 +33,30 @@ export type ControlExtractionPlan = {
 };
 
 export const CONTROL_EXTRACTION_SCHEMA = {
-  type: "array",
-  items: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      id: { type: "string" },
-      standard: { type: "string" },
-      category: { type: "string" },
-      requirement: { type: "string" },
-      risk_level: { type: "string", enum: ["Critical", "High", "Medium", "Low"] },
-      source_url: { type: "string" },
-      source_section: { type: "string" },
-      source_quote: { type: "string" },
-      extraction_batch: { type: "string" }
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    controls: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: { type: "string" },
+          standard: { type: "string" },
+          category: { type: "string" },
+          requirement: { type: "string" },
+          risk_level: { type: "string", enum: ["Critical", "High", "Medium", "Low"] },
+          source_url: { type: "string" },
+          source_section: { type: "string" },
+          source_quote: { type: "string" },
+          extraction_batch: { type: "string" }
+        },
+        required: ["id", "standard", "category", "requirement", "risk_level", "source_url", "source_section", "source_quote", "extraction_batch"]
+      }
     },
-    required: ["id", "standard", "category", "requirement", "risk_level", "source_url", "source_section", "source_quote", "extraction_batch"]
-  }
+  },
+  required: ["controls"]
 } as const;
 
 function collapsed(value: string) {
@@ -111,7 +118,7 @@ export function buildGroundedControlPrompt(input: {
   return `${input.batch.prompt.replace(/Fetch current authoritative text first\.?/gi, "")}
 
 Extract only requirements that are explicitly supported by the supplied official source text.
-Return every in-scope requirement for this batch. Do not summarize multiple separately identified requirements into one control.
+Return every in-scope requirement for this batch in an object with a controls array. Do not summarize multiple separately identified requirements into one control.
 Each control must contain exactly: id, standard, category, requirement, risk_level, source_url, source_section, source_quote, extraction_batch.
 - standard must be ${input.standardKey}.
 - source_url must be one of the supplied official source URLs.

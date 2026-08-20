@@ -26,7 +26,7 @@ function money(cents: number) {
 
 export function RunQuoteSummary({ quote }: { quote: RunQuote }) {
   return (
-    <div className="card" style={{ padding: 14, background: "rgba(255,255,255,.65)" }}>
+    <div className="card subcard" style={{ padding: 14 }}>
       <div className="mono">Run estimate</div>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginTop: 10 }}>
         <div><b>{quote.orgCount}</b><p className="muted" style={{ margin: 0 }}>org{quote.orgCount === 1 ? "" : "s"} assessed</p></div>

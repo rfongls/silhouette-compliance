@@ -217,6 +217,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [status, setStatus] = useState("");
   const [domainPlan, setDomainPlan] = useState<DomainPlan | null>(null);
   const [extractionRun, setExtractionRun] = useState<ExtractionRun | null>(null);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
   const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
@@ -449,25 +451,44 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   }
 
   async function continueFailedRun() {
-    if (!extractionRun || extractionIsRunning) return;
+    if (!extractionRun || extractionIsRunning || recoveryBusy) return;
+    setRecoveryBusy(true);
+    setRecoveryMessage("Checking the current official-source fingerprints...");
     setStatus("Rechecking official sources before continuing the failed run...");
     const plan = domainPlan || await loadDomainPlan();
-    if (!plan) return;
+    if (!plan) {
+      setRecoveryMessage("The official sources could not be checked. Review the status message and try again.");
+      setRecoveryBusy(false);
+      return;
+    }
     const sourcesStillMatch = Object.keys(extractionRun.sourceHashes || {}).length > 0
       && Object.entries(extractionRun.sourceHashes || {}).every(([key, hash]) =>
         plan.standards.some((item) => item.standardKey === key && item.sourceHash === hash));
     if (!sourcesStillMatch) {
-      setStatus("One or more official sources changed after the failed run. Saved checkpoints cannot be reused; start a new run with the current sources.");
+      const message = "The official source snapshot changed after this run failed. Its checkpoints cannot be reused safely. Choose Start new run; completed review drafts will remain available.";
+      setRecoveryMessage(message);
+      setStatus(message);
+      setRecoveryBusy(false);
       return;
     }
+    setRecoveryMessage("Saved checkpoints match the current sources. Confirm continuation in the dialog.");
+    setRecoveryBusy(false);
     await extractBoard(undefined, true, false, plan);
   }
 
   async function startNewExtractionRun() {
-    if (extractionIsRunning) return;
+    if (extractionIsRunning || recoveryBusy) return;
+    setRecoveryBusy(true);
+    setRecoveryMessage("Checking current sources before creating a fresh run...");
     setStatus("Checking current official sources before starting a new run...");
     const plan = domainPlan || await loadDomainPlan();
-    if (!plan) return;
+    if (!plan) {
+      setRecoveryMessage("The official sources could not be checked. Review the status message and try again.");
+      setRecoveryBusy(false);
+      return;
+    }
+    setRecoveryMessage("Current sources are ready. Confirm the new run in the dialog.");
+    setRecoveryBusy(false);
     await extractBoard(undefined, false, true, plan);
   }
 
@@ -671,9 +692,10 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
               </tr>)}</tbody>
             </table> : null}
             {runNeedsRecovery ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button className="btn" onClick={continueFailedRun}>{runCanResume ? "Continue from last failed item" : "Check and continue failed run"}</button>
-              <button className="btn secondary" onClick={startNewExtractionRun}>Start new run</button>
+              <button className="btn" onClick={continueFailedRun} disabled={recoveryBusy}>{recoveryBusy ? "Checking sources..." : runCanResume ? "Continue from last failed item" : "Check and continue failed run"}</button>
+              <button className="btn secondary" onClick={startNewExtractionRun} disabled={recoveryBusy}>{recoveryBusy ? "Please wait..." : "Start new run"}</button>
             </div> : null}
+            {runNeedsRecovery && recoveryMessage ? <p className="muted" role="status" style={{ marginTop: 10, marginBottom: 0 }}>{recoveryMessage}</p> : null}
             {extractionRun.status === "COMPLETED" ? <button className="btn secondary" onClick={() => window.location.reload()}>Review created drafts</button> : null}
           </div> : null}
         <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>

@@ -72,6 +72,12 @@ function groundedComparable(value: string) {
     .replace(/[\u2010-\u2015\u2212]/g, "-"));
 }
 
+function includesOfficialIdentifier(control: NormalizedControl, identifier: string) {
+  const location = groundedComparable(`${control.id} ${control.source_section || ""}`);
+  const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^0-9A-Z])${escaped}(?=$|[^0-9])`, "i").test(location);
+}
+
 export function buildControlExtractionPlan(
   standardKey: string,
   source: ControlSourceSnapshot,
@@ -130,6 +136,7 @@ Extract only requirements that are explicitly supported by the supplied official
 Return every in-scope requirement for this batch in an object with a controls array. Do not summarize multiple separately identified requirements into one control.
 Each control must contain exactly: id, standard, category, requirement, risk_level, source_url, source_section, source_quote, extraction_batch.
 - standard must be ${input.standardKey}.
+- id must use the exact official control or section identifier. For CFR requirements, begin with the CFR section and paragraph (for example, 164.308(a)(1)(i)); do not create generic sequential IDs.
 - source_url must be one of the supplied official source URLs.
 - source_section must identify the source heading, CFR section, control family, or equivalent location.
 - source_quote must be one contiguous, exact supporting quote copied from the supplied source text. Do not paraphrase, ellipsize, add words, or omit words inside the quote.
@@ -171,7 +178,7 @@ export function validateGroundedControls(input: {
     }
   }
   const missingIdentifiers = (input.batch.requiredIdentifiers || []).filter((identifier) =>
-    !input.controls.some((control) => control.id.toLocaleLowerCase().startsWith(identifier.toLocaleLowerCase()))
+    !input.controls.some((control) => includesOfficialIdentifier(control, identifier))
   );
   if (missingIdentifiers.length) {
     throw new Error(`${input.batch.label} is incomplete. Missing required identifiers: ${missingIdentifiers.join(", ")}.`);

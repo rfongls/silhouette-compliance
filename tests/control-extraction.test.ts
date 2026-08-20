@@ -76,6 +76,48 @@ test("grounded quote matching tolerates source typography without accepting para
   assert.throws(() => validateGroundedControls({ controls: [{ ...control, source_quote: "The organization should probably maintain a tested plan." }], standardKey: "RULE", sourceText, sourceUrls: source.urls, batch }), /exact source quote/);
 });
 
+test("required CFR sections accept official identifier prefixes and source-section citations", () => {
+  const sourceText = "164.308 Administrative safeguards. 164.310 Physical safeguards.";
+  const controls = [
+    {
+      id: "45-CFR-164.308(a)(1)(i)",
+      standard: "HIPAA",
+      category: "Administrative safeguards",
+      requirement: "Implement security management processes.",
+      risk_level: "High",
+      source_url: source.urls[0],
+      source_section: "45 CFR 164.308(a)(1)(i)",
+      source_quote: "164.308 Administrative safeguards.",
+      extraction_batch: "HIPAA Security"
+    },
+    {
+      id: "HIPAA-PHYSICAL-1",
+      standard: "HIPAA",
+      category: "Physical safeguards",
+      requirement: "Implement physical safeguards.",
+      risk_level: "High",
+      source_url: source.urls[0],
+      source_section: "45 CFR \u00a7 164.310",
+      source_quote: "164.310 Physical safeguards.",
+      extraction_batch: "HIPAA Security"
+    }
+  ];
+  assert.equal(validateGroundedControls({
+    controls,
+    standardKey: "HIPAA",
+    sourceText,
+    sourceUrls: source.urls,
+    batch: { label: "HIPAA Security", prompt: "Extract", requiredIdentifiers: ["164.308", "164.310"] }
+  }).length, 2);
+  assert.throws(() => validateGroundedControls({
+    controls,
+    standardKey: "HIPAA",
+    sourceText,
+    sourceUrls: source.urls,
+    batch: { label: "HIPAA Security", prompt: "Extract", requiredIdentifiers: ["164.312"] }
+  }), /164\.312/);
+});
+
 test("official markup parsing decodes numeric XML entities before grounded extraction", () => {
   assert.equal(officialSourceParsers.readableMarkup("<P>&#167; 164.308 &#x2014; Security &amp; Privacy</P>"), "\u00a7 164.308 \u2014 Security & Privacy");
 });

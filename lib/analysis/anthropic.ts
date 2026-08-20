@@ -1,9 +1,26 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { sanitizeForExport } from "@/lib/sanitize";
-import { getAIConfig } from "@/lib/settings";
+import { getAIConfig, markAIKeyUnverified } from "@/lib/settings";
 
 export type ModelUsage = { inputTokens?: number; outputTokens?: number };
 type JsonCallOptions = { schemaName?: string; schema?: Record<string, unknown> };
+
+class AIProviderRequestError extends Error {
+  status: number;
+
+  constructor(label: string, status: number) {
+    const message = status === 401
+      ? `${label} rejected the configured API key. An administrator must replace and verify it in Analysis Settings.`
+      : status === 403
+        ? `${label} denied this request. Check the API key project permissions and selected model access.`
+        : status === 429
+          ? `${label} rate limit or quota was reached. Check provider usage and billing before retrying.`
+          : `${label} request failed (HTTP ${status}).`;
+    super(message);
+    this.name = "AIProviderRequestError";
+    this.status = status;
+  }
+}
 
 function extractJson(raw: string) {
   const objStart = raw.indexOf("{");
@@ -44,7 +61,7 @@ async function callOpenAICompatible(system: string, prompt: string, apiKey: stri
       ]
     })
   });
-  if (!res.ok) throw new Error(`AI provider request failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new AIProviderRequestError("AI provider", res.status);
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content || "";
   return {
@@ -87,7 +104,7 @@ async function callOpenAIResponses(system: string, prompt: string, apiKey: strin
       } : {})
     })
   });
-  if (!res.ok) throw new Error(`OpenAI API error ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new AIProviderRequestError("OpenAI", res.status);
   const data = await res.json();
   const text = responseOutputText(data);
   if (!text) throw new Error("OpenAI response did not contain output text");
@@ -100,9 +117,19 @@ async function callOpenAIResponses(system: string, prompt: string, apiKey: strin
 export async function callAIJson(system: string, prompt: string, options?: JsonCallOptions): Promise<{ json: unknown; usage: ModelUsage }> {
   const config = await getAIConfig();
   if (!config.apiKey) throw new Error(`${config.provider} API key is not configured`);
-  if (config.provider === "anthropic") return callAnthropic(system, prompt, config.apiKey, config.model);
-  if (config.provider === "openai") return callOpenAIResponses(system, prompt, config.apiKey, config.model, config.baseUrl, options);
-  return callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl);
+  try {
+    if (config.provider === "anthropic") return await callAnthropic(system, prompt, config.apiKey, config.model);
+    if (config.provider === "openai") return await callOpenAIResponses(system, prompt, config.apiKey, config.model, config.baseUrl, options);
+    return await callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl);
+  } catch (error) {
+    const status = error instanceof AIProviderRequestError
+      ? error.status
+      : typeof error === "object" && error && "status" in error
+        ? Number(error.status)
+        : 0;
+    if (status === 401) await markAIKeyUnverified(config.provider).catch(() => undefined);
+    throw error;
+  }
 }
 
 export const callAnthropicJson = callAIJson;

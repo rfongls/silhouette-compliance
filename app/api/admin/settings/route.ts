@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
-import { getAIConfigForAdmin, setAIConfig, type AIProvider } from "@/lib/settings";
+import { AIKeyVerificationError, verifyAIKey } from "@/lib/ai-provider-validation";
+import { getAIConfig, getAIConfigForAdmin, markAIKeyVerified, setAIConfig, type AIProvider } from "@/lib/settings";
 
 const providers = new Set(["anthropic", "openai", "deepseek", "openai-compatible"]);
 
@@ -31,6 +32,36 @@ export async function PATCH(req: Request) {
   if (!validModel(model)) return NextResponse.json({ error: "Invalid model name" }, { status: 400 });
   if (!validBaseUrl(baseUrl)) return NextResponse.json({ error: "Invalid base URL" }, { status: 400 });
 
-  await setAIConfig({ provider: nextProvider as AIProvider, model, baseUrl, apiKey });
+  const typedProvider = nextProvider as AIProvider;
+  if (apiKey) {
+    try {
+      const verification = await verifyAIKey({ provider: typedProvider, apiKey, baseUrl });
+      await setAIConfig({ provider: typedProvider, model, baseUrl, apiKey });
+      await markAIKeyVerified(typedProvider, apiKey, verification.verifiedAt);
+    } catch (error) {
+      const message = error instanceof AIKeyVerificationError ? error.message : "The API key could not be verified.";
+      const status = error instanceof AIKeyVerificationError && error.status >= 400 && error.status < 500 ? 400 : 502;
+      return NextResponse.json({ error: message }, { status });
+    }
+  } else {
+    await setAIConfig({ provider: typedProvider, model, baseUrl });
+  }
   return NextResponse.json({ aiConfig: await getAIConfigForAdmin() });
+}
+
+export async function POST() {
+  const guard = await requireSession("admin");
+  if ("response" in guard) return guard.response;
+
+  const config = await getAIConfig();
+  if (!config.apiKey) return NextResponse.json({ error: "No API key is stored for this provider." }, { status: 400 });
+  try {
+    const verification = await verifyAIKey(config);
+    await markAIKeyVerified(config.provider, config.apiKey, verification.verifiedAt);
+    return NextResponse.json({ aiConfig: await getAIConfigForAdmin() });
+  } catch (error) {
+    const message = error instanceof AIKeyVerificationError ? error.message : "The API key could not be verified.";
+    const status = error instanceof AIKeyVerificationError && error.status >= 400 && error.status < 500 ? 400 : 502;
+    return NextResponse.json({ error: message }, { status });
+  }
 }

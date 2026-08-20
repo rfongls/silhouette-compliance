@@ -11,6 +11,14 @@ export const SETTING_KEYS = {
   anthropicModel: "anthropicModel"
 } as const;
 
+export type AIKeyStatus = "missing" | "stored" | "verified";
+
+type AIKeyVerification = {
+  provider: AIProvider;
+  keyFingerprint: string;
+  verifiedAt: string;
+};
+
 const providerDefaults: Record<AIProvider, { model: string; baseUrl: string }> = {
   anthropic: { model: "claude-3-5-sonnet-latest", baseUrl: "" },
   openai: { model: "gpt-5.6-terra", baseUrl: "https://api.openai.com/v1/responses" },
@@ -84,10 +92,35 @@ function envBaseUrlFor(provider: AIProvider) {
 }
 
 function normalizedBaseUrl(provider: AIProvider, value: string) {
-  if (provider === "openai" && /^https:\/\/api\.openai\.com\/v1\/chat\/completions\/?$/i.test(value)) {
+  if (provider === "openai") {
     return providerDefaults.openai.baseUrl;
   }
   return value;
+}
+
+function providerApiKeySetting(provider: AIProvider) {
+  return `${SETTING_KEYS.aiApiKey}:${provider}`;
+}
+
+function providerVerificationSetting(provider: AIProvider) {
+  return `${SETTING_KEYS.aiApiKey}:verification:${provider}`;
+}
+
+function keyFingerprint(apiKey: string) {
+  return crypto.createHash("sha256").update(apiKey).digest("hex");
+}
+
+async function getKeyVerification(provider: AIProvider, apiKey: string): Promise<AIKeyVerification | null> {
+  if (!apiKey) return null;
+  const raw = await getSetting(providerVerificationSetting(provider), "");
+  if (!raw) return null;
+  try {
+    const verification = JSON.parse(raw) as AIKeyVerification;
+    if (verification.provider !== provider || verification.keyFingerprint !== keyFingerprint(apiKey)) return null;
+    return verification;
+  } catch {
+    return null;
+  }
 }
 
 export async function getAIConfig() {
@@ -97,19 +130,35 @@ export async function getAIConfig() {
   const model = await getSetting(SETTING_KEYS.aiModel, legacyModel || envModelFor(provider));
   const configuredBaseUrl = await getSetting(SETTING_KEYS.aiBaseUrl, envBaseUrlFor(provider));
   const baseUrl = normalizedBaseUrl(provider, configuredBaseUrl);
-  const encrypted = await getSetting(SETTING_KEYS.aiApiKey, "");
+  const encrypted = await getSetting(providerApiKeySetting(provider), "") || await getSetting(SETTING_KEYS.aiApiKey, "");
   const apiKey = encrypted ? decryptSecret(encrypted) : envKeyFor(provider);
   return { provider, model, baseUrl, apiKey };
 }
 
 export async function getAIConfigForAdmin() {
   const config = await getAIConfig();
+  const verification = await getKeyVerification(config.provider, config.apiKey);
   return {
     provider: config.provider,
     model: config.model,
     baseUrl: config.baseUrl,
-    hasApiKey: Boolean(config.apiKey)
+    hasApiKey: Boolean(config.apiKey),
+    keyStatus: (!config.apiKey ? "missing" : verification ? "verified" : "stored") as AIKeyStatus,
+    keyVerifiedAt: verification?.verifiedAt || null
   };
+}
+
+export async function markAIKeyVerified(provider: AIProvider, apiKey: string, verifiedAt: string) {
+  const verification: AIKeyVerification = {
+    provider,
+    keyFingerprint: keyFingerprint(apiKey),
+    verifiedAt
+  };
+  await setSetting(providerVerificationSetting(provider), JSON.stringify(verification));
+}
+
+export async function markAIKeyUnverified(provider: AIProvider) {
+  await setSetting(providerVerificationSetting(provider), "");
 }
 
 export async function setAIConfig(input: { provider: AIProvider; model: string; baseUrl?: string; apiKey?: string }) {
@@ -118,5 +167,5 @@ export async function setAIConfig(input: { provider: AIProvider; model: string; 
     setSetting(SETTING_KEYS.aiModel, input.model),
     setSetting(SETTING_KEYS.aiBaseUrl, input.baseUrl || "")
   ]);
-  if (input.apiKey?.trim()) await setSetting(SETTING_KEYS.aiApiKey, encryptSecret(input.apiKey.trim()));
+  if (input.apiKey?.trim()) await setSetting(providerApiKeySetting(input.provider), encryptSecret(input.apiKey.trim()));
 }

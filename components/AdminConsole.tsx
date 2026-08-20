@@ -118,6 +118,8 @@ type Props = {
     model: string;
     baseUrl: string;
     hasApiKey: boolean;
+    keyStatus: "missing" | "stored" | "verified";
+    keyVerifiedAt: string | null;
   };
 };
 
@@ -199,6 +201,10 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [baseUrl, setBaseUrl] = useState(aiConfig.baseUrl);
   const [apiKey, setApiKey] = useState("");
   const [hasApiKey, setHasApiKey] = useState(aiConfig.hasApiKey);
+  const [keyStatus, setKeyStatus] = useState(aiConfig.keyStatus);
+  const [keyVerifiedAt, setKeyVerifiedAt] = useState(aiConfig.keyVerifiedAt);
+  const [savingAISettings, setSavingAISettings] = useState(false);
+  const [testingAIKey, setTestingAIKey] = useState(false);
   const [industry, setIndustry] = useState(industries[0].value);
   const [standardKey, setStandardKey] = useState(standardsByIndustry[industries[0].value]?.[0]?.key || standards[0] || "HIPAA");
   const [controlsJson, setControlsJson] = useState("");
@@ -259,6 +265,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setModelChoice(nextModel);
     setCustomModel("");
     setBaseUrl(providerBaseUrls[nextProvider] || "");
+    setKeyStatus(hasApiKey ? "stored" : "missing");
+    setKeyVerifiedAt(null);
     setDomainPlan(null);
   }
 
@@ -300,13 +308,17 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   }
 
   async function saveAISettings() {
+    setSavingAISettings(true);
     setStatus("Saving AI settings...");
     const res = await fetch("/api/admin/settings", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ provider, model, baseUrl, apiKey })
     });
-    if (!res.ok) return setStatus(await readError(res));
+    if (!res.ok) {
+      setSavingAISettings(false);
+      return setStatus(await readError(res));
+    }
     const data = await res.json();
     setProvider(data.aiConfig.provider);
     setModel(data.aiConfig.model);
@@ -319,8 +331,28 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     }
     setBaseUrl(data.aiConfig.baseUrl);
     setHasApiKey(data.aiConfig.hasApiKey);
+    setKeyStatus(data.aiConfig.keyStatus);
+    setKeyVerifiedAt(data.aiConfig.keyVerifiedAt);
     setApiKey("");
-    setStatus("AI settings saved.");
+    setSavingAISettings(false);
+    setStatus(data.aiConfig.keyStatus === "verified" ? "AI settings saved. API key is active and verified." : "AI settings saved. Test the stored key before running analysis.");
+  }
+
+  async function testAIKey() {
+    setTestingAIKey(true);
+    setStatus("Verifying the stored API key...");
+    const res = await fetch("/api/admin/settings", { method: "POST" });
+    if (!res.ok) {
+      setTestingAIKey(false);
+      setKeyStatus(hasApiKey ? "stored" : "missing");
+      return setStatus(await readError(res));
+    }
+    const data = await res.json();
+    setHasApiKey(data.aiConfig.hasApiKey);
+    setKeyStatus(data.aiConfig.keyStatus);
+    setKeyVerifiedAt(data.aiConfig.keyVerifiedAt);
+    setTestingAIKey(false);
+    setStatus("API key is active and verified.");
   }
 
   async function preflightBoard() {
@@ -528,11 +560,13 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
           </select></label>
           {modelChoice === "__custom" ? <label>Custom model<input className="input" value={customModel} onChange={(event) => changeCustomModel(event.target.value)} placeholder="provider-specific-model-id" /></label> : null}
           <label>Base URL<input className="input" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="Provider API endpoint" /></label>
-          <label>API Key<input className="input" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={hasApiKey ? "Stored key active" : "Environment fallback or new key"} /></label>
+          <label>API Key<input className="input" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={hasApiKey ? "Stored key available" : "Environment fallback or new key"} autoComplete="new-password" /></label>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 14, flexWrap: "wrap" }}>
-          <button className="btn" onClick={saveAISettings}>Save AI settings</button>
-          <span className={hasApiKey ? "badge" : "badge locked"}>{hasApiKey ? "Key configured" : "No key configured"}</span>
+          <button className="btn" onClick={saveAISettings} disabled={savingAISettings || testingAIKey}>{savingAISettings ? apiKey.trim() ? "Verifying and saving..." : "Saving..." : "Save AI settings"}</button>
+          <button className="btn secondary" onClick={testAIKey} disabled={!hasApiKey || savingAISettings || testingAIKey}>{testingAIKey ? "Verifying..." : "Test saved key"}</button>
+          <span className={keyStatus === "verified" ? "badge" : keyStatus === "stored" ? "badge warning" : "badge locked"}>{keyStatus === "verified" ? "Active and verified" : keyStatus === "stored" ? "Stored, not verified" : "No key configured"}</span>
+          {keyStatus === "verified" && keyVerifiedAt ? <span className="muted" style={{ fontSize: 12 }}>Verified {new Date(keyVerifiedAt).toLocaleString()}</span> : null}
         </div>
       </section>
 

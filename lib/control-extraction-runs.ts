@@ -7,6 +7,7 @@ export type ExtractionStandardStatus = {
   status: "PENDING" | "RUNNING" | "COMPLETE" | "FAILED";
   message: string;
   controlCount?: number;
+  boardId?: string;
 };
 
 export type ControlExtractionRun = {
@@ -67,7 +68,19 @@ export async function acquireControlExtractionRun(
   }
 
   const now = new Date().toISOString();
-  const run: ControlExtractionRun = {
+  const resumable = Boolean(existing
+    && existing.status !== "COMPLETED"
+    && sourceFingerprint(existing.sourceHashes || {}) === sourceFingerprint(sourceHashes));
+  const run: ControlExtractionRun = resumable ? {
+    ...existing!,
+    status: "RUNNING",
+    phase: "CHECKING_SOURCES",
+    currentStandard: null,
+    startedBy,
+    updatedAt: now,
+    completedAt: null,
+    error: null
+  } : {
     id: crypto.randomUUID(),
     industry,
     status: "RUNNING",
@@ -88,7 +101,7 @@ export async function acquireControlExtractionRun(
   if (!setting) {
     try {
       await prisma.appSetting.create({ data: { key, value } });
-      return run;
+      return { run, resumed: false };
     } catch {
       throw new Error("A control extraction was started by another request. Follow the active run instead of submitting again.");
     }
@@ -101,7 +114,7 @@ export async function acquireControlExtractionRun(
   if (acquired.count !== 1) {
     throw new Error("A control extraction was started by another request. Follow the active run instead of submitting again.");
   }
-  return run;
+  return { run, resumed: resumable };
 }
 
 export async function updateControlExtractionRun(

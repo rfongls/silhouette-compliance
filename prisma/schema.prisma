@@ -104,57 +104,73 @@ model AppSetting {
 }
 
 model ControlBoard {
-  id           String      @id @default(cuid())
-  industry     String
-  standardKey  String
-  version      Int
-  status       BoardStatus
-  controls     Json
-  controlCount Int
-  sourceTitle  String?
+  id            String      @id @default(cuid())
+  industry      String
+  standardKey   String
+  version       Int
+  status        BoardStatus
+  controls      Json
+  controlCount  Int
+  sourceTitle   String?
   sourceVersion String?
-  sourceUrls   Json?
-  sourceHash   String?
-  retrievedAt  DateTime?
-  reviewedBy   String?
-  reviewedAt   DateTime?
-  reviewNotes  String?
-  publishedAt  DateTime?
-  createdAt    DateTime    @default(now())
+  sourceUrls    Json?
+  sourceHash    String?
+  retrievedAt   DateTime?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewNotes   String?
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
 
   @@index([industry, standardKey, status])
 }
 
+model ControlExtractionCheckpoint {
+  id           String   @id @default(cuid())
+  runId        String
+  industry     String
+  standardKey  String
+  sourceHash   String
+  batchKey     String
+  controls     Json
+  controlCount Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([runId, standardKey, batchKey])
+  @@index([industry, standardKey, sourceHash])
+}
+
 model Assessment {
-  id         String       @id @default(cuid())
-  orgId      String
-  orgName    String?
-  accountId  String
-  industry   String
-  status     AssessStatus
-  score      Int?
-  posture    String?
-  result     Json?
-  boardCite  String?
-  boardSnapshot Json?
-  modelProvider String?
-  modelName String?
-  promptVersion String?
-  documentCount Int?
-  sourceCharCount Int?
-  documentHashes Json?
-  sourceSetHash String?
-  phiAttested Boolean @default(false)
-  phiAttestedAt DateTime?
+  id                String       @id @default(cuid())
+  orgId             String
+  orgName           String?
+  accountId         String
+  industry          String
+  status            AssessStatus
+  score             Int?
+  posture           String?
+  result            Json?
+  boardCite         String?
+  boardSnapshot     Json?
+  modelProvider     String?
+  modelName         String?
+  promptVersion     String?
+  documentCount     Int?
+  sourceCharCount   Int?
+  documentHashes    Json?
+  sourceSetHash     String?
+  phiAttested       Boolean      @default(false)
+  phiAttestedAt     DateTime?
   dataHandlingFlags Json?
-  reviewStatus String @default("AI_DRAFT")
-  reviewedBy String?
-  reviewedAt DateTime?
-  refineUsed Boolean      @default(false)
-  ledgerId   String?      @unique
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  ledger     UsageLedger? @relation(fields: [ledgerId], references: [id])
+  reviewStatus      String       @default("AI_DRAFT")
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  refineUsed        Boolean      @default(false)
+  ledgerId          String?      @unique
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  ledger            UsageLedger? @relation(fields: [ledgerId], references: [id])
 
   @@index([accountId, createdAt])
   @@index([accountId, status])
@@ -182,27 +198,27 @@ model UsageLedger {
 }
 
 model RunQuote {
-  id                      String   @id @default(cuid())
+  id                      String    @id @default(cuid())
   accountId               String
   module                  String
   kind                    EntKind
   orgNames                Json?
-  orgCount                Int      @default(1)
-  documentCount           Int      @default(0)
-  charCount               Int      @default(0)
+  orgCount                Int       @default(1)
+  documentCount           Int       @default(0)
+  charCount               Int       @default(0)
   sourceDigest            String?
-  estimatedInputTokens    Int      @default(0)
-  estimatedOutputTokens   Int      @default(0)
-  estimatedModelCostCents Int      @default(0)
-  customerAmountCents     Int      @default(0)
-  marginCents             Int      @default(0)
-  withinGuard             Boolean  @default(true)
-  status                  String   @default("QUOTED")
+  estimatedInputTokens    Int       @default(0)
+  estimatedOutputTokens   Int       @default(0)
+  estimatedModelCostCents Int       @default(0)
+  customerAmountCents     Int       @default(0)
+  marginCents             Int       @default(0)
+  withinGuard             Boolean   @default(true)
+  status                  String    @default("QUOTED")
   stripeRef               String?
   acceptedAt              DateTime?
   expiresAt               DateTime
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   @@index([accountId, module, status])
   @@index([stripeRef])

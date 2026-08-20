@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type UserRow = {
   id: string;
@@ -77,6 +77,27 @@ type DomainPlan = {
     estimatedInputTokens: number;
     ready: boolean;
   };
+};
+
+type ExtractionRun = {
+  id: string;
+  industry: string;
+  status: "RUNNING" | "COMPLETED" | "FAILED";
+  phase: "CHECKING_SOURCES" | "EXTRACTING" | "CREATING_DRAFTS" | "COMPLETED" | "FAILED";
+  completedStandards: number;
+  totalStandards: number;
+  currentStandard: string | null;
+  standards: {
+    standardKey: string;
+    label: string;
+    status: "PENDING" | "RUNNING" | "COMPLETE" | "FAILED";
+    message: string;
+    controlCount?: number;
+  }[];
+  startedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  error: string | null;
 };
 
 type Props = {
@@ -182,9 +203,32 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [draftReview, setDraftReview] = useState<{ id: string; label: string; controlsJson: string; saved: boolean } | null>(null);
   const [status, setStatus] = useState("");
   const [domainPlan, setDomainPlan] = useState<DomainPlan | null>(null);
+  const [extractionRun, setExtractionRun] = useState<ExtractionRun | null>(null);
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
   const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
+  const extractionIsRunning = extractionRun?.status === "RUNNING";
+
+  async function refreshExtractionRun() {
+    const res = await fetch("/api/admin/boards/fetch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "status", industry })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    setExtractionRun(data.run || null);
+  }
+
+  useEffect(() => {
+    void refreshExtractionRun();
+  }, [industry]);
+
+  useEffect(() => {
+    if (!extractionIsRunning) return;
+    const timer = window.setInterval(() => void refreshExtractionRun(), 1500);
+    return () => window.clearInterval(timer);
+  }, [industry, extractionIsRunning]);
 
   function changeProvider(nextProvider: string) {
     setProvider(nextProvider);
@@ -271,19 +315,44 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   }
 
   async function extractBoard() {
-    if (!domainPlan) return;
+    if (!domainPlan || extractionIsRunning) return;
     const action = `Create ${domainPlan.aggregate.updateCount} new or changed control-board draft${domainPlan.aggregate.updateCount === 1 ? "" : "s"}? This will run ${domainPlan.aggregate.requestCount} paid AI request${domainPlan.aggregate.requestCount === 1 ? "" : "s"}. Current bases will remain active until an admin reviews and publishes each draft.`;
     if (!window.confirm(action)) return;
-    setStatus("Retrieving new and changed domain sources and validating each control board...");
+    const now = new Date().toISOString();
+    setExtractionRun({
+      id: "starting",
+      industry,
+      status: "RUNNING",
+      phase: "CHECKING_SOURCES",
+      completedStandards: 0,
+      totalStandards: domainPlan.aggregate.updateCount,
+      currentStandard: null,
+      standards: domainPlan.standards.filter((plan) => plan.needsDraft).map((plan) => ({
+        standardKey: plan.standardKey,
+        label: plan.label,
+        status: "PENDING",
+        message: "Waiting for source validation"
+      })),
+      startedAt: now,
+      updatedAt: now,
+      completedAt: null,
+      error: null
+    });
+    setStatus("Control extraction started. This page will update as each standard completes.");
     const sourceHashes = Object.fromEntries(domainPlan.standards.filter((plan) => plan.available && plan.sourceHash).map((plan) => [plan.standardKey, plan.sourceHash]));
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "extract", industry, sourceHashes, confirmExtraction: true })
     });
-    if (!res.ok) return setStatus(await readError(res));
+    if (!res.ok) {
+      setStatus(await readError(res));
+      await refreshExtractionRun();
+      return;
+    }
+    const data = await res.json();
+    setExtractionRun(data.run || null);
     setStatus("Validated update drafts created. Existing base boards remain active pending review.");
-    window.location.reload();
   }
 
   async function readBackupFile(files: FileList | null) {
@@ -429,7 +498,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <button className="btn" onClick={preflightBoard}>Check for control updates</button>
+          <button className="btn" onClick={preflightBoard} disabled={extractionIsRunning}>Check for control updates</button>
           <a className="btn secondary" href="/api/admin/boards/export">Download base control backup</a>
         </div>
         {domainPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
@@ -456,8 +525,32 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
               </tr>
             ))}</tbody>
           </table>
-          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready}>Create new and updated drafts</button>
+          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready || extractionIsRunning}>{extractionIsRunning ? "Creating drafts..." : "Create new and updated drafts"}</button>
         </div> : null}
+        {extractionRun ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div>
+                <div className="mono">Extraction status</div>
+                <b>{extractionRun.status === "RUNNING" ? "Control library update in progress" : extractionRun.status === "COMPLETED" ? "Control library drafts are ready" : "Control library update failed"}</b>
+              </div>
+              <span className={extractionRun.status === "FAILED" ? "badge locked" : "badge"}>{extractionRun.status}</span>
+            </div>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              {extractionRun.phase === "CHECKING_SOURCES" ? "Checking and fingerprinting every official source." : extractionRun.phase === "EXTRACTING" ? `${extractionRun.currentStandard ? `Processing ${extractionRun.currentStandard}. ` : ""}${extractionRun.completedStandards} of ${extractionRun.totalStandards} standards complete.` : extractionRun.phase === "CREATING_DRAFTS" ? "All controls are validated. Creating reviewable drafts." : extractionRun.phase === "COMPLETED" ? `${extractionRun.completedStandards} reviewable drafts were created.` : extractionRun.error || "The run did not complete."}
+            </p>
+            <div style={{ height: 8, background: "var(--surface-2, #1b1430)", borderRadius: 4, overflow: "hidden", marginBottom: 12 }}>
+              <div style={{ height: "100%", width: `${extractionRun.totalStandards ? Math.round((extractionRun.completedStandards / extractionRun.totalStandards) * 100) : 3}%`, background: "var(--accent, #9c6cff)", transition: "width 200ms ease" }} />
+            </div>
+            {extractionRun.standards.length ? <table className="table" style={{ marginBottom: 10 }}>
+              <thead><tr><th>Standard</th><th>Status</th><th>Progress</th></tr></thead>
+              <tbody>{extractionRun.standards.map((item) => <tr key={item.standardKey}>
+                <td>{item.label}</td>
+                <td><span className={item.status === "FAILED" ? "badge locked" : "badge"}>{item.status}</span></td>
+                <td>{item.message}{typeof item.controlCount === "number" ? ` (${item.controlCount} controls)` : ""}</td>
+              </tr>)}</tbody>
+            </table> : null}
+            {extractionRun.status === "COMPLETED" ? <button className="btn secondary" onClick={() => window.location.reload()}>Review created drafts</button> : null}
+          </div> : null}
         <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
           <div className="mono">Control-board backup</div>
           <h3 style={{ marginBottom: 6 }}>Restore saved base controls</h3>

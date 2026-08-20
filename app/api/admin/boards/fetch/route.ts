@@ -154,7 +154,8 @@ export async function POST(req: Request) {
     try {
       run = await acquireControlExtractionRun(
         industry,
-        guard.session.user.email || guard.session.user.id || "admin"
+        guard.session.user.email || guard.session.user.id || "admin",
+        Object.fromEntries(Object.entries(body.sourceHashes).map(([key, value]) => [key, String(value)]))
       );
     } catch (error) {
       return NextResponse.json({

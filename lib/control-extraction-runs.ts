@@ -23,6 +23,7 @@ export type ControlExtractionRun = {
   updatedAt: string;
   completedAt: string | null;
   error: string | null;
+  sourceHashes: Record<string, string>;
 };
 
 const RUN_PREFIX = "controlExtractionRun:";
@@ -46,13 +47,24 @@ export async function getControlExtractionRun(industry: string) {
   return parseRun(setting?.value);
 }
 
-export async function acquireControlExtractionRun(industry: string, startedBy: string) {
+function sourceFingerprint(sourceHashes: Record<string, string>) {
+  return JSON.stringify(Object.entries(sourceHashes).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+export async function acquireControlExtractionRun(
+  industry: string,
+  startedBy: string,
+  sourceHashes: Record<string, string>
+) {
   const key = keyFor(industry);
   const setting = await prisma.appSetting.findUnique({ where: { key } });
   const existing = parseRun(setting?.value);
   const existingIsActive = existing?.status === "RUNNING"
     && Date.now() - new Date(existing.updatedAt).getTime() < STALE_RUN_MS;
   if (existingIsActive) throw new Error("A control extraction is already running for this domain.");
+  if (existing?.status === "COMPLETED" && sourceFingerprint(existing.sourceHashes || {}) === sourceFingerprint(sourceHashes)) {
+    throw new Error("Drafts were already created for this exact official source set. Review those drafts instead of submitting the paid extraction again.");
+  }
 
   const now = new Date().toISOString();
   const run: ControlExtractionRun = {
@@ -68,7 +80,8 @@ export async function acquireControlExtractionRun(industry: string, startedBy: s
     startedAt: now,
     updatedAt: now,
     completedAt: null,
-    error: null
+    error: null,
+    sourceHashes
   };
   const value = JSON.stringify(run);
 

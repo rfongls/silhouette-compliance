@@ -98,6 +98,7 @@ type ExtractionRun = {
   updatedAt: string;
   completedAt: string | null;
   error: string | null;
+  sourceHashes: Record<string, string>;
 };
 
 type Props = {
@@ -208,6 +209,10 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const providerModels = optionsFor(provider);
   const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
   const extractionIsRunning = extractionRun?.status === "RUNNING";
+  const extractionMatchesPlan = Boolean(domainPlan && extractionRun && domainPlan.standards
+    .filter((plan) => plan.available && plan.sourceHash)
+    .every((plan) => extractionRun.sourceHashes?.[plan.standardKey] === plan.sourceHash));
+  const extractionAlreadyCompleted = extractionRun?.status === "COMPLETED" && extractionMatchesPlan;
 
   async function refreshExtractionRun() {
     const res = await fetch("/api/admin/boards/fetch", {
@@ -336,7 +341,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       startedAt: now,
       updatedAt: now,
       completedAt: null,
-      error: null
+      error: null,
+      sourceHashes: Object.fromEntries(domainPlan.standards.filter((plan) => plan.available && plan.sourceHash).map((plan) => [plan.standardKey, plan.sourceHash as string]))
     });
     setStatus("Control extraction started. This page will update as each standard completes.");
     const sourceHashes = Object.fromEntries(domainPlan.standards.filter((plan) => plan.available && plan.sourceHash).map((plan) => [plan.standardKey, plan.sourceHash]));
@@ -525,7 +531,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
               </tr>
             ))}</tbody>
           </table>
-          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready || extractionIsRunning}>{extractionIsRunning ? "Creating drafts..." : "Create new and updated drafts"}</button>
+          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready || extractionIsRunning || extractionAlreadyCompleted}>{extractionIsRunning ? "Creating drafts..." : extractionAlreadyCompleted ? "Drafts already created" : "Create new and updated drafts"}</button>
         </div> : null}
         {extractionRun ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>

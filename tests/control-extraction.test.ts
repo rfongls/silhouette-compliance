@@ -21,7 +21,7 @@ test("preflight reports every configured paid extraction batch", () => {
     { label: "Second", prompt: "Extract section 2" }
   ]);
   assert.equal(plan.method, "grounded-ai");
-  assert.equal(plan.requestCount, 2);
+  assert.equal(plan.requestCount, 4);
   assert.deepEqual(plan.batchLabels, ["First", "Second"]);
   assert.ok(plan.estimatedInputTokens > 0);
 });

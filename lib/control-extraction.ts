@@ -32,6 +32,8 @@ export type ControlExtractionPlan = {
   deterministicControlCount: number;
 };
 
+export const CONTROL_EXTRACTION_MAX_ATTEMPTS = 2;
+
 export const CONTROL_EXTRACTION_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -87,8 +89,8 @@ export function buildControlExtractionPlan(
   if (!deterministicControlCount && (!source.sourceText || !batches.length)) {
     throw new Error("No complete grounded extraction plan is configured for this standard.");
   }
-  const promptCharacters = batches.reduce((total, batch) => total + batch.prompt.length, 0);
-  const sourceCharacters = (source.sourceText?.length || 0) * batches.length;
+  const promptCharacters = batches.reduce((total, batch) => total + batch.prompt.length, 0) * CONTROL_EXTRACTION_MAX_ATTEMPTS;
+  const sourceCharacters = (source.sourceText?.length || 0) * batches.length * CONTROL_EXTRACTION_MAX_ATTEMPTS;
   return {
     standardKey,
     sourceTitle: source.title,
@@ -99,7 +101,7 @@ export function buildControlExtractionPlan(
     refreshCadenceDays: source.refreshCadenceDays,
     method: deterministicControlCount ? "deterministic" : "grounded-ai",
     batchLabels: deterministicControlCount ? [] : batches.map((batch) => batch.label),
-    requestCount: deterministicControlCount ? 0 : batches.length,
+    requestCount: deterministicControlCount ? 0 : batches.length * CONTROL_EXTRACTION_MAX_ATTEMPTS,
     estimatedInputTokens: deterministicControlCount ? 0 : Math.ceil((promptCharacters + sourceCharacters) / 4),
     deterministicControlCount
   };

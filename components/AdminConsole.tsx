@@ -393,7 +393,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       ? `Resume this control-board run from its saved checkpoints? Completed drafts and validated AI batches will be reused. Up to ${paidRequests} remaining paid AI request${paidRequests === 1 ? "" : "s"} may run.`
       : restart
         ? `Start a new control-board run? Incomplete AI-batch checkpoints will be cleared. Completed review drafts will be kept, and up to ${paidRequests} paid AI request${paidRequests === 1 ? "" : "s"} may run.`
-      : `Create ${targetPlans.length} reviewable control-board draft${targetPlans.length === 1 ? "" : "s"}? This will run ${paidRequests} paid AI request${paidRequests === 1 ? "" : "s"}. Current bases remain active until an admin reviews and publishes each draft.`;
+      : `Create ${targetPlans.length} reviewable control-board draft${targetPlans.length === 1 ? "" : "s"}? This may run up to ${paidRequests} paid AI request${paidRequests === 1 ? "" : "s"}, including one validation retry per batch. Current bases remain active until an admin reviews and publishes each draft.`;
     if (!window.confirm(action)) return;
     const sourceHashes = resume && extractionRun
       ? extractionRun.sourceHashes
@@ -649,8 +649,8 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             <div><b>Automatic</b><br/><span className="muted">{domainPlan.aggregate.automaticCount}</span></div>
             <div><b>Reviewed upload</b><br/><span className="muted">{domainPlan.aggregate.manualCount}</span></div>
             <div><b>New or changed</b><br/><span className="muted">{domainPlan.aggregate.updateCount}</span></div>
-            <div><b>AI requests</b><br/><span className="muted">{domainPlan.aggregate.requestCount}</span></div>
-            <div><b>Estimated input</b><br/><span className="muted">{domainPlan.aggregate.estimatedInputTokens.toLocaleString()} tokens</span></div>
+            <div><b>Maximum AI requests</b><br/><span className="muted">{domainPlan.aggregate.requestCount}</span></div>
+            <div><b>Maximum estimated input</b><br/><span className="muted">{domainPlan.aggregate.estimatedInputTokens.toLocaleString()} tokens</span></div>
           </div>
           <table className="table" style={{ marginBottom: 14 }}>
             <thead><tr><th>Standard</th><th>Retrieval</th><th>Update check</th><th>Current base</th><th>Readiness</th><th>Action</th></tr></thead>

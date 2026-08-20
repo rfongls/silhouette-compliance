@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { demoOrgName } from "@/lib/demo";
+import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { RunQuoteSummary, type RunQuote } from "@/components/RunQuoteSummary";
 
@@ -35,6 +36,7 @@ function orgDocuments(orgs: ReviewedOrg[]) {
 export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; characterLimitPerOrg: number }) {
   const [clientName, setClientName] = useState(demo ? "Demo Client Group" : "");
   const [industry, setIndustry] = useState("health-center");
+  const [standards, setStandards] = useState(defaultStandards("health-center"));
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
     ...newOrg(demoOrgName("health-center")),
     documents: [{ name: "demo-irp.txt", text: "Demo incident response policy text." }]
@@ -63,6 +65,8 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
   const [result, setResult] = useState<any>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Array<{ assessmentId: string; orgName: string; result: any; reused?: boolean }>>([]);
+  const standardOptions = INDUSTRY_STANDARDS[industry]?.standards || [];
+  const allStandardsSelected = standardOptions.length > 0 && standardOptions.every((standard) => standards.includes(standard.key));
 
   function clearQuote() {
     if (!demo) setAcceptedQuote(null);
@@ -106,7 +110,21 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
 
   function changeIndustry(nextIndustry: string) {
     setIndustry(nextIndustry);
+    setStandards(defaultStandards(nextIndustry));
     if (demo) setOrgs((rows) => rows.map((org, index) => index === 0 ? { ...org, name: demoOrgName(nextIndustry) } : org));
+    clearQuote();
+  }
+
+  function toggleAllStandards() {
+    setStandards(allStandardsSelected ? defaultStandards(industry) : standardOptions.map((standard) => standard.key));
+    clearQuote();
+  }
+
+  function toggleStandard(standardKey: string) {
+    setStandards((selected) => {
+      if (selected.includes(standardKey)) return selected.length === 1 ? selected : selected.filter((key) => key !== standardKey);
+      return [...selected, standardKey];
+    });
     clearQuote();
   }
 
@@ -121,7 +139,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
     const res = await fetch("/api/run-quotes", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ module: "irp", industry, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
+      body: JSON.stringify({ module: "irp", industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
     });
     const data = await res.json();
     setQuoting(false);
@@ -144,6 +162,7 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
         demo,
         orgName: clientName || validOrgs[0]?.name,
         industry,
+        standards,
         orgNames: validOrgs.map((org) => org.name),
         orgCount: validOrgs.length,
         quoteId: acceptedQuote?.id,
@@ -180,6 +199,23 @@ export function IrpClient({ demo, characterLimitPerOrg }: { demo: boolean; chara
               <option value="retail">Retail</option>
             </select>
           </label>
+
+          <fieldset className="card subcard" style={{ padding: 14, margin: 0 }}>
+            <legend style={{ padding: "0 6px" }}>Standards used for scoring</legend>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <input type="checkbox" checked={allStandardsSelected} onChange={toggleAllStandards} />
+              <b>All {INDUSTRY_STANDARDS[industry]?.label || "domain"} standards</b>
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
+              {standardOptions.map((standard) => (
+                <label key={standard.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="checkbox" checked={standards.includes(standard.key)} onChange={() => toggleStandard(standard.key)} />
+                  <span>{standard.label}{standard.default ? " (default)" : ""}</span>
+                </label>
+              ))}
+            </div>
+            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>The estimate and final report use only these published control boards.</p>
+          </fieldset>
 
           <div className="card subcard" style={{ padding: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 12 }}>

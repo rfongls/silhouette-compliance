@@ -31,30 +31,48 @@ type LedgerRow = {
   stripeRef: string | null;
 };
 
-type BoardPlan = {
+type DomainStandardPlan = {
   standardKey: string;
-  sourceTitle: string;
-  sourceVersion: string;
+  label: string;
+  default: boolean;
+  available: boolean;
+  manualUploadRequired: boolean;
+  sourceTitle?: string;
+  sourceVersion?: string;
   sourceUrls: string[];
-  sourceHash: string;
-  sourceScope: string;
-  refreshCadenceDays: number;
-  method: "deterministic" | "grounded-ai";
-  batchLabels: string[];
+  sourceHash: string | null;
+  sourceScope?: string;
+  refreshCadenceDays?: number;
+  method?: "deterministic" | "grounded-ai";
+  batchLabels?: string[];
   requestCount: number;
   estimatedInputTokens: number;
-  deterministicControlCount: number;
-  provider: string | null;
-  model: string | null;
+  deterministicControlCount?: number;
+  provider?: string | null;
+  model?: string | null;
   ready: boolean;
   readinessMessage: string;
-  activeBase: {
+  activeBase?: {
     version: number | null;
     publishedAt: string | null;
     hasBaseControl: boolean;
     sourceChanged: boolean;
     refreshDue: boolean;
     refreshDueAt: string | null;
+  };
+};
+
+type DomainPlan = {
+  industry: string;
+  industryLabel: string;
+  standards: DomainStandardPlan[];
+  aggregate: {
+    standardCount: number;
+    automaticCount: number;
+    manualCount: number;
+    requestCount: number;
+    estimatedInputTokens: number;
+    ready: boolean;
   };
 };
 
@@ -158,7 +176,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [sourceUrls, setSourceUrls] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
   const [status, setStatus] = useState("");
-  const [boardPlan, setBoardPlan] = useState<BoardPlan | null>(null);
+  const [domainPlan, setDomainPlan] = useState<DomainPlan | null>(null);
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
   const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
@@ -170,7 +188,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setModelChoice(nextModel);
     setCustomModel("");
     setBaseUrl(providerBaseUrls[nextProvider] || "");
-    setBoardPlan(null);
+    setDomainPlan(null);
   }
 
   function changeModelChoice(nextChoice: string) {
@@ -190,7 +208,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
 
   function changeIndustry(nextIndustry: string) {
     setIndustry(nextIndustry);
-    setBoardPlan(null);
+    setDomainPlan(null);
     const nextStandards = standardsByIndustry[nextIndustry] || [];
     if (!nextStandards.some((standard) => standard.key === standardKey)) {
       setStandardKey(nextStandards[0]?.key || standards[0] || "HIPAA");
@@ -235,32 +253,31 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   }
 
   async function preflightBoard() {
-    setStatus("Checking the official source and extraction plan...");
+    setStatus("Checking every official source configured for this domain...");
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "preflight", industry, standardKey })
+      body: JSON.stringify({ action: "preflight", industry })
     });
     if (!res.ok) return setStatus(await readError(res));
     const data = await res.json();
-    setBoardPlan(data.plan);
-    setStatus("Source preflight complete. No AI request was made.");
+    setDomainPlan(data.plan);
+    setStatus("Domain source preflight complete. No AI request was made.");
   }
 
   async function extractBoard() {
-    if (!boardPlan) return;
-    const action = boardPlan.method === "deterministic"
-      ? `Create a draft from ${boardPlan.deterministicControlCount} deterministically parsed controls?`
-      : `Run ${boardPlan.requestCount} paid ${boardPlan.provider || "AI"} extraction request${boardPlan.requestCount === 1 ? "" : "s"} using ${boardPlan.model || "the configured model"}?`;
+    if (!domainPlan) return;
+    const action = `Create ${domainPlan.aggregate.automaticCount} domain control-board draft${domainPlan.aggregate.automaticCount === 1 ? "" : "s"}? This will run ${domainPlan.aggregate.requestCount} paid AI request${domainPlan.aggregate.requestCount === 1 ? "" : "s"}. Standards marked for reviewed upload will remain pending.`;
     if (!window.confirm(action)) return;
-    setStatus(boardPlan.method === "deterministic" ? "Creating control board draft..." : "Running grounded extraction and validation...");
+    setStatus("Retrieving the complete domain library and validating each control board...");
+    const sourceHashes = Object.fromEntries(domainPlan.standards.filter((plan) => plan.available && plan.sourceHash).map((plan) => [plan.standardKey, plan.sourceHash]));
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "extract", industry, standardKey, sourceHash: boardPlan.sourceHash, confirmExtraction: true })
+      body: JSON.stringify({ action: "extract", industry, sourceHashes, confirmExtraction: true })
     });
     if (!res.ok) return setStatus(await readError(res));
-    setStatus("Validated draft board created.");
+    setStatus("Validated domain draft boards created.");
     window.location.reload();
   }
 
@@ -358,35 +375,42 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <select className="select" value={standardKey} onChange={(event) => { setStandardKey(event.target.value); setBoardPlan(null); }} style={{ maxWidth: 220 }}>
-            {selectedStandards.map((standard) => <option key={standard.key} value={standard.key}>{standard.label}</option>)}
-          </select>
-          <button className="btn" onClick={preflightBoard}>Check official source</button>
+          <button className="btn" onClick={preflightBoard}>Check all domain sources</button>
           <a className="btn secondary" href="/api/admin/boards/export" target="_blank">Export base controls</a>
         </div>
-        {boardPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
-          <div className="mono">Extraction preflight</div>
-          <h3 style={{ marginBottom: 6 }}>{boardPlan.sourceTitle}</h3>
-          <p className="muted" style={{ marginTop: 0 }}>{boardPlan.sourceVersion}</p>
-          <p>{boardPlan.sourceScope}</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10, margin: "14px 0" }}>
-            <div><b>Method</b><br/><span className="muted">{boardPlan.method === "deterministic" ? "Deterministic parser" : "Grounded AI extraction"}</span></div>
-            <div><b>Provider</b><br/><span className="muted">{boardPlan.provider ? `${boardPlan.provider} / ${boardPlan.model}` : "No AI call"}</span></div>
-            <div><b>Requests</b><br/><span className="muted">{boardPlan.requestCount}</span></div>
-            <div><b>Estimated input</b><br/><span className="muted">{boardPlan.estimatedInputTokens.toLocaleString()} tokens</span></div>
-            <div><b>Review cycle</b><br/><span className="muted">Every {boardPlan.refreshCadenceDays} days</span></div>
-            <div><b>Next review</b><br/><span className="muted">{boardPlan.activeBase.refreshDueAt ? new Date(boardPlan.activeBase.refreshDueAt).toLocaleDateString() : "Set after first base"}</span></div>
-            <div><b>Current base</b><br/><span className="muted">{boardPlan.activeBase.hasBaseControl ? `v${boardPlan.activeBase.version}` : "Not set"}</span></div>
-            <div><b>Source status</b><br/><span className="muted">{boardPlan.activeBase.sourceChanged ? "Source changed" : boardPlan.activeBase.refreshDue ? "Annual review due" : "Current"}</span></div>
+        {domainPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
+          <div className="mono">Domain extraction preflight</div>
+          <h3 style={{ marginBottom: 6 }}>{domainPlan.industryLabel} control library</h3>
+          <p className="muted" style={{ marginTop: 0 }}>One confirmed run creates a separate reviewable draft for every automatically retrievable standard.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, margin: "14px 0" }}>
+            <div><b>Standards</b><br/><span className="muted">{domainPlan.aggregate.standardCount}</span></div>
+            <div><b>Automatic</b><br/><span className="muted">{domainPlan.aggregate.automaticCount}</span></div>
+            <div><b>Reviewed upload</b><br/><span className="muted">{domainPlan.aggregate.manualCount}</span></div>
+            <div><b>AI requests</b><br/><span className="muted">{domainPlan.aggregate.requestCount}</span></div>
+            <div><b>Estimated input</b><br/><span className="muted">{domainPlan.aggregate.estimatedInputTokens.toLocaleString()} tokens</span></div>
           </div>
-          <div><b>Authoritative sources</b><ul>{boardPlan.sourceUrls.map((url) => <li key={url}><a href={url} target="_blank" rel="noreferrer">{url}</a></li>)}</ul></div>
-          {boardPlan.batchLabels.length ? <div><b>Required batches</b><ul>{boardPlan.batchLabels.map((label) => <li key={label}>{label}</li>)}</ul></div> : null}
-          <p className="muted" style={{ overflowWrap: "anywhere" }}><b>Source fingerprint:</b> {boardPlan.sourceHash}</p>
-          <p>{boardPlan.readinessMessage}</p>
-          <button className="btn" onClick={extractBoard} disabled={!boardPlan.ready}>{boardPlan.method === "deterministic" ? "Create parsed draft" : "Run confirmed extraction"}</button>
+          <table className="table" style={{ marginBottom: 14 }}>
+            <thead><tr><th>Standard</th><th>Retrieval</th><th>Requests</th><th>Current base</th><th>Readiness</th></tr></thead>
+            <tbody>{domainPlan.standards.map((plan) => (
+              <tr key={plan.standardKey}>
+                <td><b>{plan.label}</b><br/><span className="muted">{plan.standardKey}{plan.default ? " / default" : ""}</span></td>
+                <td>{plan.available ? (plan.method === "deterministic" ? "Deterministic" : "Grounded AI") : "Reviewed upload"}</td>
+                <td>{plan.requestCount}</td>
+                <td>{plan.activeBase?.hasBaseControl ? `v${plan.activeBase.version}` : "Not set"}</td>
+                <td><span className={plan.ready ? "badge" : "badge locked"}>{plan.ready ? "Ready" : plan.manualUploadRequired ? "Upload required" : "Blocked"}</span><br/><span className="muted">{plan.readinessMessage}</span></td>
+              </tr>
+            ))}</tbody>
+          </table>
+          <button className="btn" onClick={extractBoard} disabled={!domainPlan.aggregate.ready}>Create all automatic drafts</button>
         </div> : null}
         <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
           <div className="mono">Manual control upload</div>
+          <label style={{ display: "block", maxWidth: 360, margin: "12px 0" }}>
+            Standard
+            <select className="select" value={standardKey} onChange={(event) => setStandardKey(event.target.value)}>
+              {selectedStandards.map((standard) => <option key={standard.key} value={standard.key}>{standard.label}</option>)}
+            </select>
+          </label>
           <div className="control-upload-grid">
             <label>
               Control JSON

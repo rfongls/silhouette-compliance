@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { runGapAnalysis, demoAssessment } from "@/lib/analysis/engine";
 import { IRP_PROMPT_VERSION } from "@/lib/analysis/prompts";
 import { IRP_CONTROL_BATCH_SIZE, scoringPassCount } from "@/lib/analysis/scoring";
-import { defaultStandards } from "@/lib/analysis/standards";
+import { normalizeStandards } from "@/lib/analysis/standards";
 import { requireSession } from "@/lib/authz";
 import { loadPublishedControlSet } from "@/lib/control-boards";
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest, type IntegrityDocument } from "@/lib/document-integrity";
@@ -61,6 +61,8 @@ export async function handleIrpAssessment(req: Request) {
 
   const accountId = guard.session.user.accountId;
   const isAdmin = isEffectiveAdmin(guard.session);
+  const industry = String(body.industry || "health-center");
+  const standards = normalizeStandards(industry, body.standards, body.allStandards === true);
   const quoteId = typeof body.quoteId === "string" ? body.quoteId : "";
   const quote = quoteId ? await prisma.runQuote.findFirst({
     where: {
@@ -76,14 +78,11 @@ export async function handleIrpAssessment(req: Request) {
 
   const quotedOrgNames = Array.isArray(quote.orgNames) ? quote.orgNames.map((name) => String(name || "").trim()).filter(Boolean) : [];
   const orgNamesMatch = quotedOrgNames.length === orgNames.length && quotedOrgNames.every((name, index) => name === orgNames[index]);
-  if (!orgNamesMatch || quote.sourceDigest !== quoteSourceDigest(documents)) {
-    return NextResponse.json({ error: "Uploaded documents changed after the quote. Create and accept a new estimate." }, { status: 409 });
+  const quoteContext = JSON.stringify({ industry, standards: [...standards].sort() });
+  if (!orgNamesMatch || quote.sourceDigest !== quoteSourceDigest(documents, quoteContext)) {
+    return NextResponse.json({ error: "Uploaded documents, domain, or selected standards changed after the quote. Create and accept a new estimate." }, { status: 409 });
   }
 
-  const industry = String(body.industry || "health-center");
-  const standards = Array.isArray(body.standards) && body.standards.length
-    ? body.standards.map(String).slice(0, 6)
-    : defaultStandards(industry);
   let controlSet: Awaited<ReturnType<typeof loadPublishedControlSet>>;
   try {
     controlSet = await loadPublishedControlSet(industry, standards);

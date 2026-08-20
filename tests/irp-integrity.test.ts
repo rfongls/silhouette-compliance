@@ -3,6 +3,7 @@ import test from "node:test";
 import { calculateComplianceScore, chunkEvidenceDocuments, scoringPassCount, validateEvidenceStatus } from "../lib/analysis/scoring";
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest } from "../lib/document-integrity";
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
+import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
 
 test("evidence chunking preserves every character without truncation", () => {
   const text = `${"A".repeat(59995)}\n${"B".repeat(70010)}`;
@@ -32,6 +33,27 @@ test("duplicate content and document-set digests are deterministic", () => {
   const integrity = documentSetIntegrity(documents);
   assert.equal(integrity.duplicateHashes.length, 1);
   assert.equal(quoteSourceDigest(documents), quoteSourceDigest([...documents].reverse()));
+});
+
+test("quote digest binds the selected domain control set", () => {
+  const documents = [{ name: "policy.txt", text: "policy", orgName: "Clinic" }];
+  const defaults = JSON.stringify({ industry: "health-center", standards: ["HIPAA", "NIST"] });
+  const expanded = JSON.stringify({ industry: "health-center", standards: ["HIPAA", "HITECH", "NIST"] });
+  assert.notEqual(quoteSourceDigest(documents, defaults), quoteSourceDigest(documents, expanded));
+});
+
+test("all standards expands to every configured domain catalog", () => {
+  for (const industry of Object.keys(INDUSTRY_STANDARDS)) {
+    assert.deepEqual(
+      normalizeStandards(industry, ["ignored-selection"], true),
+      standardsForIndustry(industry),
+      industry
+    );
+  }
+});
+
+test("standard selection rejects keys from another domain", () => {
+  assert.deepEqual(normalizeStandards("retail", ["HIPAA", "PCIDSS"]), ["PCIDSS"]);
 });
 
 test("assessment reuse changes when the reviewed board snapshot changes", () => {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { estimateRunQuote, quoteExpiresAt, type QuoteModule } from "@/lib/run-quotes";
-import { defaultStandards } from "@/lib/analysis/standards";
+import { normalizeStandards } from "@/lib/analysis/standards";
 import { IRP_CONTROL_BATCH_SIZE, scoringPassCount } from "@/lib/analysis/scoring";
 import { loadPublishedControlSet } from "@/lib/control-boards";
 import { quoteSourceDigest } from "@/lib/document-integrity";
@@ -22,11 +22,13 @@ export async function POST(req: Request) {
   const documents: any[] | undefined = Array.isArray(body.documents) ? body.documents : undefined;
   let analysisPasses: number | undefined;
   let analysisRequestCount: number | undefined;
+  let quoteIndustry = "";
+  let quoteStandards: string[] = [];
   if (module === "irp") {
     const industry = String(body.industry || "health-center");
-    const standards = Array.isArray(body.standards) && body.standards.length
-      ? body.standards.map(String).slice(0, 6)
-      : defaultStandards(industry);
+    const standards = normalizeStandards(industry, body.standards, body.allStandards === true);
+    quoteIndustry = industry;
+    quoteStandards = standards;
     try {
       const controlSet = await loadPublishedControlSet(industry, standards);
       const orgNames = Array.isArray(body.orgNames) ? body.orgNames.map(String) : [];
@@ -57,7 +59,7 @@ export async function POST(req: Request) {
         name: String(document?.name || "document.txt"),
         text: String(document?.text || ""),
         orgName: String(document?.orgName || estimate.orgNames[0] || "Organization 1")
-      })))
+      })), JSON.stringify({ industry: quoteIndustry, standards: [...quoteStandards].sort() }))
     : undefined;
 
   const quote = await prisma.runQuote.create({

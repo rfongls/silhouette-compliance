@@ -21,8 +21,9 @@ export function documentSetIntegrity(documents: IntegrityDocument[]) {
   };
 }
 
-export function quoteSourceDigest(documents: IntegrityDocument[]) {
-  return digest(documents.map((document) => `${document.orgName}:${documentHash(document)}`).sort().join("\n"));
+export function quoteSourceDigest(documents: IntegrityDocument[], context = "") {
+  const sources = documents.map((document) => `${document.orgName}:${documentHash(document)}`).sort().join("\n");
+  return digest(context ? `${context}\n${sources}` : sources);
 }
 
 export function assessmentFingerprint(sourceSetHash: string, boardSnapshot: unknown, promptVersion: string) {

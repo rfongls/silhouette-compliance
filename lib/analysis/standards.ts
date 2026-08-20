@@ -34,6 +34,18 @@ export function defaultStandards(industry: string) {
   return (INDUSTRY_STANDARDS[industry]?.standards ?? INDUSTRY_STANDARDS["health-center"].standards).filter((s) => s.default).map((s) => s.key);
 }
 
+export function standardsForIndustry(industry: string) {
+  return (INDUSTRY_STANDARDS[industry]?.standards ?? []).map((standard) => standard.key);
+}
+
+export function normalizeStandards(industry: string, standards: unknown, useAll = false) {
+  const configured = standardsForIndustry(industry);
+  if (useAll) return configured;
+  if (!Array.isArray(standards) || !standards.length) return defaultStandards(industry);
+  const selected = [...new Set(standards.map(String))].filter((standard) => configured.includes(standard));
+  return selected.length ? selected : defaultStandards(industry);
+}
+
 export function standardLabels(industry: string, standards: string[]) {
   const defs = INDUSTRY_STANDARDS[industry]?.standards ?? [];
   const labels = new Map(defs.map((s) => [s.key, s.label]));

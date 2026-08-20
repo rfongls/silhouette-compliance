@@ -1,15 +1,27 @@
 import { standardLabels } from "@/lib/analysis/standards";
+import type { ControlExtractionBatch } from "@/lib/control-extraction";
 
 export type AnalysisScope = { industry: string; standards: string[] };
 export const IRP_PROMPT_VERSION = "irp-controls-v2";
 
-export const EXTRA_CB_BATCHES: Record<string, { label: string; prompt: string }[]> = {
+export const EXTRA_CB_BATCHES: Record<string, ControlExtractionBatch[]> = {
   PCIDSS: [
     { label: "PCI DSS Batch 1/3 - Network & Data Protection", prompt: "Return all PCI DSS v4.0.1 sub-requirements for Requirements 1-4. Each element: {id,standard,category,requirement,risk_level}. Fetch current authoritative text first. Return JSON array only." },
     { label: "PCI DSS Batch 2/3 - Vulnerability & Access", prompt: "Return all PCI DSS v4.0.1 sub-requirements for Requirements 5-8. Each element: {id,standard,category,requirement,risk_level}. Fetch current authoritative text first. Return JSON array only." },
     { label: "PCI DSS Batch 3/3 - Physical, Monitoring & Policy", prompt: "Return all PCI DSS v4.0.1 sub-requirements for Requirements 9-12, including incident response. Each element: {id,standard,category,requirement,risk_level}. Return JSON array only." }
   ],
-  HIPAA: [{ label: "HIPAA Security, Privacy, Breach", prompt: "Return HIPAA Security Rule, Privacy Rule, and Breach Notification controls relevant to incident response planning. Include CFR identifiers. Return JSON array only." }],
+  HIPAA: [
+    {
+      label: "HIPAA Batch 1/2 - Security Rule",
+      prompt: "Return all HIPAA Security Rule controls with standard=HIPAA. Include every safeguard and implementation specification: Administrative Safeguards 164.308(a)(1)(i) through 164.308(b)(1), Physical Safeguards 164.310(a)(1) through 164.310(d)(2)(iv), Technical Safeguards 164.312(a)(1) through 164.312(e)(2)(ii), Organizational Requirements 164.314(a)(1) through 164.314(b), and Policies and Procedures 164.316. Return a JSON array only.",
+      requiredIdentifiers: ["164.308", "164.310", "164.312", "164.314", "164.316"]
+    },
+    {
+      label: "HIPAA Batch 2/2 - Privacy Rule",
+      prompt: "Return all HIPAA Privacy Rule controls with standard=HIPAA. Include 164.502(a), 164.502(b), 164.502(e), 164.504(e), 164.506(a), 164.508(a)-(b), 164.510(a)-(b), 164.512(a), (b), (e), and (f), 164.514(a), (b), (d), and (e), 164.520(a)-(c), 164.522(a)-(b), 164.524(a)-(c), 164.526(a)-(b), 164.528(a)-(b), and 164.530(a)-(j). Return a JSON array only.",
+      requiredIdentifiers: ["164.502", "164.504", "164.506", "164.508", "164.510", "164.512", "164.514", "164.520", "164.522", "164.524", "164.526", "164.528", "164.530"]
+    }
+  ],
   NIST: [{ label: "NIST IR/CP/RA/AC/AU/SI", prompt: "Return NIST SP 800-53 Rev. 5 controls relevant to incident response, contingency planning, risk assessment, access control, audit, and system integrity. Return JSON array only." }],
   HITECH: [{ label: "HITECH Enforcement", prompt: "Return HITECH breach notification and enforcement requirements relevant to incident response planning. Return JSON array only." }],
   EP: [{ label: "CMS Emergency Preparedness", prompt: "Return CMS Emergency Preparedness Rule requirements relevant to healthcare incident response, emergency planning, communications, training, testing, continuity, and documentation. Include CFR identifiers where applicable. Return JSON array only." }],

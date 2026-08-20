@@ -7,6 +7,10 @@ export type NormalizedControl = {
   category: string;
   requirement: string;
   risk_level: string;
+  source_url?: string;
+  source_section?: string;
+  source_quote?: string;
+  extraction_batch?: string;
 };
 
 export function standardBelongsToIndustry(industry: string, standardKey: string) {
@@ -27,18 +31,26 @@ export function normalizeControlImport(value: unknown, fallbackStandard = ""): N
   const controls = Array.isArray(parsed) ? parsed : (parsed && typeof parsed === "object" && "controls" in parsed ? (parsed as any).controls : null);
   if (!Array.isArray(controls)) throw new Error("Control import must be a JSON array or an object with a controls array.");
   const normalized = controls
-    .map((control, index) => {
+    .map((control, index): NormalizedControl | null => {
       if (!control || typeof control !== "object") return null;
       const row = control as Record<string, unknown>;
       const id = String(row.id || row.control_id || row.controlId || row.requirement_id || row.key || `control-${index + 1}`).trim();
       const requirement = String(row.requirement || row.description || row.text || row.control || "").trim();
       if (!id || !requirement) return null;
+      const optional = (key: string) => {
+        const value = String(row[key] || "").trim();
+        return value || undefined;
+      };
       return {
         id,
         standard: String(row.standard || row.framework || fallbackStandard).trim() || fallbackStandard,
         category: String(row.category || row.family || "").trim(),
         requirement,
-        risk_level: String(row.risk_level || row.riskLevel || row.priority || "Medium").trim()
+        risk_level: String(row.risk_level || row.riskLevel || row.priority || "Medium").trim(),
+        source_url: optional("source_url"),
+        source_section: optional("source_section"),
+        source_quote: optional("source_quote"),
+        extraction_batch: optional("extraction_batch")
       };
     })
     .filter((control): control is NormalizedControl => control !== null);

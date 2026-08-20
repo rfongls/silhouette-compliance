@@ -6,8 +6,8 @@ export async function POST(req: Request) {
   const guard = await requireSession("admin");
   if ("response" in guard) return guard.response;
   const { id, reviewConfirmed, reviewNotes } = await req.json();
-  if (reviewConfirmed !== true) return NextResponse.json({ error: "Reviewer confirmation is required before publishing." }, { status: 400 });
-  if (!String(reviewNotes || "").trim()) return NextResponse.json({ error: "Reviewer notes are required before publishing." }, { status: 400 });
+  if (reviewConfirmed !== true) return NextResponse.json({ error: "Reviewer confirmation is required before setting a base control." }, { status: 400 });
+  if (!String(reviewNotes || "").trim()) return NextResponse.json({ error: "Reviewer notes are required before setting a base control." }, { status: 400 });
   const draft = await prisma.controlBoard.findUnique({ where: { id: String(id) } });
   if (!draft || draft.status !== "DRAFT") return NextResponse.json({ error: "Draft board not found" }, { status: 404 });
   const sourceUrls = Array.isArray(draft.sourceUrls) ? draft.sourceUrls : [];

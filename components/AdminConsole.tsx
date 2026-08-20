@@ -31,6 +31,33 @@ type LedgerRow = {
   stripeRef: string | null;
 };
 
+type BoardPlan = {
+  standardKey: string;
+  sourceTitle: string;
+  sourceVersion: string;
+  sourceUrls: string[];
+  sourceHash: string;
+  sourceScope: string;
+  refreshCadenceDays: number;
+  method: "deterministic" | "grounded-ai";
+  batchLabels: string[];
+  requestCount: number;
+  estimatedInputTokens: number;
+  deterministicControlCount: number;
+  provider: string | null;
+  model: string | null;
+  ready: boolean;
+  readinessMessage: string;
+  activeBase: {
+    version: number | null;
+    publishedAt: string | null;
+    hasBaseControl: boolean;
+    sourceChanged: boolean;
+    refreshDue: boolean;
+    refreshDueAt: string | null;
+  };
+};
+
 type Props = {
   users: UserRow[];
   boards: BoardRow[];
@@ -115,6 +142,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [sourceUrls, setSourceUrls] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
   const [status, setStatus] = useState("");
+  const [boardPlan, setBoardPlan] = useState<BoardPlan | null>(null);
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
   const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
@@ -125,6 +153,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setModel(nextModel);
     setModelChoice(nextModel);
     setCustomModel("");
+    setBoardPlan(null);
   }
 
   function changeModelChoice(nextChoice: string) {
@@ -144,6 +173,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
 
   function changeIndustry(nextIndustry: string) {
     setIndustry(nextIndustry);
+    setBoardPlan(null);
     const nextStandards = standardsByIndustry[nextIndustry] || [];
     if (!nextStandards.some((standard) => standard.key === standardKey)) {
       setStandardKey(nextStandards[0]?.key || standards[0] || "HIPAA");
@@ -187,15 +217,33 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setStatus("AI settings saved.");
   }
 
-  async function fetchBoard() {
-    setStatus("Fetching control board draft...");
+  async function preflightBoard() {
+    setStatus("Checking the official source and extraction plan...");
     const res = await fetch("/api/admin/boards/fetch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ industry, standardKey })
+      body: JSON.stringify({ action: "preflight", industry, standardKey })
     });
     if (!res.ok) return setStatus(await readError(res));
-    setStatus("Draft board created.");
+    const data = await res.json();
+    setBoardPlan(data.plan);
+    setStatus("Source preflight complete. No AI request was made.");
+  }
+
+  async function extractBoard() {
+    if (!boardPlan) return;
+    const action = boardPlan.method === "deterministic"
+      ? `Create a draft from ${boardPlan.deterministicControlCount} deterministically parsed controls?`
+      : `Run ${boardPlan.requestCount} paid ${boardPlan.provider || "AI"} extraction request${boardPlan.requestCount === 1 ? "" : "s"} using ${boardPlan.model || "the configured model"}?`;
+    if (!window.confirm(action)) return;
+    setStatus(boardPlan.method === "deterministic" ? "Creating control board draft..." : "Running grounded extraction and validation...");
+    const res = await fetch("/api/admin/boards/fetch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "extract", industry, standardKey, sourceHash: boardPlan.sourceHash, confirmExtraction: true })
+    });
+    if (!res.ok) return setStatus(await readError(res));
+    setStatus("Validated draft board created.");
     window.location.reload();
   }
 
@@ -220,17 +268,17 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   }
 
   async function publishBoard(id: string) {
-    if (!window.confirm("Confirm that you reviewed the control text against the listed authoritative source and approve this board for scoring.")) return;
-    const reviewNotes = window.prompt("Record what you reviewed before publishing this board:");
-    if (!reviewNotes?.trim()) return setStatus("Publishing canceled. Review notes are required.");
-    setStatus("Publishing board...");
+    if (!window.confirm("Set this reviewed draft as the base control set used for scoring? The current base for this industry and standard will be archived.")) return;
+    const reviewNotes = window.prompt("Record what you reviewed before setting this as the base control:");
+    if (!reviewNotes?.trim()) return setStatus("Base control update canceled. Review notes are required.");
+    setStatus("Setting base control...");
     const res = await fetch("/api/admin/boards/publish", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ id, reviewConfirmed: true, reviewNotes })
     });
     if (!res.ok) return setStatus(await readError(res));
-    setStatus("Board published.");
+    setStatus("Base control updated.");
     window.location.reload();
   }
 
@@ -287,18 +335,39 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
 
       <section className="card">
         <div className="mono">Control Boards</div>
-        <h2>Fetch & Publish</h2>
-        <p className="muted">Fetch retrieves an allowlisted official source and creates a grounded draft. Standards without a configured public source require a reviewed manual JSON upload. Publishing requires human confirmation and records the reviewer.</p>
+        <h2>Retrieve, Review & Set Base</h2>
+        <p className="muted">Only administrators can retrieve official sources, create drafts, and set the reviewed base control used for scoring. Each configured source is checked annually and fingerprinted so source changes are visible before extraction.</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <select className="select" value={standardKey} onChange={(event) => setStandardKey(event.target.value)} style={{ maxWidth: 220 }}>
+          <select className="select" value={standardKey} onChange={(event) => { setStandardKey(event.target.value); setBoardPlan(null); }} style={{ maxWidth: 220 }}>
             {selectedStandards.map((standard) => <option key={standard.key} value={standard.key}>{standard.label}</option>)}
           </select>
-          <button className="btn" onClick={fetchBoard}>Fetch controls</button>
-          <a className="btn secondary" href="/api/admin/boards/export" target="_blank">Export published</a>
+          <button className="btn" onClick={preflightBoard}>Check official source</button>
+          <a className="btn secondary" href="/api/admin/boards/export" target="_blank">Export base controls</a>
         </div>
+        {boardPlan ? <div className="card" style={{ padding: 16, background: "rgba(255,255,255,.55)", marginBottom: 18 }}>
+          <div className="mono">Extraction preflight</div>
+          <h3 style={{ marginBottom: 6 }}>{boardPlan.sourceTitle}</h3>
+          <p className="muted" style={{ marginTop: 0 }}>{boardPlan.sourceVersion}</p>
+          <p>{boardPlan.sourceScope}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10, margin: "14px 0" }}>
+            <div><b>Method</b><br/><span className="muted">{boardPlan.method === "deterministic" ? "Deterministic parser" : "Grounded AI extraction"}</span></div>
+            <div><b>Provider</b><br/><span className="muted">{boardPlan.provider ? `${boardPlan.provider} / ${boardPlan.model}` : "No AI call"}</span></div>
+            <div><b>Requests</b><br/><span className="muted">{boardPlan.requestCount}</span></div>
+            <div><b>Estimated input</b><br/><span className="muted">{boardPlan.estimatedInputTokens.toLocaleString()} tokens</span></div>
+            <div><b>Review cycle</b><br/><span className="muted">Every {boardPlan.refreshCadenceDays} days</span></div>
+            <div><b>Next review</b><br/><span className="muted">{boardPlan.activeBase.refreshDueAt ? new Date(boardPlan.activeBase.refreshDueAt).toLocaleDateString() : "Set after first base"}</span></div>
+            <div><b>Current base</b><br/><span className="muted">{boardPlan.activeBase.hasBaseControl ? `v${boardPlan.activeBase.version}` : "Not set"}</span></div>
+            <div><b>Source status</b><br/><span className="muted">{boardPlan.activeBase.sourceChanged ? "Source changed" : boardPlan.activeBase.refreshDue ? "Annual review due" : "Current"}</span></div>
+          </div>
+          <div><b>Authoritative sources</b><ul>{boardPlan.sourceUrls.map((url) => <li key={url}><a href={url} target="_blank" rel="noreferrer">{url}</a></li>)}</ul></div>
+          {boardPlan.batchLabels.length ? <div><b>Required batches</b><ul>{boardPlan.batchLabels.map((label) => <li key={label}>{label}</li>)}</ul></div> : null}
+          <p className="muted" style={{ overflowWrap: "anywhere" }}><b>Source fingerprint:</b> {boardPlan.sourceHash}</p>
+          <p>{boardPlan.readinessMessage}</p>
+          <button className="btn" onClick={extractBoard} disabled={!boardPlan.ready}>{boardPlan.method === "deterministic" ? "Create parsed draft" : "Run confirmed extraction"}</button>
+        </div> : null}
         <div className="card" style={{ padding: 14, background: "rgba(255,255,255,.55)", marginBottom: 18 }}>
           <div className="mono">Manual control upload</div>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(260px,1fr) 200px", gap: 12, alignItems: "end", marginTop: 10 }}>
@@ -328,10 +397,10 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
                 <td>{board.standardKey}</td>
                 <td>v{board.version}</td>
                 <td>{board.sourceTitle || "Missing"}<br/><span className="muted">{board.sourceVersion || "No version"}</span></td>
-                <td><span className={board.status === "PUBLISHED" ? "badge" : "badge locked"}>{board.status}</span></td>
+                <td><span className={board.status === "PUBLISHED" ? "badge" : "badge locked"}>{board.status === "PUBLISHED" ? "BASE" : board.status}</span></td>
                 <td>{board.controlCount}</td>
                 <td>{board.reviewedBy || "-"}</td>
-                <td>{board.status === "DRAFT" ? <button className="btn secondary" onClick={() => publishBoard(board.id)}>Publish</button> : "-"}</td>
+                <td>{board.status === "DRAFT" ? <button className="btn secondary" onClick={() => publishBoard(board.id)}>Set as base</button> : "-"}</td>
               </tr>
             ))}
             {!boards.length ? <tr><td colSpan={8}>No boards yet.</td></tr> : null}

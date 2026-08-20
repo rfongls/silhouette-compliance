@@ -6,6 +6,8 @@ type SourceDefinition = {
   version: string;
   urls: string[];
   format: "oscal" | "html";
+  scope: string;
+  refreshCadenceDays: number;
 };
 
 const SOURCES: Record<string, SourceDefinition> = {
@@ -13,16 +15,20 @@ const SOURCES: Record<string, SourceDefinition> = {
     title: "NIST SP 800-53 Rev. 5 OSCAL Catalog",
     version: "Revision 5.1.1",
     urls: ["https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json"],
-    format: "oscal"
+    format: "oscal",
+    scope: "SP 800-53 Rev. 5 access control, audit, contingency planning, incident response, risk assessment, and system integrity families",
+    refreshCadenceDays: 365
   },
   HIPAA: {
-    title: "HHS HIPAA Security and Breach Notification Rules",
+    title: "HHS HIPAA Security and Privacy Rules",
     version: "Current HHS guidance",
     urls: [
       "https://www.hhs.gov/hipaa/for-professionals/security/laws-regulations/index.html",
-      "https://www.hhs.gov/hipaa/for-professionals/breach-notification/index.html"
+      "https://www.hhs.gov/hipaa/for-professionals/privacy/laws-regulations/index.html"
     ],
-    format: "html"
+    format: "html",
+    scope: "HIPAA Security Rule safeguards and Privacy Rule requirements defined by the reviewed extraction manifests",
+    refreshCadenceDays: 365
   },
   HITECH: {
     title: "HHS HITECH Act and Breach Notification Guidance",
@@ -31,13 +37,17 @@ const SOURCES: Record<string, SourceDefinition> = {
       "https://www.hhs.gov/hipaa/for-professionals/special-topics/hitech-act-enforcement-interim-final-rule/index.html",
       "https://www.hhs.gov/hipaa/for-professionals/breach-notification/index.html"
     ],
-    format: "html"
+    format: "html",
+    scope: "HITECH breach notification and enforcement requirements relevant to incident response planning",
+    refreshCadenceDays: 365
   },
   EP: {
     title: "CMS Emergency Preparedness Rule",
     version: "Current CMS guidance",
     urls: ["https://www.cms.gov/medicare/health-safety-standards/quality-safety-oversight-emergency-preparedness/emergency-preparedness-rule"],
-    format: "html"
+    format: "html",
+    scope: "CMS Emergency Preparedness Rule planning, communications, continuity, training, testing, and documentation requirements",
+    refreshCadenceDays: 365
   }
 };
 
@@ -97,12 +107,13 @@ export async function fetchOfficialControlSource(standardKey: string) {
   const source = SOURCES[standardKey];
   if (!source) throw new Error("No allowlisted public source is configured for this standard. Upload a reviewed control JSON file with source provenance instead.");
   const rawDocuments = await Promise.all(source.urls.map(retrieve));
-  const combined = rawDocuments.map((raw, index) => `${source.urls[index]}\n${raw}`).join("\n\n");
+  const sourceDocuments = source.format === "html" ? rawDocuments.map(readableHtml) : rawDocuments;
+  const combined = sourceDocuments.map((document, index) => `${source.urls[index]}\n${document}`).join("\n\n");
   return {
     ...source,
     sourceHash: sourceHash(combined),
     retrievedAt: new Date(),
     controls: source.format === "oscal" ? nistControls(rawDocuments[0]) : null,
-    sourceText: source.format === "html" ? rawDocuments.map(readableHtml).join("\n\n") : null
+    sourceText: source.format === "html" ? sourceDocuments.join("\n\n") : null
   };
 }

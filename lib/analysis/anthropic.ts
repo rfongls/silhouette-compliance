@@ -3,6 +3,7 @@ import { sanitizeForExport } from "@/lib/sanitize";
 import { getAIConfig } from "@/lib/settings";
 
 export type ModelUsage = { inputTokens?: number; outputTokens?: number };
+type JsonCallOptions = { schemaName?: string; schema?: Record<string, unknown> };
 
 function extractJson(raw: string) {
   const objStart = raw.indexOf("{");
@@ -26,7 +27,7 @@ async function callAnthropic(system: string, prompt: string, apiKey: string, mod
   return { json: sanitizeForExport(extractJson(text)), usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } };
 }
 
-async function callOpenAICompatible(system: string, prompt: string, apiKey: string, model: string, baseUrl: string) {
+async function callOpenAICompatible(system: string, prompt: string, apiKey: string, model: string, baseUrl: string, options?: JsonCallOptions, officialOpenAI = false) {
   if (!baseUrl) throw new Error("AI base URL is required for this provider");
   const res = await fetch(baseUrl, {
     method: "POST",
@@ -37,6 +38,13 @@ async function callOpenAICompatible(system: string, prompt: string, apiKey: stri
     body: JSON.stringify({
       model,
       temperature: 0.1,
+      ...(officialOpenAI ? { store: false } : {}),
+      ...(officialOpenAI && options?.schema ? {
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: options.schemaName || "structured_response", strict: true, schema: options.schema }
+        }
+      } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt }
@@ -52,9 +60,11 @@ async function callOpenAICompatible(system: string, prompt: string, apiKey: stri
   };
 }
 
-export async function callAnthropicJson(system: string, prompt: string): Promise<{ json: unknown; usage: ModelUsage }> {
+export async function callAIJson(system: string, prompt: string, options?: JsonCallOptions): Promise<{ json: unknown; usage: ModelUsage }> {
   const config = await getAIConfig();
   if (!config.apiKey) throw new Error(`${config.provider} API key is not configured`);
   if (config.provider === "anthropic") return callAnthropic(system, prompt, config.apiKey, config.model);
-  return callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl);
+  return callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl, options, config.provider === "openai");
 }
+
+export const callAnthropicJson = callAIJson;

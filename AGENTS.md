@@ -12,6 +12,29 @@ Users land on a marketing page, sign in (Google/Microsoft), and access modules t
 A **Suite shell** (§13) fronts all three: landing page, auth, module launcher, and per-module
 purchase/entitlement gates.
 
+## Production deployment invariant
+
+**The only production deployment flow is:** validate locally -> commit the intended changes ->
+push the commit to `main` -> allow `.github/workflows/deploy-hostinger.yml` to deploy automatically.
+
+- Production is sourced from `main`. Completed, approved changes must be pushed to `main` so the
+  repository's GitHub Actions workflow performs the deployment.
+- Do not deploy application files manually through Hostinger hPanel, File Manager, file upload,
+  SFTP, SCP, rsync, or an SSH shell.
+- Do not edit production files, extract releases, install packages, run Prisma commands, create
+  restart markers, or restart the application manually over SSH. SSH is read-only diagnostics only.
+- Do not use Hostinger's native Git auto-deploy in parallel with GitHub Actions. GitHub Actions is
+  the sole deployment owner; competing deployment systems can erase files during a release.
+- Do not use a manual Hostinger redeploy or other out-of-band release as a workaround for a failed
+  action. Diagnose the action, fix its workflow/configuration in the repository, test the fix, and
+  push the fix to `main` to trigger the normal deployment path.
+- After every production push, inspect the resulting GitHub Actions run and confirm its build,
+  deploy/restart, and smoke-test stages before reporting the release as deployed.
+- Keep production secrets in the configured GitHub Actions secrets/variables and Hostinger app
+  environment. Never commit them.
+
+These rules override any older deployment notes elsewhere in this file or repository.
+
 > **Prime directive — data minimization:** the Gap Analysis module never persists uploaded source
 > documents or any patient/client data (document in memory for one request only). You DO persist
 > generated *results*, accounts, billing, control boards, and entitlements. The SRA module is the one
@@ -341,14 +364,14 @@ model Entitlement {
 
 ## 14. Deployment target — Hostinger (Cloud hosting tier)
 
-The owner has a **Hostinger Cloud plan**, which supports managed Node.js web apps (deploy from a
-GitHub repo or file upload via hPanel; framework auto-detected, builds run automatically; Next.js is
-supported). Deploy the suite as a Node.js web app on this plan. **Constraints to design around:**
+The owner has a **Hostinger Cloud plan**, which supports managed Node.js web apps and Next.js. The
+production release is built and deployed by `.github/workflows/deploy-hostinger.yml` after a push to
+`main`. Hostinger remains the runtime target, not a second deployment orchestrator. **Constraints to
+design around:**
 
-1. **Managed build, no SSH npm** — npm build commands run automatically on deploy and are configured
-   in hPanel's Build settings; you cannot run arbitrary npm/CLI over SSH. Keep the build a standard
-   `next build`; run `prisma generate` in the build script and `prisma migrate deploy` via a
-   programmatic startup hook (e.g. in the server entry before listen), not a shell step.
+1. **Build and release through GitHub Actions** — keep build, dependency installation, Prisma client
+   generation/migrations, artifact transfer, restart signaling, and smoke tests in the committed
+   workflow. Never reproduce those steps manually over SSH.
 2. **Database — use external managed Postgres.** Hostinger web/cloud databases are MySQL-family.
    Do NOT convert the schema to MySQL; point `DATABASE_URL` at a managed Postgres (Neon, Supabase,
    or similar). This also keeps backups/PITR managed.
@@ -361,8 +384,10 @@ supported). Deploy the suite as a Node.js web app on this plan. **Constraints to
    `admin/boards/export` route and trigger it via hPanel cron (if available for the app) or an
    external scheduler (e.g. cron-job.org / GitHub Actions schedule) hitting the route with an
    admin token.
-6. **Deploy flow** — connect the GitHub repo in hPanel → auto-redeploy on push to main. Keep
-   `.env` values in the hPanel environment settings; never commit them.
+6. **Deploy flow** — test locally -> commit -> push to `main` -> GitHub Actions deploys and smoke
+   tests the app. Hostinger native Git auto-deploy must remain disabled to prevent a second process
+   from modifying `public_html`. Keep secrets in GitHub Actions/Hostinger environment settings;
+   never commit them.
 7. **Fallback** — if the app outgrows the managed environment (long-running jobs, Docker needs),
    move to a Hostinger KVM VPS (Ubuntu + Docker + Nginx/Certbot). The app code should not need to
    change — only infrastructure.

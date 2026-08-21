@@ -11,6 +11,9 @@ export async function POST(req: Request) {
   if (!String(reviewNotes || "").trim()) return NextResponse.json({ error: "Reviewer notes are required before setting a base control." }, { status: 400 });
   const draft = await prisma.controlBoard.findUnique({ where: { id: String(id) } });
   if (!draft || draft.status !== "DRAFT") return NextResponse.json({ error: "Draft board not found" }, { status: 404 });
+  if (!draft.reviewedAt || !draft.reviewedBy) {
+    return NextResponse.json({ error: "Save the reviewed control priorities before approving this draft." }, { status: 409 });
+  }
   const sourceUrls = Array.isArray(draft.sourceUrls) ? draft.sourceUrls : [];
   if (!draft.sourceTitle || !draft.sourceVersion || !draft.sourceHash || !sourceUrls.length) {
     return NextResponse.json({ error: "Board provenance is incomplete. Add source title, version, URL, and source hash before publishing." }, { status: 409 });

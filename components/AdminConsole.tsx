@@ -21,6 +21,7 @@ type BoardRow = {
   sourceTitle: string | null;
   sourceVersion: string | null;
   reviewedBy: string | null;
+  reviewedAt: string | null;
 };
 
 type LedgerRow = {
@@ -193,6 +194,7 @@ async function readError(res: Response) {
 
 export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }: Props) {
   const [users, setUsers] = useState(initialUsers);
+  const [boardRows, setBoardRows] = useState(boards);
   const [provider, setProvider] = useState(aiConfig.provider);
   const [model, setModel] = useState(aiConfig.model);
   const initialModelIsListed = optionsFor(aiConfig.provider).some((option) => option.value === aiConfig.model);
@@ -213,7 +215,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
   const [extractionRun, setExtractionRun] = useState<ExtractionRun | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
-  const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
+  const drafts = useMemo(() => boardRows.filter((board) => board.status === "DRAFT"), [boardRows]);
   const providerModels = optionsFor(provider);
   const extractionIsStale = Boolean(extractionRun?.status === "RUNNING"
     && Date.now() - new Date(extractionRun.updatedAt).getTime() >= 45 * 60 * 1000);
@@ -545,9 +547,11 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
       id: board.id,
       label: `${board.industry} / ${board.standardKey} v${board.version}`,
       controlsJson: JSON.stringify(data.board.controls, null, 2),
-      saved: false
+      saved: Boolean(data.board.reviewedAt)
     });
-    setStatus("Review every category and priority before publishing this draft.");
+    setStatus(data.board.reviewedAt
+      ? "This draft has a saved review and is eligible for approval. Review or update it before setting the base."
+      : "Review every category and priority before publishing this draft.");
     window.setTimeout(() => document.getElementById("draft-priority-review")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
@@ -560,7 +564,15 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
       body: JSON.stringify({ id: draftReview.id, controlsJson: draftReview.controlsJson })
     });
     if (!res.ok) return setStatus(await readError(res));
+    const data = await res.json();
     setDraftReview({ ...draftReview, saved: true });
+    setBoardRows((current) => current.map((board) => board.id === draftReview.id
+      ? {
+          ...board,
+          reviewedBy: data.board.reviewedBy || board.reviewedBy,
+          reviewedAt: data.board.reviewedAt || new Date().toISOString()
+        }
+      : board));
     setStatus("Draft categories and priorities saved. It is ready for final publication review.");
   }
 
@@ -704,7 +716,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
         <table className="table">
           <thead><tr><th>Industry</th><th>Standard</th><th>Version</th><th>Source</th><th>Status</th><th>Controls</th><th>Reviewer</th><th>Action</th></tr></thead>
           <tbody>
-            {boards.map((board) => (
+            {boardRows.map((board) => (
               <tr key={board.id}>
                 <td>{board.industry}</td>
                 <td>{board.standardKey}</td>
@@ -713,10 +725,18 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
                 <td><span className={board.status === "PUBLISHED" ? "badge" : "badge locked"}>{board.status === "PUBLISHED" ? "BASE" : board.status}</span></td>
                 <td>{board.controlCount}</td>
                 <td>{board.reviewedBy || "-"}</td>
-                <td>{board.status === "DRAFT" ? <button className="btn secondary" onClick={() => reviewDraft(board)}>Review draft</button> : "-"}</td>
+                <td>{board.status === "DRAFT" ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn secondary" onClick={() => reviewDraft(board)}>Review draft</button>
+                  <button
+                    className="btn"
+                    onClick={() => approveDraft(board.id)}
+                    disabled={!board.reviewedAt}
+                    title={board.reviewedAt ? "Approve this reviewed draft and set it as the scoring base" : "Save the reviewed priorities before approval"}
+                  >Approve and set base</button>
+                </div> : "-"}</td>
               </tr>
             ))}
-            {!boards.length ? <tr><td colSpan={8}>No boards yet.</td></tr> : null}
+            {!boardRows.length ? <tr><td colSpan={8}>No boards yet.</td></tr> : null}
           </tbody>
         </table>
         {drafts.length ? <p className="muted">{drafts.length} draft board{drafts.length === 1 ? "" : "s"} pending.</p> : null}

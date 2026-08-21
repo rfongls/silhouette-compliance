@@ -29,7 +29,12 @@ export async function PATCH(req: Request) {
     );
     const updated = await prisma.controlBoard.update({
       where: { id },
-      data: { controls, controlCount: controls.length }
+      data: {
+        controls,
+        controlCount: controls.length,
+        reviewedBy: guard.session.user.email || guard.session.user.id,
+        reviewedAt: new Date()
+      }
     });
     return NextResponse.json({ board: updated });
   } catch (error) {

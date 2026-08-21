@@ -557,7 +557,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     window.location.reload();
   }
 
-  async function reviewDraft(board: BoardRow) {
+  async function reviewDraft(board: Pick<BoardRow, "id" | "industry" | "standardKey" | "version">) {
     setStatus(`Loading ${board.standardKey} v${board.version} for priority review...`);
     const res = await fetch(`/api/admin/boards?id=${encodeURIComponent(board.id)}`);
     if (!res.ok) return setStatus(await readError(res));
@@ -569,6 +569,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       saved: false
     });
     setStatus("Review every category and priority before publishing this draft.");
+    window.setTimeout(() => document.getElementById("draft-priority-review")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   async function saveDraftReview() {
@@ -671,7 +672,9 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
                 <td>{formatControlTimestamp(plan.activeBase?.publishedAt)}</td>
                 <td>{plan.needsDraft && plan.ready
                   ? <button className="btn secondary" onClick={() => extractBoard(plan.standardKey)} disabled={extractionIsRunning}>{plan.updateStatus === "CHANGED" ? "Update draft" : "Create draft"}</button>
-                  : plan.pendingDraft ? `Review draft v${plan.pendingDraft.version}` : plan.updateStatus === "CURRENT" ? "No action needed" : "-"}</td>
+                  : plan.pendingDraft
+                    ? <button className="btn secondary" onClick={() => reviewDraft({ id: plan.pendingDraft!.id, industry: domainPlan.industry, standardKey: plan.standardKey, version: plan.pendingDraft!.version })}>Review draft v{plan.pendingDraft.version}</button>
+                    : plan.updateStatus === "CURRENT" ? "No action needed" : "-"}</td>
               </tr>
             ))}</tbody>
           </table>
@@ -744,7 +747,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             </div>
           </div>
         </div>
-        {draftReview ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
+        {draftReview ? <div id="draft-priority-review" className="card subcard" style={{ padding: 14, marginBottom: 18, scrollMarginTop: 20 }}>
           <div className="mono">Draft priority review</div>
           <h3 style={{ marginBottom: 6 }}>{draftReview.label}</h3>
           <p className="muted">The publisher does not assign a universal cross-framework score. Confirm each control category and Silhouette IRP priority before this draft becomes a scoring base. Valid priorities are Critical, High, Medium, and Low.</p>

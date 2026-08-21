@@ -28,14 +28,4 @@
 }
 .btn:disabled{cursor:not-allowed;opacity:.48}
 .badge.warning{background:rgba(245,158,11,.12);color:var(--warn)}
-.form label,.control-upload-grid label{display:grid;gap:6px}
-.control-upload-grid{
-  display:grid;
-  grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);
-  gap:16px;
-  align-items:start;
-  margin-top:12px;
-}
-@media(max-width:900px){
-  .control-upload-grid{grid-template-columns:1fr}
-}
+.form label{display:grid;gap:6px}

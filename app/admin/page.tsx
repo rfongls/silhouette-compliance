@@ -2,10 +2,8 @@ import { AdminConsole } from "@/components/AdminConsole";
 import { Nav } from "@/components/Nav";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { EXTRA_CB_BATCHES } from "@/lib/analysis/prompts";
 import { getAIConfigForAdmin } from "@/lib/settings";
 import { isComplianceEmailAllowed } from "@/lib/access-gate";
-import { standardsByIndustry } from "@/lib/control-boards";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -17,5 +15,5 @@ export default async function AdminPage() {
     prisma.user.findMany({ orderBy:[{role:"asc"},{email:"asc"}], select:{ id:true, name:true, email:true, role:true, accountId:true, createdAt:true } }).catch(()=>[]),
     getAIConfigForAdmin()
   ]);
-  return <main><Nav/><section className="wrap" style={{maxWidth:1320}}><div className="mono">Admin</div><h1 style={{fontFamily:"EB Garamond",fontSize:44}}>Admin Console</h1><AdminConsole users={users.map((u: { id: string; name: string | null; email: string | null; role: string; accountId: string; createdAt: Date })=>({...u,createdAt:u.createdAt.toISOString()}))} boards={boards} ledgers={ledgers} standards={Object.keys(EXTRA_CB_BATCHES)} standardsByIndustry={standardsByIndustry()} aiConfig={aiConfig}/></section></main>;
+  return <main><Nav/><section className="wrap" style={{maxWidth:1320}}><div className="mono">Admin</div><h1 style={{fontFamily:"EB Garamond",fontSize:44}}>Admin Console</h1><AdminConsole users={users.map((u: { id: string; name: string | null; email: string | null; role: string; accountId: string; createdAt: Date })=>({...u,createdAt:u.createdAt.toISOString()}))} boards={boards} ledgers={ledgers} aiConfig={aiConfig}/></section></main>;
 }

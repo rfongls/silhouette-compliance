@@ -113,8 +113,6 @@ type Props = {
   users: UserRow[];
   boards: BoardRow[];
   ledgers: LedgerRow[];
-  standards: string[];
-  standardsByIndustry: Record<string, { key: string; label: string; default: boolean }[]>;
   aiConfig: {
     provider: string;
     model: string;
@@ -193,7 +191,7 @@ async function readError(res: Response) {
   }
 }
 
-export function AdminConsole({ users: initialUsers, boards, ledgers, standards, standardsByIndustry, aiConfig }: Props) {
+export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }: Props) {
   const [users, setUsers] = useState(initialUsers);
   const [provider, setProvider] = useState(aiConfig.provider);
   const [model, setModel] = useState(aiConfig.model);
@@ -208,13 +206,9 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [savingAISettings, setSavingAISettings] = useState(false);
   const [testingAIKey, setTestingAIKey] = useState(false);
   const [industry, setIndustry] = useState(industries[0].value);
-  const [standardKey, setStandardKey] = useState(standardsByIndustry[industries[0].value]?.[0]?.key || standards[0] || "HIPAA");
-  const [controlsJson, setControlsJson] = useState("");
-  const [sourceTitle, setSourceTitle] = useState("");
-  const [sourceVersion, setSourceVersion] = useState("");
-  const [sourceUrls, setSourceUrls] = useState("");
-  const [reviewNotes, setReviewNotes] = useState("");
   const [backupJson, setBackupJson] = useState("");
+  const [backupFileName, setBackupFileName] = useState("");
+  const [showControlImport, setShowControlImport] = useState(false);
   const [draftReview, setDraftReview] = useState<{ id: string; label: string; controlsJson: string; saved: boolean } | null>(null);
   const [status, setStatus] = useState("");
   const [domainPlan, setDomainPlan] = useState<DomainPlan | null>(null);
@@ -223,7 +217,6 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const drafts = useMemo(() => boards.filter((board) => board.status === "DRAFT"), [boards]);
   const providerModels = optionsFor(provider);
-  const selectedStandards = standardsByIndustry[industry] || standards.map((standard) => ({ key: standard, label: standard, default: false }));
   const extractionIsStale = Boolean(extractionRun?.status === "RUNNING"
     && Date.now() - new Date(extractionRun.updatedAt).getTime() >= 45 * 60 * 1000);
   const extractionIsRunning = extractionRun?.status === "RUNNING" && !extractionIsStale;
@@ -294,10 +287,6 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
   function changeIndustry(nextIndustry: string) {
     setIndustry(nextIndustry);
     setDomainPlan(null);
-    const nextStandards = standardsByIndustry[nextIndustry] || [];
-    if (!nextStandards.some((standard) => standard.key === standardKey)) {
-      setStandardKey(nextStandards[0]?.key || standards[0] || "HIPAA");
-    }
   }
 
   async function updateRole(userId: string, role: string) {
@@ -504,13 +493,25 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     const file = files?.[0];
     if (!file) return;
     setStatus("Reading control-board backup...");
-    setBackupJson(await file.text());
-    setStatus(`Loaded ${file.name}. Restore will create reviewable drafts only.`);
+    const text = await file.text();
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.kind !== "silhouette-control-board-backup" || parsed?.schemaVersion !== 1 || !Array.isArray(parsed?.boards)) {
+        throw new Error("Select a Silhouette control-board backup with schema version 1.");
+      }
+      setBackupJson(text);
+      setBackupFileName(file.name);
+      setStatus(`Loaded ${file.name}. Import will create reviewable drafts only.`);
+    } catch (error) {
+      setBackupJson("");
+      setBackupFileName("");
+      setStatus((error as Error).message || "The selected control-board file is invalid.");
+    }
   }
 
   async function restoreBackup() {
-    if (!backupJson.trim() || !window.confirm("Restore every board in this backup as a new draft? Existing base boards will remain active until each restored draft is reviewed and published.")) return;
-    setStatus("Restoring control-board backup as drafts...");
+    if (!backupJson.trim() || !window.confirm("Import every board in this file as a new draft? Existing base boards will remain active until each imported draft is reviewed and published.")) return;
+    setStatus("Importing control-board file as drafts...");
     const res = await fetch("/api/admin/boards/upload", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -518,27 +519,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     });
     if (!res.ok) return setStatus(await readError(res));
     const data = await res.json();
-    setStatus(`${data.boards.length} control-board draft${data.boards.length === 1 ? "" : "s"} restored.`);
-    window.location.reload();
-  }
-
-  async function readControlsFile(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
-    setStatus("Reading control import...");
-    setControlsJson(await file.text());
-    setStatus(`Loaded ${file.name}.`);
-  }
-
-  async function uploadBoard() {
-    setStatus("Creating control board draft from uploaded JSON...");
-    const res = await fetch("/api/admin/boards/upload", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ industry, standardKey, controlsJson, sourceTitle, sourceVersion, sourceUrls, reviewNotes })
-    });
-    if (!res.ok) return setStatus(await readError(res));
-    setStatus("Uploaded draft board created.");
+    setStatus(`${data.boards.length} control-board draft${data.boards.length === 1 ? "" : "s"} imported.`);
     window.location.reload();
   }
 
@@ -641,14 +622,28 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
       <section className="card">
         <div className="mono">Control Boards</div>
         <h2>Retrieve, Review & Set Base</h2>
-        <p className="muted">Only administrators can check official sources, create drafts, restore backups, and set the reviewed base controls used for scoring. A source check never changes the active base.</p>
+        <p className="muted">Only administrators can check official sources, create drafts, import control-board backups, and set the reviewed base controls used for scoring. A source check never changes the active base.</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <button className="btn" onClick={preflightBoard} disabled={extractionIsRunning}>{domainPlan ? "Check again for control updates" : "Check for control updates"}</button>
           <a className="btn secondary" href="/api/admin/boards/export">Download base control backup</a>
+          <button className="btn secondary" onClick={() => setShowControlImport((current) => !current)}>{showControlImport ? "Close import" : "Import control board file"}</button>
         </div>
+        {showControlImport ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
+          <div className="mono">Control-board file import</div>
+          <h3 style={{ marginBottom: 6 }}>Import downloaded controls</h3>
+          <p className="muted">Select a Silhouette control-board backup JSON file. Every included board is restored as a draft and requires review before it can become the scoring base.</p>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
+              Select JSON file
+              <input type="file" accept="application/json,.json" onChange={(event) => readBackupFile(event.target.files)} style={{ display: "none" }} />
+            </label>
+            {backupFileName ? <span className="muted">{backupFileName}</span> : null}
+            <button className="btn" onClick={restoreBackup} disabled={!backupJson.trim()}>Import as drafts</button>
+          </div>
+        </div> : null}
         {domainPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
           <div className="mono">Control update check results</div>
           <h3 style={{ marginBottom: 6 }}>{domainPlan.industryLabel} control library</h3>
@@ -709,44 +704,6 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             {runNeedsRecovery && recoveryMessage ? <p className="muted" role="status" style={{ marginTop: 10, marginBottom: 0 }}>{recoveryMessage}</p> : null}
             {extractionRun.status === "COMPLETED" ? <button className="btn secondary" onClick={() => window.location.reload()}>Review created drafts</button> : null}
           </div> : null}
-        <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
-          <div className="mono">Control-board backup</div>
-          <h3 style={{ marginBottom: 6 }}>Restore saved base controls</h3>
-          <p className="muted">A downloaded Silhouette backup restores each saved board as a new draft. It cannot replace a published base without admin review.</p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
-              Select backup
-              <input type="file" accept=".json" onChange={(event) => readBackupFile(event.target.files)} style={{ display: "none" }} />
-            </label>
-            <button className="btn" onClick={restoreBackup} disabled={!backupJson.trim()}>Restore as drafts</button>
-          </div>
-        </div>
-        <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
-          <div className="mono">Manual control upload</div>
-          <label style={{ display: "block", maxWidth: 360, margin: "12px 0" }}>
-            Standard
-            <select className="select" value={standardKey} onChange={(event) => setStandardKey(event.target.value)}>
-              {selectedStandards.map((standard) => <option key={standard.key} value={standard.key}>{standard.label}</option>)}
-            </select>
-          </label>
-          <div className="control-upload-grid">
-            <label>
-              Control JSON
-              <textarea className="textarea" value={controlsJson} onChange={(event) => setControlsJson(event.target.value)} placeholder='[{"id":"IR-4","standard":"NIST","category":"Incident Response","requirement":"Incident response plan is developed and tested","risk_level":"High"}]' style={{ minHeight: 320 }} />
-            </label>
-            <div style={{ display: "grid", gap: 10 }}>
-              <label>Source title<input className="input" value={sourceTitle} onChange={(event) => setSourceTitle(event.target.value)} placeholder="Official publication title" /></label>
-              <label>Source version<input className="input" value={sourceVersion} onChange={(event) => setSourceVersion(event.target.value)} placeholder="Revision or effective date" /></label>
-              <label>Source URL(s)<textarea className="textarea" value={sourceUrls} onChange={(event) => setSourceUrls(event.target.value)} placeholder="One authoritative URL per line" style={{ minHeight: 80 }} /></label>
-              <label>Review notes<textarea className="textarea" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} placeholder="What was checked before publishing" style={{ minHeight: 80 }} /></label>
-              <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
-                Load file
-                <input type="file" accept=".json,.txt" onChange={(event) => readControlsFile(event.target.files)} style={{ display: "none" }} />
-              </label>
-              <button className="btn" onClick={uploadBoard} disabled={!controlsJson.trim() || !sourceTitle.trim() || !sourceVersion.trim() || !sourceUrls.trim() || !reviewNotes.trim()}>Upload draft</button>
-            </div>
-          </div>
-        </div>
         {draftReview ? <div id="draft-priority-review" className="card subcard" style={{ padding: 14, marginBottom: 18, scrollMarginTop: 20 }}>
           <div className="mono">Draft priority review</div>
           <h3 style={{ marginBottom: 6 }}>{draftReview.label}</h3>

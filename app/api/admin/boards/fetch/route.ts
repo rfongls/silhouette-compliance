@@ -66,6 +66,7 @@ async function buildDomainPlan(industry: string) {
         model: extraction.method === "grounded-ai" ? aiConfig.model : null,
         ready,
         needsDraft,
+        checkedAt: source.retrievedAt.toISOString(),
         updateStatus: pendingDraft ? "DRAFT" : !activeBase ? "NEW" : refresh.sourceChanged ? "CHANGED" : "CURRENT",
         readinessMessage: pendingDraft
           ? `Draft v${pendingDraft.version} already contains this official source and is waiting for review.`
@@ -77,9 +78,10 @@ async function buildDomainPlan(industry: string) {
         activeBase: activeBase ? {
           id: activeBase.id,
           version: activeBase.version,
+          retrievedAt: activeBase.retrievedAt,
           publishedAt: activeBase.publishedAt,
           ...refresh
-        } : { version: null, publishedAt: null, ...refresh },
+        } : { version: null, retrievedAt: null, publishedAt: null, ...refresh },
         pendingDraft: pendingDraft ? {
           id: pendingDraft.id,
           version: pendingDraft.version,
@@ -100,6 +102,7 @@ async function buildDomainPlan(industry: string) {
         estimatedInputTokens: 0,
         sourceHash: null,
         sourceUrls: [] as string[],
+        checkedAt: new Date().toISOString(),
         source: null,
         needsDraft: false,
         updateStatus: activeBase ? "MANUAL" : "MISSING"

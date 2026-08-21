@@ -52,10 +52,12 @@ type DomainStandardPlan = {
   model?: string | null;
   ready: boolean;
   needsDraft: boolean;
+  checkedAt: string;
   updateStatus: "NEW" | "CHANGED" | "DRAFT" | "CURRENT" | "MANUAL" | "MISSING";
   readinessMessage: string;
   activeBase?: {
     version: number | null;
+    retrievedAt: string | null;
     publishedAt: string | null;
     hasBaseControl: boolean;
     sourceChanged: boolean;
@@ -381,6 +383,12 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
     setStatus("Domain source preflight complete. No AI request was made.");
   }
 
+  function formatControlTimestamp(value?: string | null) {
+    if (!value) return "Never";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
+  }
+
   async function extractBoard(onlyStandardKey?: string, resume = false, restart = false, planOverride?: DomainPlan) {
     const activePlan = planOverride || domainPlan;
     if (!activePlan || extractionIsRunning) return;
@@ -637,13 +645,13 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
           <select className="select" value={industry} onChange={(event) => changeIndustry(event.target.value)} style={{ maxWidth: 260 }}>
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <button className="btn" onClick={preflightBoard} disabled={extractionIsRunning}>Check for control updates</button>
+          <button className="btn" onClick={preflightBoard} disabled={extractionIsRunning}>{domainPlan ? "Check again for control updates" : "Check for control updates"}</button>
           <a className="btn secondary" href="/api/admin/boards/export">Download base control backup</a>
         </div>
         {domainPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
-          <div className="mono">Domain extraction preflight</div>
+          <div className="mono">Control update check results</div>
           <h3 style={{ marginBottom: 6 }}>{domainPlan.industryLabel} control library</h3>
-          <p className="muted" style={{ marginTop: 0 }}>One confirmed run creates a separate reviewable draft for every automatically retrievable standard.</p>
+          <p className="muted" style={{ marginTop: 0 }}>Official sources were checked without changing the active base. Create reviewable drafts only for standards marked new or changed.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, margin: "14px 0" }}>
             <div><b>Standards</b><br/><span className="muted">{domainPlan.aggregate.standardCount}</span></div>
             <div><b>Automatic</b><br/><span className="muted">{domainPlan.aggregate.automaticCount}</span></div>
@@ -653,17 +661,17 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, standards, 
             <div><b>Maximum estimated input</b><br/><span className="muted">{domainPlan.aggregate.estimatedInputTokens.toLocaleString()} tokens</span></div>
           </div>
           <table className="table" style={{ marginBottom: 14 }}>
-            <thead><tr><th>Standard</th><th>Retrieval</th><th>Update check</th><th>Current base</th><th>Readiness</th><th>Action</th></tr></thead>
+            <thead><tr><th>Standard</th><th>Update status</th><th>Last checked</th><th>Last pulled</th><th>Last published</th><th>Action</th></tr></thead>
             <tbody>{domainPlan.standards.map((plan) => (
               <tr key={plan.standardKey}>
-                <td><b>{plan.label}</b><br/><span className="muted">{plan.standardKey}{plan.default ? " / default" : ""}</span></td>
-                <td>{plan.available ? (plan.method === "deterministic" ? "Deterministic" : "Grounded AI") : "Reviewed upload"}</td>
-                <td>{plan.updateStatus === "CHANGED" ? "Update available" : plan.updateStatus === "NEW" ? "New board required" : plan.updateStatus === "DRAFT" ? "Draft pending review" : plan.updateStatus === "CURRENT" ? "Current" : plan.updateStatus === "MANUAL" ? "Check manually" : "Base missing"}</td>
-                <td>{plan.activeBase?.hasBaseControl ? `v${plan.activeBase.version}` : "Not set"}</td>
-                <td><span className={plan.pendingDraft || plan.ready ? "badge" : "badge locked"}>{plan.pendingDraft ? "Draft ready" : plan.ready ? "Ready" : plan.manualUploadRequired ? "Upload required" : "Blocked"}</span><br/><span className="muted">{plan.readinessMessage}</span></td>
+                <td><b>{plan.label}</b><br/><span className="muted">{plan.standardKey}{plan.default ? " / default" : ""}</span><br/><span className="muted">{plan.available ? (plan.method === "deterministic" ? "Deterministic" : "Grounded AI") : "Reviewed upload"}</span></td>
+                <td><span className={plan.updateStatus === "CHANGED" || plan.updateStatus === "NEW" ? "badge warning" : plan.updateStatus === "MISSING" || plan.updateStatus === "MANUAL" ? "badge locked" : "badge"}>{plan.updateStatus === "CHANGED" ? "Update available" : plan.updateStatus === "NEW" ? "New board required" : plan.updateStatus === "DRAFT" ? "Draft pending review" : plan.updateStatus === "CURRENT" ? "No change detected" : plan.updateStatus === "MANUAL" ? "Manual check required" : "Base missing"}</span><br/><span className="muted">{plan.readinessMessage}</span></td>
+                <td>{formatControlTimestamp(plan.checkedAt)}</td>
+                <td>{formatControlTimestamp(plan.activeBase?.retrievedAt)}{plan.activeBase?.hasBaseControl ? <><br/><span className="muted">Base v{plan.activeBase.version}</span></> : null}</td>
+                <td>{formatControlTimestamp(plan.activeBase?.publishedAt)}</td>
                 <td>{plan.needsDraft && plan.ready
                   ? <button className="btn secondary" onClick={() => extractBoard(plan.standardKey)} disabled={extractionIsRunning}>{plan.updateStatus === "CHANGED" ? "Update draft" : "Create draft"}</button>
-                  : plan.pendingDraft ? `v${plan.pendingDraft.version}` : "-"}</td>
+                  : plan.pendingDraft ? `Review draft v${plan.pendingDraft.version}` : plan.updateStatus === "CURRENT" ? "No action needed" : "-"}</td>
               </tr>
             ))}</tbody>
           </table>

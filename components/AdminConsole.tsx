@@ -547,23 +547,24 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
       id: board.id,
       label: `${board.industry} / ${board.standardKey} v${board.version}`,
       controlsJson: JSON.stringify(data.board.controls, null, 2),
-      saved: Boolean(data.board.reviewedAt)
+      saved: true
     });
-    setStatus(data.board.reviewedAt
-      ? "This draft has a saved review and is eligible for approval. Review or update it before setting the base."
-      : "Review every category and priority before publishing this draft.");
+    setStatus("Review the fetched controls or approve the validated draft as the scoring base.");
     window.setTimeout(() => document.getElementById("draft-priority-review")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   async function saveDraftReview() {
-    if (!draftReview) return;
+    if (!draftReview) return false;
     setStatus("Validating and saving reviewed control priorities...");
     const res = await fetch("/api/admin/boards", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ id: draftReview.id, controlsJson: draftReview.controlsJson })
     });
-    if (!res.ok) return setStatus(await readError(res));
+    if (!res.ok) {
+      setStatus(await readError(res));
+      return false;
+    }
     const data = await res.json();
     setDraftReview({ ...draftReview, saved: true });
     setBoardRows((current) => current.map((board) => board.id === draftReview.id
@@ -574,6 +575,13 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
         }
       : board));
     setStatus("Draft categories and priorities saved. It is ready for final publication review.");
+    return true;
+  }
+
+  async function approveFromReview() {
+    if (!draftReview) return;
+    if (!draftReview.saved && !(await saveDraftReview())) return;
+    await approveDraft(draftReview.id);
   }
 
   return (
@@ -709,7 +717,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
           <textarea className="textarea" value={draftReview.controlsJson} onChange={(event) => setDraftReview({ ...draftReview, controlsJson: event.target.value, saved: false })} style={{ minHeight: 420 }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
             <button className="btn secondary" onClick={saveDraftReview}>Save reviewed priorities</button>
-            <button className="btn" onClick={() => approveDraft(draftReview.id)} disabled={!draftReview.saved}>Approve</button>
+            <button className="btn" onClick={approveFromReview}>Approve</button>
             <button className="btn secondary" onClick={() => setDraftReview(null)}>Close</button>
           </div>
         </div> : null}
@@ -730,8 +738,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
                   <button
                     className="btn"
                     onClick={() => approveDraft(board.id)}
-                    disabled={!board.reviewedAt}
-                    title={board.reviewedAt ? "Approve this reviewed draft and set it as the scoring base" : "Save the reviewed priorities before approval"}
+                    title="Approve this validated draft and set it as the scoring base"
                     style={{ minWidth: 132 }}
                   >Approve</button>
                 </div> : "-"}</td>

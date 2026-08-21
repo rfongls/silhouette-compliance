@@ -498,7 +498,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
         throw new Error("Select a Silhouette control-board backup with schema version 1.");
       }
       if (!parsed.boards.length) {
-        throw new Error("This backup contains no published control boards to import.");
+        throw new Error("This backup contains no control boards to import.");
       }
       if (!window.confirm(`Import ${parsed.boards.length} control board${parsed.boards.length === 1 ? "" : "s"} from ${file.name} as reviewable drafts? Existing base boards will remain active.`)) {
         setStatus("Control-board import canceled.");
@@ -521,18 +521,18 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
     }
   }
 
-  async function publishBoard(id: string) {
-    if (!window.confirm("Set this reviewed draft as the base control set used for scoring? The current base for this industry and standard will be archived.")) return;
-    const reviewNotes = window.prompt("Record what you reviewed before setting this as the base control:");
-    if (!reviewNotes?.trim()) return setStatus("Base control update canceled. Review notes are required.");
-    setStatus("Setting base control...");
+  async function approveDraft(id: string) {
+    if (!window.confirm("Approve this reviewed draft and set it as the base control set used for scoring? The current base for this industry and standard will be archived.")) return;
+    const reviewNotes = window.prompt("Record what you reviewed before approving this draft:");
+    if (!reviewNotes?.trim()) return setStatus("Draft approval canceled. Review notes are required.");
+    setStatus("Approving draft and setting base control...");
     const res = await fetch("/api/admin/boards/publish", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ id, reviewConfirmed: true, reviewNotes })
     });
     if (!res.ok) return setStatus(await readError(res));
-    setStatus("Base control updated.");
+    setStatus("Draft approved and base control updated.");
     window.location.reload();
   }
 
@@ -626,7 +626,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
             {industries.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <button className="btn" onClick={preflightBoard} disabled={extractionIsRunning}>{domainPlan ? "Check again for control updates" : "Check for control updates"}</button>
-          <a className="btn secondary" href="/api/admin/boards/export">Download base control backup</a>
+          <a className="btn secondary" href="/api/admin/boards/export">Download control-board backup</a>
           <button className="btn secondary" onClick={() => controlImportInputRef.current?.click()}>Import control board file</button>
           <input ref={controlImportInputRef} type="file" accept="application/json,.json" onChange={(event) => importBackupFile(event.target.files)} style={{ display: "none" }} />
         </div>
@@ -697,7 +697,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
           <textarea className="textarea" value={draftReview.controlsJson} onChange={(event) => setDraftReview({ ...draftReview, controlsJson: event.target.value, saved: false })} style={{ minHeight: 420 }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
             <button className="btn secondary" onClick={saveDraftReview}>Save reviewed priorities</button>
-            <button className="btn" onClick={() => publishBoard(draftReview.id)} disabled={!draftReview.saved}>Set reviewed draft as base</button>
+            <button className="btn" onClick={() => approveDraft(draftReview.id)} disabled={!draftReview.saved}>Approve draft and set as base</button>
             <button className="btn secondary" onClick={() => setDraftReview(null)}>Close</button>
           </div>
         </div> : null}

@@ -10,7 +10,14 @@ export async function GET(req: Request) {
     const guard = await requireSession("admin");
     if ("response" in guard) return guard.response;
   }
-  const boards = await prisma.controlBoard.findMany({ where: { status: "PUBLISHED" }, orderBy: [{ industry: "asc" }, { standardKey: "asc" }] });
+  const loadedBoards = await prisma.controlBoard.findMany({
+    where: { status: { in: ["DRAFT", "PUBLISHED"] } },
+    orderBy: [{ industry: "asc" }, { standardKey: "asc" }, { version: "desc" }]
+  });
+  const boards = loadedBoards.filter((board, index) => {
+    const previous = loadedBoards[index - 1];
+    return !previous || previous.industry !== board.industry || previous.standardKey !== board.standardKey;
+  });
   return NextResponse.json({
     kind: "silhouette-control-board-backup",
     schemaVersion: 1,

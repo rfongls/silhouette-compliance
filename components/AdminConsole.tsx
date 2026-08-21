@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type UserRow = {
   id: string;
@@ -206,9 +206,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
   const [savingAISettings, setSavingAISettings] = useState(false);
   const [testingAIKey, setTestingAIKey] = useState(false);
   const [industry, setIndustry] = useState(industries[0].value);
-  const [backupJson, setBackupJson] = useState("");
-  const [backupFileName, setBackupFileName] = useState("");
-  const [showControlImport, setShowControlImport] = useState(false);
+  const controlImportInputRef = useRef<HTMLInputElement>(null);
   const [draftReview, setDraftReview] = useState<{ id: string; label: string; controlsJson: string; saved: boolean } | null>(null);
   const [status, setStatus] = useState("");
   const [domainPlan, setDomainPlan] = useState<DomainPlan | null>(null);
@@ -489,7 +487,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
     await extractBoard(undefined, false, true, plan);
   }
 
-  async function readBackupFile(files: FileList | null) {
+  async function importBackupFile(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
     setStatus("Reading control-board backup...");
@@ -499,28 +497,28 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
       if (parsed?.kind !== "silhouette-control-board-backup" || parsed?.schemaVersion !== 1 || !Array.isArray(parsed?.boards)) {
         throw new Error("Select a Silhouette control-board backup with schema version 1.");
       }
-      setBackupJson(text);
-      setBackupFileName(file.name);
-      setStatus(`Loaded ${file.name}. Import will create reviewable drafts only.`);
+      if (!parsed.boards.length) {
+        throw new Error("This backup contains no published control boards to import.");
+      }
+      if (!window.confirm(`Import ${parsed.boards.length} control board${parsed.boards.length === 1 ? "" : "s"} from ${file.name} as reviewable drafts? Existing base boards will remain active.`)) {
+        setStatus("Control-board import canceled.");
+        return;
+      }
+      setStatus(`Importing ${file.name} as reviewable drafts...`);
+      const res = await fetch("/api/admin/boards/upload", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode: "restore", backupJson: text })
+      });
+      if (!res.ok) return setStatus(await readError(res));
+      const data = await res.json();
+      setStatus(`${data.boards.length} control-board draft${data.boards.length === 1 ? "" : "s"} imported.`);
+      window.location.reload();
     } catch (error) {
-      setBackupJson("");
-      setBackupFileName("");
       setStatus((error as Error).message || "The selected control-board file is invalid.");
+    } finally {
+      if (controlImportInputRef.current) controlImportInputRef.current.value = "";
     }
-  }
-
-  async function restoreBackup() {
-    if (!backupJson.trim() || !window.confirm("Import every board in this file as a new draft? Existing base boards will remain active until each imported draft is reviewed and published.")) return;
-    setStatus("Importing control-board file as drafts...");
-    const res = await fetch("/api/admin/boards/upload", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "restore", backupJson })
-    });
-    if (!res.ok) return setStatus(await readError(res));
-    const data = await res.json();
-    setStatus(`${data.boards.length} control-board draft${data.boards.length === 1 ? "" : "s"} imported.`);
-    window.location.reload();
   }
 
   async function publishBoard(id: string) {
@@ -629,21 +627,9 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
           </select>
           <button className="btn" onClick={preflightBoard} disabled={extractionIsRunning}>{domainPlan ? "Check again for control updates" : "Check for control updates"}</button>
           <a className="btn secondary" href="/api/admin/boards/export">Download base control backup</a>
-          <button className="btn secondary" onClick={() => setShowControlImport((current) => !current)}>{showControlImport ? "Close import" : "Import control board file"}</button>
+          <button className="btn secondary" onClick={() => controlImportInputRef.current?.click()}>Import control board file</button>
+          <input ref={controlImportInputRef} type="file" accept="application/json,.json" onChange={(event) => importBackupFile(event.target.files)} style={{ display: "none" }} />
         </div>
-        {showControlImport ? <div className="card subcard" style={{ padding: 14, marginBottom: 18 }}>
-          <div className="mono">Control-board file import</div>
-          <h3 style={{ marginBottom: 6 }}>Import downloaded controls</h3>
-          <p className="muted">Select a Silhouette control-board backup JSON file. Every included board is restored as a draft and requires review before it can become the scoring base.</p>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <label className="btn secondary" style={{ textAlign: "center", cursor: "pointer" }}>
-              Select JSON file
-              <input type="file" accept="application/json,.json" onChange={(event) => readBackupFile(event.target.files)} style={{ display: "none" }} />
-            </label>
-            {backupFileName ? <span className="muted">{backupFileName}</span> : null}
-            <button className="btn" onClick={restoreBackup} disabled={!backupJson.trim()}>Import as drafts</button>
-          </div>
-        </div> : null}
         {domainPlan ? <div className="card subcard" style={{ padding: 16, marginBottom: 18 }}>
           <div className="mono">Control update check results</div>
           <h3 style={{ marginBottom: 6 }}>{domainPlan.industryLabel} control library</h3>

@@ -709,7 +709,7 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
           <textarea className="textarea" value={draftReview.controlsJson} onChange={(event) => setDraftReview({ ...draftReview, controlsJson: event.target.value, saved: false })} style={{ minHeight: 420 }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
             <button className="btn secondary" onClick={saveDraftReview}>Save reviewed priorities</button>
-            <button className="btn" onClick={() => approveDraft(draftReview.id)} disabled={!draftReview.saved}>Approve draft and set as base</button>
+            <button className="btn" onClick={() => approveDraft(draftReview.id)} disabled={!draftReview.saved}>Approve</button>
             <button className="btn secondary" onClick={() => setDraftReview(null)}>Close</button>
           </div>
         </div> : null}
@@ -726,13 +726,14 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
                 <td>{board.controlCount}</td>
                 <td>{board.reviewedBy || "-"}</td>
                 <td>{board.status === "DRAFT" ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="btn secondary" onClick={() => reviewDraft(board)}>Review draft</button>
+                  <button className="btn secondary" onClick={() => reviewDraft(board)} style={{ minWidth: 132 }}>Review draft</button>
                   <button
                     className="btn"
                     onClick={() => approveDraft(board.id)}
                     disabled={!board.reviewedAt}
                     title={board.reviewedAt ? "Approve this reviewed draft and set it as the scoring base" : "Save the reviewed priorities before approval"}
-                  >Approve and set base</button>
+                    style={{ minWidth: 132 }}
+                  >Approve</button>
                 </div> : "-"}</td>
               </tr>
             ))}

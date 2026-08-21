@@ -525,13 +525,11 @@ export function AdminConsole({ users: initialUsers, boards, ledgers, aiConfig }:
 
   async function approveDraft(id: string) {
     if (!window.confirm("Approve this reviewed draft and set it as the base control set used for scoring? The current base for this industry and standard will be archived.")) return;
-    const reviewNotes = window.prompt("Record what you reviewed before approving this draft:");
-    if (!reviewNotes?.trim()) return setStatus("Draft approval canceled. Review notes are required.");
     setStatus("Approving draft and setting base control...");
     const res = await fetch("/api/admin/boards/publish", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id, reviewConfirmed: true, reviewNotes })
+      body: JSON.stringify({ id, reviewConfirmed: true })
     });
     if (!res.ok) return setStatus(await readError(res));
     setStatus("Draft approved and base control updated.");

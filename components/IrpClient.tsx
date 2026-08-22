@@ -19,6 +19,8 @@ type ReviewedOrg = {
   status?: string;
 };
 
+type AssessmentScope = "self" | "network";
+
 type AssessmentProgress = {
   id: string;
   orgName: string | null;
@@ -76,7 +78,7 @@ function availableDefaults(industry: string, available: Record<string, string[]>
 }
 
 export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
-  const [clientName, setClientName] = useState(demo ? "Demo Client Group" : "");
+  const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>(demo ? "network" : "self");
   const [industry, setIndustry] = useState("health-center");
   const [standards, setStandards] = useState(availableDefaults("health-center", availableStandardsByIndustry, demo));
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
@@ -187,6 +189,11 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
     if (!demo) setAcceptedQuote(null);
   }
 
+  function changeAssessmentScope(nextScope: AssessmentScope) {
+    setAssessmentScope(nextScope);
+    clearQuote();
+  }
+
   function updateOrg(id: string, patch: Partial<ReviewedOrg>) {
     setOrgs((rows) => rows.map((org) => org.id === id ? { ...org, ...patch } : org));
     clearQuote();
@@ -251,8 +258,8 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
   }
 
   async function estimate() {
-    const validOrgs = orgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
-    if (!clientName.trim()) return alert("Enter the client or umbrella organization name.");
+    const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
+    const validOrgs = scopedOrgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
     if (!validOrgs.length) return alert("Add at least one organization being reviewed.");
     if (!standards.length) return alert("No published base control board is available for this domain. An administrator must publish one before an assessment can run.");
     const documents = orgDocuments(validOrgs);
@@ -273,7 +280,8 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
   async function run() {
     if (!demo && !acceptedQuote) return alert("Create and accept a run estimate before starting the assessment.");
     if (!demo && acceptedQuote && !acceptedQuote.withinGuard) return alert("This document set exceeds the current processing guard. Reduce the upload size or split the run.");
-    const validOrgs = orgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
+    const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
+    const validOrgs = scopedOrgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
     const documents = orgDocuments(validOrgs);
     if (!documents.length) return alert("Upload or paste policy text before running.");
     if (!demo && !phiAttested) return alert("Confirm that you reviewed the files and removed PHI before running.");
@@ -294,7 +302,7 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           demo,
-          orgName: clientName || validOrgs[0]?.name,
+          orgName: validOrgs[0]?.name,
           industry,
           standards,
           orgNames: validOrgs.map((org) => org.name),
@@ -313,7 +321,7 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
       }
       setResult(data.result);
       setAssessmentId(data.assessmentId || null);
-      setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || clientName, result: data.result }] : []);
+      setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || validOrgs[0]?.name || "Organization", result: data.result }] : []);
       setOperation((current) => current ? {
         ...current,
         state: "COMPLETED",
@@ -343,10 +351,22 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
         <div className="mono">Upload console</div>
         <h2>Incident Response Plan</h2>
         <div className="form">
-          <label>
-            Client / umbrella organization
-            <input className="input" value={clientName} onChange={(e) => { setClientName(e.target.value); clearQuote(); }} placeholder="Client organization or parent group" />
-          </label>
+          <fieldset className="card subcard" style={{ padding: 14, margin: 0 }}>
+            <legend style={{ padding: "0 6px" }}>Who is this assessment for?</legend>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+              <button className={assessmentScope === "self" ? "btn" : "btn secondary"} type="button" onClick={() => changeAssessmentScope("self")} aria-pressed={assessmentScope === "self"}>
+                My organization
+              </button>
+              <button className={assessmentScope === "network" ? "btn" : "btn secondary"} type="button" onClick={() => changeAssessmentScope("network")} aria-pressed={assessmentScope === "network"}>
+                Client or network
+              </button>
+            </div>
+            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>
+              {assessmentScope === "self"
+                ? "Assess one IRP for your own organization."
+                : "Assess one or more organizations on behalf of a client or parent network. Include the parent as an organization if its own policy should be scored."}
+            </p>
+          </fieldset>
           <label>
             Industry
             <select className="select" value={industry} onChange={(e) => changeIndustry(e.target.value)}>
@@ -379,16 +399,18 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
           <div className="card subcard" style={{ padding: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 12 }}>
               <div>
-                <div className="mono">Organizations reviewed</div>
-                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>Each named organization becomes a separate $250 IRP invoice line item.</p>
+                <div className="mono">{assessmentScope === "self" ? "Organization assessed" : "Organizations assessed"}</div>
+                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
+                  {assessmentScope === "self" ? "This organization is one $250 IRP assessment." : "Each named organization becomes a separate $250 IRP invoice line item."}
+                </p>
               </div>
-              <button className="btn secondary" type="button" onClick={addOrg}>Add org</button>
+              {assessmentScope === "network" ? <button className="btn secondary" type="button" onClick={addOrg}>Add org</button> : null}
             </div>
-            {orgs.map((org, index) => (
+            {(assessmentScope === "self" ? orgs.slice(0, 1) : orgs).map((org, index) => (
               <div key={org.id} className="card nested-card" style={{ padding: 12, marginTop: 10 }}>
                 <label>
-                  Organization {index + 1}
-                  <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder="Organization being assessed" />
+                  {assessmentScope === "self" ? "Organization name" : `Organization ${index + 1}`}
+                  <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder={assessmentScope === "self" ? "Your organization name" : "Organization being assessed"} />
                 </label>
                 <label>
                   Policy uploads
@@ -408,7 +430,7 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
                   Paste policy text
                   <textarea className="textarea" value={org.text} onChange={(e) => updateOrg(org.id, { text: e.target.value, documents: [] })} placeholder="Paste extracted policy text for this organization." />
                 </label>
-                <button className="btn ghost" type="button" onClick={() => removeOrg(org.id)} disabled={orgs.length === 1}>Remove org</button>
+                {assessmentScope === "network" ? <button className="btn ghost" type="button" onClick={() => removeOrg(org.id)} disabled={orgs.length === 1}>Remove org</button> : null}
               </div>
             ))}
           </div>

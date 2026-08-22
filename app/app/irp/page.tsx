@@ -23,5 +23,5 @@ export default async function IrpPage({ searchParams }: { searchParams: { demo?:
     publishedBoards.filter((board) => board.industry === industry).map((board) => board.standardKey)
   ]));
   const canLoad = demo || isAdmin || balance > 0;
-  return <main><Nav/><section className="wrap"><div className="mono">{demo ? "Demo mode" : isAdmin ? "Admin comped module" : "Credit-gated module"}</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1>{canLoad ? <IrpClient demo={demo} isAdmin={isAdmin} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={availableStandardsByIndustry}/> : <ModulePaywall module="irp" demoHref="/app/irp?demo=1" />}</section></main>;
+  return <main><Nav/><section className="wrap"><div className="mono">{demo ? "Curated demo" : isAdmin ? "Admin comped module" : "Client assessment"}</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1>{canLoad ? <IrpClient demo={demo} isAdmin={isAdmin} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={availableStandardsByIndustry}/> : <ModulePaywall module="irp" demoHref="/app/irp?demo=1" />}</section></main>;
 }

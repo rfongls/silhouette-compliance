@@ -20,6 +20,18 @@ type ReviewedOrg = {
 
 type AssessmentScope = "self" | "network";
 
+const DEMO_POLICY_NAME = "generic-health-system-incident-response-plan.txt";
+const DEMO_POLICY_TEXT = `Generic Health System Incident Response Plan
+
+Purpose
+This plan establishes a coordinated process for identifying, reporting, containing, and recovering from information security incidents.
+
+Response process
+Workforce members report suspected incidents to the Security Office. The incident lead documents containment decisions, coordinates internal communications, and preserves relevant evidence.
+
+Testing and improvement
+The response team reviews the plan annually and records lessons learned after material incidents.`;
+
 type AssessmentProgress = {
   id: string;
   orgName: string | null;
@@ -77,12 +89,12 @@ function availableDefaults(industry: string, available: Record<string, string[]>
 }
 
 export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
-  const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>(demo ? "network" : "self");
+  const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>("self");
   const [industry, setIndustry] = useState("health-center");
   const [standards, setStandards] = useState(availableDefaults("health-center", availableStandardsByIndustry, demo));
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
     ...newOrg(demoOrgName("health-center")),
-    documents: [{ name: "demo-irp.txt", text: "Demo incident response policy text." }]
+    documents: [{ name: DEMO_POLICY_NAME, text: DEMO_POLICY_TEXT }]
   }] : [newOrg("")]);
   const [quoting, setQuoting] = useState(false);
   const [phiAttested, setPhiAttested] = useState(demo);
@@ -370,6 +382,38 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
 
   return (
     <div className="irp-flow">
+      {demo ? (
+      <section className="card irp-process-card irp-demo-card">
+        <div className="mono">Curated demo</div>
+        <h2>Sample IRP assessment</h2>
+        <p className="muted irp-process-intro">Review a fixed, generic healthcare policy sample and open its curated assessment report. Demo mode does not accept uploads, call an AI provider, or enable downloads.</p>
+        <div className="irp-demo-grid">
+          <section className="irp-demo-source">
+            <div className="mono">Sample source</div>
+            <div className="irp-demo-file">
+              <div>
+                <b>{DEMO_POLICY_NAME}</b>
+                <span className="muted">Plain-text policy sample</span>
+              </div>
+              <span className="badge">Read only</span>
+            </div>
+            <pre className="irp-demo-excerpt">{DEMO_POLICY_TEXT}</pre>
+          </section>
+          <section className="irp-demo-scope">
+            <div className="mono">Assessment scope</div>
+            <dl>
+              <div><dt>Organization</dt><dd>{demoOrgName("health-center")}</dd></div>
+              <div><dt>Industry</dt><dd>Health Center / Healthcare</dd></div>
+              <div><dt>Standards</dt><dd>HIPAA Security / Privacy and NIST SP 800-53 Rev. 5</dd></div>
+              <div><dt>Output</dt><dd>Scored findings and remediation roadmap</dd></div>
+            </dl>
+            <button className="btn" type="button" onClick={run} disabled={operationActive}>
+              {operationActive ? "Preparing sample report..." : result ? "View sample report again" : "View sample report"}
+            </button>
+          </section>
+        </div>
+      </section>
+      ) : (
       <section className="card irp-process-card">
         <div className="mono">Policy processing</div>
         <h2>Configure IRP assessment</h2>
@@ -512,6 +556,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
           <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Your purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
         </div>
       </section>
+      )}
       {operation || result ? <section className="card irp-result-card">
         <div className="mono">Assessment result</div>
         {operation ? (
@@ -599,7 +644,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                   </div>
                 ))}
               </div>
-            ) : assessmentId ? null : <span className="badge">Demo exports disabled</span>}
+            ) : demo ? <p className="muted" style={{ marginTop: 16 }}>This curated sample report is available in the demo view only.</p> : assessmentId ? null : null}
           </>
         ) : null}
       </section> : null}

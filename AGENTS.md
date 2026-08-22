@@ -228,6 +228,9 @@ ASSESSMENT_RATE_CENTS=25000   # $250/org default; admin-configurable
 - Health-center analysis output matches the prototype (regression guard); other industries score
   against their own PUBLISHED boards.
 - All `admin/*` routes reject non-admin sessions.
+- Every long-running model, retrieval, import, or export operation displays real persisted status,
+  disables duplicate submission while active, reports measurable progress when available, and ends
+  with a visible success or failure state. A generic loading button is not sufficient.
 
 ## 10. Out of scope (do not build yet)
 

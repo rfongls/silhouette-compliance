@@ -163,6 +163,11 @@ model Assessment {
   phiAttested       Boolean      @default(false)
   phiAttestedAt     DateTime?
   dataHandlingFlags Json?
+  progressStage     String?
+  progressMessage   String?
+  progressCurrent   Int          @default(0)
+  progressTotal     Int          @default(0)
+  progressUpdatedAt DateTime?
   reviewStatus      String       @default("AI_DRAFT")
   reviewedBy        String?
   reviewedAt        DateTime?

@@ -7,6 +7,15 @@ export const IRP_CONTROL_BATCH_SIZE = 20;
 export const IRP_EVIDENCE_CHUNK_CHARS = 60000;
 
 export type EvidenceDocument = { name: string; text: string };
+export type AnalysisProgress = {
+  completed: number;
+  total: number;
+  controlBatch: number;
+  controlBatches: number;
+  evidenceChunk: number;
+  evidenceChunks: number;
+  message: string;
+};
 type Status = "Yes" | "Partial" | "No";
 
 const responseSchema = z.object({
@@ -169,15 +178,30 @@ export async function scoreControlSet(input: {
   controls: NormalizedControl[];
   documents: EvidenceDocument[];
   boardCite: string;
+  onProgress?: (progress: AnalysisProgress) => void | Promise<void>;
 }) {
   const chunks = chunkEvidenceDocuments(input.documents);
   if (!chunks.length) throw new Error("No readable policy text was supplied for this organization.");
   const system = buildSystemPrompt(input.scope);
   const best = new Map<string, { status: Status; quote: string; document: string; finding: string }>();
   const usage: Required<ModelUsage> = { inputTokens: 0, outputTokens: 0 };
+  const controlBatches = batches(input.controls, IRP_CONTROL_BATCH_SIZE);
+  const total = controlBatches.length * chunks.length;
+  let completed = 0;
 
-  for (const controlBatch of batches(input.controls, IRP_CONTROL_BATCH_SIZE)) {
-    for (const evidenceChunk of chunks) {
+  for (const [controlBatchIndex, controlBatch] of controlBatches.entries()) {
+    for (const [evidenceChunkIndex, evidenceChunk] of chunks.entries()) {
+      if (completed === 0) {
+        await input.onProgress?.({
+          completed,
+          total,
+          controlBatch: controlBatchIndex + 1,
+          controlBatches: controlBatches.length,
+          evidenceChunk: evidenceChunkIndex + 1,
+          evidenceChunks: chunks.length,
+          message: `Analyzing policy segment ${evidenceChunkIndex + 1} of ${chunks.length} against control batch ${controlBatchIndex + 1} of ${controlBatches.length}.`
+        });
+      }
       const prompt = buildControlEvaluationPrompt({
         orgName: input.orgName,
         scope: input.scope,
@@ -204,6 +228,16 @@ export async function scoreControlSet(input: {
         const current = best.get(key);
         if (!current || statusRank(candidate.status) > statusRank(current.status)) best.set(key, candidate);
       }
+      completed += 1;
+      await input.onProgress?.({
+        completed,
+        total,
+        controlBatch: controlBatchIndex + 1,
+        controlBatches: controlBatches.length,
+        evidenceChunk: evidenceChunkIndex + 1,
+        evidenceChunks: chunks.length,
+        message: `Analyzed policy segment ${evidenceChunkIndex + 1} of ${chunks.length} against control batch ${controlBatchIndex + 1} of ${controlBatches.length}.`
+      });
     }
   }
 

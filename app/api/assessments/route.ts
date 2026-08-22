@@ -2,9 +2,40 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: Request) {
   const guard = await requireSession("customer");
   if ("response" in guard) return guard.response;
-  const assessments = await prisma.assessment.findMany({ where: { accountId: guard.session.user.accountId }, orderBy: { createdAt: "desc" }, select: { id: true, orgId: true, orgName: true, industry: true, createdAt: true, score: true, posture: true, status: true, boardCite: true, refineUsed: true } });
-  return NextResponse.json({ assessments });
+  const params = new URL(req.url).searchParams;
+  const quoteId = params.get("quoteId")?.trim();
+  const runningOnly = params.get("status") === "RUNNING";
+  const assessments = await prisma.assessment.findMany({
+    where: {
+      accountId: guard.session.user.accountId,
+      ...(runningOnly ? { status: "RUNNING" as const, updatedAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } } : {}),
+      ...(quoteId ? { ledger: { is: { quoteId } } } : {})
+    },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: {
+      id: true,
+      orgId: true,
+      orgName: true,
+      industry: true,
+      createdAt: true,
+      updatedAt: true,
+      score: true,
+      posture: true,
+      status: true,
+      boardCite: true,
+      refineUsed: true,
+      progressStage: true,
+      progressMessage: true,
+      progressCurrent: true,
+      progressTotal: true,
+      progressUpdatedAt: true,
+      ...(quoteId ? { result: true } : {}),
+      ledger: { select: { quoteId: true } }
+    }
+  });
+  return NextResponse.json({ assessments: assessments.map(({ ledger, ...assessment }) => ({ ...assessment, quoteId: ledger?.quoteId || null })) });
 }

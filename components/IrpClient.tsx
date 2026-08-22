@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { demoOrgName } from "@/lib/demo";
 import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
 import { CheckoutButton } from "@/components/CheckoutButton";
@@ -18,6 +18,42 @@ type ReviewedOrg = {
   text: string;
   status?: string;
 };
+
+type AssessmentProgress = {
+  id: string;
+  orgName: string | null;
+  status: "PENDING" | "RUNNING" | "DELIVERED" | "FAILED" | "REFUNDED";
+  createdAt: string;
+  updatedAt: string;
+  progressStage: string | null;
+  progressMessage: string | null;
+  progressCurrent: number;
+  progressTotal: number;
+  progressUpdatedAt: string | null;
+  quoteId: string | null;
+  result?: any;
+};
+
+type AssessmentOperation = {
+  state: "SUBMITTING" | "RUNNING" | "COMPLETED" | "FAILED";
+  quoteId: string | null;
+  startedAt: number;
+  message: string;
+  rows: AssessmentProgress[];
+};
+
+function formatElapsed(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes ? `${minutes}m ${seconds.toString().padStart(2, "0")}s` : `${seconds}s`;
+}
+
+function progressPercent(rows: AssessmentProgress[], state: AssessmentOperation["state"]) {
+  if (state === "COMPLETED") return 100;
+  const total = rows.reduce((sum, row) => sum + Math.max(0, row.progressTotal), 0);
+  const current = rows.reduce((sum, row) => sum + Math.min(Math.max(0, row.progressCurrent), Math.max(0, row.progressTotal)), 0);
+  return total ? Math.min(99, Math.round((current / total) * 100)) : 0;
+}
 
 function newOrg(name = ""): ReviewedOrg {
   return { id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, name, documents: [], text: "" };
@@ -47,7 +83,6 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
     ...newOrg(demoOrgName("health-center")),
     documents: [{ name: "demo-irp.txt", text: "Demo incident response policy text." }]
   }] : [newOrg("")]);
-  const [loading, setLoading] = useState(false);
   const [quoting, setQuoting] = useState(false);
   const [phiAttested, setPhiAttested] = useState(demo);
   const [acceptedQuote, setAcceptedQuote] = useState<RunQuote | null>(demo ? {
@@ -71,9 +106,82 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
   const [result, setResult] = useState<any>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Array<{ assessmentId: string; orgName: string; result: any; reused?: boolean }>>([]);
+  const [operation, setOperation] = useState<AssessmentOperation | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const deployedStandards = demo ? null : new Set(availableStandardsByIndustry[industry] || []);
   const standardOptions = (INDUSTRY_STANDARDS[industry]?.standards || []).filter((standard) => !deployedStandards || deployedStandards.has(standard.key));
   const allStandardsSelected = standardOptions.length > 0 && standardOptions.every((standard) => standards.includes(standard.key));
+  const operationActive = operation?.state === "SUBMITTING" || operation?.state === "RUNNING";
+
+  useEffect(() => {
+    if (!operationActive || !operation) return;
+    const updateElapsed = () => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - operation.startedAt) / 1000)));
+    updateElapsed();
+    const timer = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(timer);
+  }, [operationActive, operation?.startedAt]);
+
+  useEffect(() => {
+    if (demo) return;
+    let cancelled = false;
+    void fetch("/api/assessments?status=RUNNING", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        const rows = Array.isArray(data?.assessments) ? data.assessments as AssessmentProgress[] : [];
+        if (cancelled || !rows.length) return;
+        const latestQuoteId = rows.find((row) => row.quoteId)?.quoteId || null;
+        setOperation({
+          state: "RUNNING",
+          quoteId: latestQuoteId,
+          startedAt: Date.parse(rows[0].createdAt) || Date.now(),
+          message: "Restored an assessment currently running for this account.",
+          rows
+        });
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [demo]);
+
+  useEffect(() => {
+    if (!operationActive || !operation?.quoteId || demo) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const response = await fetch(`/api/assessments?quoteId=${encodeURIComponent(operation.quoteId!)}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        const rows = Array.isArray(data.assessments) ? data.assessments as AssessmentProgress[] : [];
+        if (cancelled || !rows.length) return;
+        const running = rows.some((row) => row.status === "RUNNING" || row.status === "PENDING");
+        const delivered = rows.filter((row) => row.status === "DELIVERED" && row.result);
+        const failed = rows.filter((row) => row.status === "FAILED" || row.status === "REFUNDED");
+        const nextState: AssessmentOperation["state"] = running ? "RUNNING" : delivered.length ? "COMPLETED" : failed.length ? "FAILED" : "RUNNING";
+        setOperation((current) => current ? {
+          ...current,
+          state: nextState,
+          rows,
+          message: running
+            ? "Assessment processing is active. Progress is updated after each completed model pass."
+            : delivered.length
+              ? failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed."
+              : "Assessment processing did not complete."
+        } : current);
+        if (delivered.length) {
+          setResult(delivered[0].result);
+          setAssessmentId(delivered[0].id);
+          setAssessments(delivered.map((row) => ({ assessmentId: row.id, orgName: row.orgName || "Organization", result: row.result })));
+        }
+      } catch {
+        // Keep the last persisted status visible while a poll temporarily fails.
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [demo, operationActive, operation?.quoteId]);
 
   function clearQuote() {
     if (!demo) setAcceptedQuote(null);
@@ -169,29 +277,65 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
     const documents = orgDocuments(validOrgs);
     if (!documents.length) return alert("Upload or paste policy text before running.");
     if (!demo && !phiAttested) return alert("Confirm that you reviewed the files and removed PHI before running.");
-    setLoading(true);
-    const res = await fetch("/api/assess", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        demo,
-        orgName: clientName || validOrgs[0]?.name,
-        industry,
-        standards,
-        orgNames: validOrgs.map((org) => org.name),
-        orgCount: validOrgs.length,
-        quoteId: acceptedQuote?.id,
-        phiAttested,
-        documents
-      })
+    setElapsedSeconds(0);
+    setResult(null);
+    setAssessmentId(null);
+    setAssessments([]);
+    setOperation({
+      state: "SUBMITTING",
+      quoteId: acceptedQuote?.id || null,
+      startedAt: Date.now(),
+      message: "Submitting the assessment and verifying payment, quote integrity, and published control boards.",
+      rows: []
     });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) return alert(data.error || "Assessment failed");
-    setResult(data.result);
-    setAssessmentId(data.assessmentId || null);
-    setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || clientName, result: data.result }] : []);
+    try {
+      const res = await fetch("/api/assess", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          demo,
+          orgName: clientName || validOrgs[0]?.name,
+          industry,
+          standards,
+          orgNames: validOrgs.map((org) => org.name),
+          orgCount: validOrgs.length,
+          quoteId: acceptedQuote?.id,
+          phiAttested,
+          documents
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = data.error || "Assessment failed";
+        setOperation((current) => current ? { ...current, state: "FAILED", message } : current);
+        alert(message);
+        return;
+      }
+      setResult(data.result);
+      setAssessmentId(data.assessmentId || null);
+      setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || clientName, result: data.result }] : []);
+      setOperation((current) => current ? {
+        ...current,
+        state: "COMPLETED",
+        message: Array.isArray(data.failed) && data.failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed.",
+        rows: current.rows.map((row) => row.status === "RUNNING" ? { ...row, status: "DELIVERED", progressStage: "DELIVERED", progressMessage: "Assessment and report completed.", progressCurrent: row.progressTotal } : row)
+      } : current);
+    } catch {
+      setOperation((current) => current ? {
+        ...current,
+        state: current.rows.some((row) => row.status === "RUNNING") ? "RUNNING" : "FAILED",
+        message: current.rows.some((row) => row.status === "RUNNING")
+          ? "The browser connection closed, but the server-side assessment is still running. Persisted progress will continue updating here."
+          : "The assessment request could not be completed. No active server-side assessment was found."
+      } : current);
+    }
   }
+
+  const operationProgress = operation ? progressPercent(operation.rows, operation.state) : 0;
+  const operationLabel = operation?.state === "SUBMITTING" ? "Starting"
+    : operation?.state === "RUNNING" ? "Running"
+      : operation?.state === "COMPLETED" ? "Completed"
+        : "Failed";
 
   return (
     <div className="grid" style={{ gridTemplateColumns: "minmax(340px,.95fr) minmax(320px,1.05fr)" }}>
@@ -294,12 +438,47 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
           {!demo && acceptedQuote ? (
             <CheckoutButton module="irp" quantity={acceptedQuote.orgCount} quoteId={acceptedQuote.id}>Purchase {acceptedQuote.orgCount} org credit{acceptedQuote.orgCount === 1 ? "" : "s"}</CheckoutButton>
           ) : null}
-          <button className="btn" onClick={run} disabled={loading || (!demo && (!acceptedQuote || !phiAttested))}>{loading ? "Generating..." : demo ? "Run demo" : "Run assessment"}</button>
+          <button className="btn" onClick={run} disabled={operationActive || (!demo && (!acceptedQuote || !phiAttested))}>{operationActive ? "Assessment running" : demo ? "Run demo" : "Run assessment"}</button>
           <p className="muted" style={{ fontSize: 13 }}>Payment is verified server-side before any model call. Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
         </div>
       </div>
       <div className="card">
         <div className="mono">Result</div>
+        {operation ? (
+          <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "12px 0 18px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div>
+                <div className="mono">Assessment status</div>
+                <b>{operation.state === "COMPLETED" ? "Report ready" : operation.state === "FAILED" ? "Assessment stopped" : "Assessment processing"}</b>
+              </div>
+              <span className={operation.state === "FAILED" ? "badge locked" : operation.state === "RUNNING" || operation.state === "SUBMITTING" ? "badge warning" : "badge"}>{operationLabel}</span>
+            </div>
+            <p className="muted" style={{ margin: "10px 0 8px" }}>{operation.message}</p>
+            <div style={{ height: 8, background: "var(--surface-nested)", borderRadius: 4, overflow: "hidden", marginBottom: 8 }}>
+              <div style={{ height: "100%", width: `${operationProgress}%`, background: "var(--accent)", transition: "width 220ms ease" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: operation.rows.length ? 12 : 0 }}>
+              <span className="muted" style={{ fontSize: 13 }}>{operationProgress}% complete</span>
+              <span className="muted" style={{ fontSize: 13 }}>Elapsed {formatElapsed(elapsedSeconds)}</span>
+            </div>
+            {operation.rows.length ? (
+              <table className="table">
+                <thead><tr><th>Organization</th><th>Stage</th><th>Progress</th></tr></thead>
+                <tbody>{operation.rows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.orgName || "Organization"}</td>
+                    <td><span className={row.status === "FAILED" || row.status === "REFUNDED" ? "badge locked" : row.status === "RUNNING" ? "badge warning" : "badge"}>{row.progressStage || row.status}</span></td>
+                    <td>
+                      {row.progressMessage || "Waiting for the next status update."}
+                      {row.progressTotal ? <><br/><span className="muted">{Math.min(row.progressCurrent, row.progressTotal)} of {row.progressTotal} analysis passes complete</span></> : null}
+                    </td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            ) : null}
+            {operationActive ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>Keep this tab open while policy text remains in request memory. Progress updates after each completed model pass.</p> : null}
+          </div>
+        ) : null}
         {result ? (
           <>
             <h2>{result.organization_name}</h2>
@@ -352,7 +531,7 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
               </div>
             ) : assessmentId ? null : <span className="badge">Demo exports disabled</span>}
           </>
-        ) : <p className="muted">Generated reports appear here. Demo mode returns static sample data and never calls the model.</p>}
+        ) : <p className="muted">{operationActive ? "The completed report will appear here automatically." : "Generated reports appear here. Demo mode returns static sample data and never calls the model."}</p>}
       </div>
     </div>
   );

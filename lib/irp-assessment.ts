@@ -154,7 +154,12 @@ export async function handleIrpAssessment(req: Request) {
             sourceSetHash: item.assessmentHash,
             phiAttested: true,
             phiAttestedAt: new Date(),
-            dataHandlingFlags: [dataHandlingAttestation()]
+            dataHandlingFlags: [dataHandlingAttestation()],
+            progressStage: "QUEUED",
+            progressMessage: "Assessment accepted. Preparing the published controls and policy segments.",
+            progressCurrent: 0,
+            progressTotal: scoringPassCount(controlSet.controls.length, item.integrity.charCount),
+            progressUpdatedAt: new Date()
           }
         });
         return { ...item, assessment, ledger };
@@ -169,13 +174,41 @@ export async function handleIrpAssessment(req: Request) {
   const failed: Array<{ assessmentId: string; orgName: string; error: string }> = [];
   for (const item of created) {
     try {
+      await prisma.assessment.update({
+        where: { id: item.assessment.id },
+        data: {
+          progressStage: "PREPARING",
+          progressMessage: "Preparing control batches and policy segments for analysis.",
+          progressUpdatedAt: new Date()
+        }
+      });
       const { result: modelResult, usage } = await runGapAnalysis({
         orgName: item.orgName,
         industry,
         standards,
         documents: item.documents.map(({ name, text }) => ({ name, text })),
         controls: controlSet.controls,
-        boardCite: controlSet.cite
+        boardCite: controlSet.cite,
+        onProgress: async (progress) => {
+          await prisma.assessment.update({
+            where: { id: item.assessment.id },
+            data: {
+              progressStage: "ANALYZING",
+              progressMessage: progress.message,
+              progressCurrent: progress.completed,
+              progressTotal: progress.total,
+              progressUpdatedAt: new Date()
+            }
+          });
+        }
+      });
+      await prisma.assessment.update({
+        where: { id: item.assessment.id },
+        data: {
+          progressStage: "FINALIZING",
+          progressMessage: "Analysis passes are complete. Calculating scores and assembling the report.",
+          progressUpdatedAt: new Date()
+        }
       });
       const result = {
         ...modelResult,
@@ -191,7 +224,15 @@ export async function handleIrpAssessment(req: Request) {
       };
       const saved = await prisma.assessment.update({
         where: { id: item.assessment.id },
-        data: { status: "DELIVERED", score: result.compliance_score, posture: result.overall_posture, result }
+        data: {
+          status: "DELIVERED",
+          score: result.compliance_score,
+          posture: result.overall_posture,
+          result,
+          progressStage: "DELIVERED",
+          progressMessage: "Assessment and report completed.",
+          progressUpdatedAt: new Date()
+        }
       });
       await prisma.usageLedger.update({
         where: { id: item.ledger.id },
@@ -200,7 +241,15 @@ export async function handleIrpAssessment(req: Request) {
       delivered.push({ assessmentId: saved.id, orgName: item.orgName, result, reused: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Assessment failed";
-      await prisma.assessment.update({ where: { id: item.assessment.id }, data: { status: isAdmin ? "FAILED" : "REFUNDED" } }).catch(() => undefined);
+      await prisma.assessment.update({
+        where: { id: item.assessment.id },
+        data: {
+          status: isAdmin ? "FAILED" : "REFUNDED",
+          progressStage: isAdmin ? "FAILED" : "REFUNDED",
+          progressMessage: isAdmin ? "Assessment processing failed." : "Assessment processing failed and the purchased credit was restored.",
+          progressUpdatedAt: new Date()
+        }
+      }).catch(() => undefined);
       await prisma.usageLedger.update({ where: { id: item.ledger.id }, data: { assessmentId: item.assessment.id, status: isAdmin ? "failed" : "refunded" } }).catch(() => undefined);
       if (!isAdmin) await restoreEntitlement(accountId, EntKind.ASSESSMENT_CREDIT, 1, item.assessment.id).catch(() => undefined);
       failed.push({ assessmentId: item.assessment.id, orgName: item.orgName, error: message });

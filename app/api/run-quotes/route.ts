@@ -6,6 +6,9 @@ import { normalizeStandards } from "@/lib/analysis/standards";
 import { IRP_CONTROL_BATCH_SIZE, scoringPassCount } from "@/lib/analysis/scoring";
 import { loadPublishedControlSet } from "@/lib/control-boards";
 import { quoteSourceDigest } from "@/lib/document-integrity";
+import { isEffectiveAdmin } from "@/lib/view-role";
+import { getEntitlementBalance } from "@/lib/entitlements";
+import { EntKind } from "@prisma/client";
 
 const modules = new Set(["irp", "sra", "proposal"]);
 
@@ -16,7 +19,7 @@ export async function POST(req: Request) {
   const module = String(body.module || "irp") as QuoteModule;
   if (!modules.has(module)) return NextResponse.json({ error: "Invalid module" }, { status: 400 });
   if (module === "irp" && body.phiAttested !== true) {
-    return NextResponse.json({ error: "Confirm that the uploader reviewed the files and removed PHI before creating an estimate." }, { status: 400 });
+    return NextResponse.json({ error: "Confirm that the uploader reviewed the files and removed PHI before starting the assessment." }, { status: 400 });
   }
 
   const documents: any[] | undefined = Array.isArray(body.documents) ? body.documents : undefined;
@@ -61,6 +64,13 @@ export async function POST(req: Request) {
         orgName: String(document?.orgName || estimate.orgNames[0] || "Organization 1")
       })), JSON.stringify({ industry: quoteIndustry, standards: [...quoteStandards].sort() }))
     : undefined;
+  const isAdmin = isEffectiveAdmin(guard.session);
+  if (module === "irp" && !isAdmin) {
+    const balance = await getEntitlementBalance(guard.session.user.accountId, EntKind.ASSESSMENT_CREDIT);
+    if (balance < estimate.orgCount) {
+      return NextResponse.json({ error: `This assessment requires ${estimate.orgCount} organization credit${estimate.orgCount === 1 ? "" : "s"}. Purchase the remaining credits before running it.` }, { status: 402 });
+    }
+  }
 
   const quote = await prisma.runQuote.create({
     data: {
@@ -78,9 +88,24 @@ export async function POST(req: Request) {
       customerAmountCents: estimate.customerAmountCents,
       marginCents: estimate.marginCents,
       withinGuard: estimate.withinGuard,
+      status: module === "irp" && !isAdmin ? "PAID" : "QUOTED",
+      acceptedAt: module === "irp" && !isAdmin ? new Date() : undefined,
       expiresAt: quoteExpiresAt()
     }
   });
 
-  return NextResponse.json({ quote: { id: quote.id, ...estimate, expiresAt: quote.expiresAt } });
+  const quoteResponse = isAdmin
+    ? { id: quote.id, ...estimate, expiresAt: quote.expiresAt }
+    : {
+        id: quote.id,
+        orgNames: estimate.orgNames,
+        orgCount: estimate.orgCount,
+        documentCount: estimate.documentCount,
+        customerAmountCents: estimate.customerAmountCents,
+        withinGuard: estimate.withinGuard,
+        warning: estimate.withinGuard ? undefined : "This submission exceeds the current processing limits. Reduce the upload size or split the run.",
+        expiresAt: quote.expiresAt
+      };
+
+  return NextResponse.json({ quote: quoteResponse });
 }

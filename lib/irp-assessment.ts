@@ -55,7 +55,7 @@ export async function handleIrpAssessment(req: Request) {
   }
   for (const [orgName, rows] of groupedDocuments) {
     if (documentSetIntegrity(rows).duplicateHashes.length) {
-      return NextResponse.json({ error: `Duplicate file content was submitted more than once for ${orgName}. Remove the duplicate and create a new estimate.` }, { status: 409 });
+      return NextResponse.json({ error: `Duplicate file content was submitted more than once for ${orgName}. Remove the duplicate and start the run again.` }, { status: 409 });
     }
   }
 
@@ -73,14 +73,14 @@ export async function handleIrpAssessment(req: Request) {
       expiresAt: { gt: new Date() }
     }
   }) : null;
-  if (!quote) return NextResponse.json({ error: "Accepted run quote required before assessment." }, { status: 428 });
+  if (!quote) return NextResponse.json({ error: "A current run authorization is required before assessment." }, { status: 428 });
   if (!quote.withinGuard) return NextResponse.json({ error: "Quote exceeds the configured processing guard." }, { status: 413 });
 
   const quotedOrgNames = Array.isArray(quote.orgNames) ? quote.orgNames.map((name) => String(name || "").trim()).filter(Boolean) : [];
   const orgNamesMatch = quotedOrgNames.length === orgNames.length && quotedOrgNames.every((name, index) => name === orgNames[index]);
   const quoteContext = JSON.stringify({ industry, standards: [...standards].sort() });
   if (!orgNamesMatch || quote.sourceDigest !== quoteSourceDigest(documents, quoteContext)) {
-    return NextResponse.json({ error: "Uploaded documents, domain, or selected standards changed after the quote. Create and accept a new estimate." }, { status: 409 });
+    return NextResponse.json({ error: "Uploaded documents, domain, or selected standards changed while preparing the run. Start the run again." }, { status: 409 });
   }
 
   let controlSet: Awaited<ReturnType<typeof loadPublishedControlSet>>;

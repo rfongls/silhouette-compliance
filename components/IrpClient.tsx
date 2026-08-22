@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { demoOrgName } from "@/lib/demo";
 import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
-import { CheckoutButton } from "@/components/CheckoutButton";
 import { RunQuoteSummary, type RunQuote } from "@/components/RunQuoteSummary";
 
 type UploadedDoc = {
@@ -77,7 +76,7 @@ function availableDefaults(industry: string, available: Record<string, string[]>
   return defaults.length ? defaults : deployed.slice(0, 1);
 }
 
-export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
+export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
   const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>(demo ? "network" : "self");
   const [industry, setIndustry] = useState("health-center");
   const [standards, setStandards] = useState(availableDefaults("health-center", availableStandardsByIndustry, demo));
@@ -257,29 +256,53 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
     clearQuote();
   }
 
-  async function estimate() {
+  async function createRunQuote() {
     const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
     const validOrgs = scopedOrgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
-    if (!validOrgs.length) return alert("Add at least one organization being reviewed.");
-    if (!standards.length) return alert("No published base control board is available for this domain. An administrator must publish one before an assessment can run.");
+    if (!validOrgs.length) {
+      alert("Add at least one organization being reviewed.");
+      return null;
+    }
+    if (!standards.length) {
+      alert("No published base control board is available for this domain. An administrator must publish one before an assessment can run.");
+      return null;
+    }
     const documents = orgDocuments(validOrgs);
-    if (!documents.length) return alert("Upload or paste policy text for at least one reviewed organization.");
-    if (!phiAttested) return alert("Confirm that you reviewed the files and removed PHI before creating an estimate.");
+    if (!documents.length) {
+      alert("Upload or paste policy text for at least one reviewed organization.");
+      return null;
+    }
+    if (!phiAttested) {
+      alert("Confirm that you reviewed the files and removed PHI before starting the assessment.");
+      return null;
+    }
     setQuoting(true);
-    const res = await fetch("/api/run-quotes", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ module: "irp", industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
-    });
-    const data = await res.json();
-    setQuoting(false);
-    if (!res.ok) return alert(data.error || "Estimate failed");
-    setAcceptedQuote(data.quote);
+    try {
+      const res = await fetch("/api/run-quotes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ module: "irp", industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || (isAdmin ? "Estimate failed" : "The assessment could not be prepared."));
+        return null;
+      }
+      setAcceptedQuote(data.quote);
+      return data.quote as RunQuote;
+    } finally {
+      setQuoting(false);
+    }
+  }
+
+  async function estimate() {
+    await createRunQuote();
   }
 
   async function run() {
-    if (!demo && !acceptedQuote) return alert("Create and accept a run estimate before starting the assessment.");
-    if (!demo && acceptedQuote && !acceptedQuote.withinGuard) return alert("This document set exceeds the current processing guard. Reduce the upload size or split the run.");
+    const runQuote = !demo && !acceptedQuote ? await createRunQuote() : acceptedQuote;
+    if (!demo && !runQuote) return;
+    if (!demo && runQuote && !runQuote.withinGuard) return alert("This document set exceeds the current processing guard. Reduce the upload size or split the run.");
     const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
     const validOrgs = scopedOrgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
     const documents = orgDocuments(validOrgs);
@@ -291,7 +314,7 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
     setAssessments([]);
     setOperation({
       state: "SUBMITTING",
-      quoteId: acceptedQuote?.id || null,
+      quoteId: runQuote?.id || null,
       startedAt: Date.now(),
       message: "Submitting the assessment and verifying payment, quote integrity, and published control boards.",
       rows: []
@@ -307,7 +330,7 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
           standards,
           orgNames: validOrgs.map((org) => org.name),
           orgCount: validOrgs.length,
-          quoteId: acceptedQuote?.id,
+          quoteId: runQuote?.id,
           phiAttested,
           documents
         })
@@ -455,13 +478,10 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
             </label>
           ) : null}
 
-          {!demo ? <button className="btn secondary" onClick={estimate} disabled={quoting || !phiAttested}>{quoting ? "Estimating..." : "Estimate run"}</button> : null}
-          {acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
-          {!demo && acceptedQuote ? (
-            <CheckoutButton module="irp" quantity={acceptedQuote.orgCount} quoteId={acceptedQuote.id}>Purchase {acceptedQuote.orgCount} org credit{acceptedQuote.orgCount === 1 ? "" : "s"}</CheckoutButton>
-          ) : null}
-          <button className="btn" onClick={run} disabled={operationActive || (!demo && (!acceptedQuote || !phiAttested))}>{operationActive ? "Assessment running" : demo ? "Run demo" : "Run assessment"}</button>
-          <p className="muted" style={{ fontSize: 13 }}>Payment is verified server-side before any model call. Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
+          {!demo && isAdmin ? <button className="btn secondary" onClick={estimate} disabled={quoting || !phiAttested}>{quoting ? "Estimating..." : "Estimate run"}</button> : null}
+          {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
+          <button className="btn" onClick={run} disabled={operationActive || quoting || (!demo && !phiAttested)}>{operationActive ? "Assessment running" : quoting ? "Preparing assessment..." : demo ? "Run demo" : "Run assessment"}</button>
+          <p className="muted" style={{ fontSize: 13 }}>{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Your purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
         </div>
       </div>
       <div className="card">

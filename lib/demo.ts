@@ -1,5 +1,5 @@
 const demoOrgNames: Record<string, string> = {
-  "health-center": "Generic Health System",
+  "health-center": "Johnson Community Health Center",
   financial: "Generic Financial Services",
   education: "Generic Education System",
   "public-sector": "Generic Public Agency",

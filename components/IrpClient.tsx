@@ -20,17 +20,94 @@ type ReviewedOrg = {
 
 type AssessmentScope = "self" | "network";
 
-const DEMO_POLICY_NAME = "generic-health-system-incident-response-plan.txt";
-const DEMO_POLICY_TEXT = `Generic Health System Incident Response Plan
+type DemoPolicySection = {
+  number: string;
+  title: string;
+  paragraphs?: readonly string[];
+  bullets?: readonly string[];
+  note?: string;
+};
 
-Purpose
-This plan establishes a coordinated process for identifying, reporting, containing, and recovering from information security incidents.
+const DEMO_POLICY_NAME = "JCHC-Incident-Response-Plan-v3.2-2026.pdf";
+const DEMO_POLICY_SECTIONS: readonly DemoPolicySection[] = [
+  {
+    number: "1",
+    title: "Purpose",
+    paragraphs: ["This plan establishes the coordinated process Johnson Community Health Center uses to identify, report, assess, contain, eradicate, and recover from information security incidents that may affect clinical operations, workforce members, patients, business partners, or protected information."]
+  },
+  {
+    number: "2",
+    title: "Scope",
+    paragraphs: ["This plan applies to all workforce members, facilities, information systems, medical devices, cloud services, vendors, and records owned or operated by JCHC. It covers suspected and confirmed events involving electronic protected health information, personally identifiable information, payment information, or interruption of essential patient-care services."]
+  },
+  {
+    number: "3",
+    title: "Authority and References",
+    bullets: ["HIPAA Security Rule, 45 CFR Part 164", "HITECH Act breach notification requirements", "NIST SP 800-53 Rev. 5 incident response controls", "JCHC Business Continuity and Disaster Recovery Plan"]
+  },
+  {
+    number: "4",
+    title: "Incident Classification",
+    bullets: ["Severity 1: active threat to patient safety, widespread outage, or confirmed large-scale disclosure", "Severity 2: confirmed compromise with limited operational impact", "Severity 3: suspected event requiring investigation", "Severity 4: policy violation or low-impact event contained by routine operations"]
+  },
+  {
+    number: "5",
+    title: "Roles and Responsibilities",
+    bullets: ["Incident Commander: Chief Information Security Officer", "Privacy Officer: evaluates privacy impact and required notifications", "IT Operations: isolates affected systems, preserves logs, and restores services", "Clinical Operations: coordinates downtime procedures and patient-care priorities", "Communications Lead: prepares approved internal and external messaging", "Legal Counsel: advises on regulatory, contractual, and law-enforcement obligations"]
+  },
+  {
+    number: "6",
+    title: "Reporting and Activation",
+    paragraphs: ["Workforce members must immediately report suspected incidents to the Service Desk or Privacy Office. The Service Desk records the event, alerts the on-call security lead, and opens an incident record. The Incident Commander determines severity and activates the response team when escalation is required."]
+  },
+  {
+    number: "7",
+    title: "Response Procedures",
+    bullets: ["Identification: validate the event, affected systems, data types, and business impact", "Containment: isolate affected assets while preserving patient-care continuity", "Eradication: remove malicious artifacts, close exploited access paths, and validate remediation", "Recovery: restore from approved backups, monitor restored systems, and obtain operational approval", "Closure: document decisions, evidence, costs, notifications, and corrective actions"]
+  },
+  {
+    number: "8",
+    title: "Communications and Notification",
+    paragraphs: ["The Privacy Officer determines whether patients, regulators, business partners, law enforcement, or the media require notification. Communications must be approved by Legal Counsel and the Communications Lead before release. Notification timing will follow applicable legal and contractual requirements."],
+    note: "The plan does not include a notification decision matrix, named regulatory clocks, or after-hours contact procedures."
+  },
+  {
+    number: "9",
+    title: "Evidence Handling",
+    paragraphs: ["Responders must preserve relevant logs, system images, messages, access records, and decision notes. Evidence is recorded in the incident record with the collector, date, source, and storage location. Legal Counsel may initiate formal chain-of-custody procedures when litigation or law-enforcement involvement is anticipated."]
+  },
+  {
+    number: "10",
+    title: "Recovery and Return to Operations",
+    paragraphs: ["System owners validate that security controls are restored before production use. Clinical Operations confirms that patient-care workflows are available, and the Incident Commander authorizes return to normal operations. Enhanced monitoring remains in place until the response team closes the incident."]
+  },
+  {
+    number: "11",
+    title: "Testing, Training, and Improvement",
+    paragraphs: ["New workforce members receive incident reporting training. The Security Office may schedule tabletop exercises based on available resources. Material incidents are reviewed for lessons learned, and recommended improvements are presented to the Compliance Committee."],
+    note: "The plan does not define a required exercise cadence, accountable owner, completion deadline, or method for tracking corrective actions."
+  },
+  {
+    number: "12",
+    title: "Records Retention and Review",
+    paragraphs: ["Incident records, supporting evidence, and after-action documentation are retained for three years. The Security Office reviews this plan annually and after material changes to technology, operations, or regulatory requirements."],
+    note: "The three-year retention period does not meet the six-year HIPAA documentation retention requirement."
+  }
+];
 
-Response process
-Workforce members report suspected incidents to the Security Office. The incident lead documents containment decisions, coordinates internal communications, and preserves relevant evidence.
-
-Testing and improvement
-The response team reviews the plan annually and records lessons learned after material incidents.`;
+const DEMO_POLICY_TEXT = [
+  "JOHNSON COMMUNITY HEALTH CENTER",
+  "INFORMATION SECURITY INCIDENT RESPONSE PLAN",
+  "Document ID: JCHC-SEC-IR-001 | Version: 3.2 | Effective: March 1, 2026",
+  "Owner: Chief Information Security Officer | Classification: Internal Use",
+  "Approved by: Compliance and Risk Committee",
+  ...DEMO_POLICY_SECTIONS.flatMap((section) => [
+    `\n${section.number}. ${section.title}`,
+    ...(section.paragraphs || []),
+    ...(section.bullets || []).map((item) => `- ${item}`),
+    ...("note" in section ? [`Assessment note: ${section.note}`] : [])
+  ])
+].join("\n");
 
 type AssessmentProgress = {
   id: string;
@@ -103,15 +180,15 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
     orgNames: [demoOrgName("health-center")],
     orgCount: 1,
     documentCount: 1,
-    charCount: 35,
+    charCount: DEMO_POLICY_TEXT.length,
     estimatedInputTokens: 6009,
     estimatedOutputTokens: 8000,
     estimatedModelCostCents: 14,
     customerAmountCents: 25000,
     marginCents: 24986,
     marginPercent: 99.9,
-    charCountByOrg: { [demoOrgName("health-center")]: 35 },
-    maxCharsPerOrg: 35,
+    charCountByOrg: { [demoOrgName("health-center")]: DEMO_POLICY_TEXT.length },
+    maxCharsPerOrg: DEMO_POLICY_TEXT.length,
     characterLimitPerOrg,
     costLimitCents: 12500,
     withinGuard: true
@@ -386,23 +463,42 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       <section className="card irp-process-card irp-demo-card">
         <div className="mono">Curated demo</div>
         <h2>Sample IRP assessment</h2>
-        <p className="muted irp-process-intro">Review a fixed, generic healthcare policy sample and open its curated assessment report. Demo mode does not accept uploads, call an AI provider, or enable downloads.</p>
+        <p className="muted irp-process-intro">Review a realistic fictional healthcare IRP and open a curated gap-analysis report. Demo mode does not accept uploads, call an AI provider, or enable downloads.</p>
         <div className="irp-demo-grid">
           <section className="irp-demo-source">
             <div className="mono">Sample source</div>
             <div className="irp-demo-file">
               <div>
                 <b>{DEMO_POLICY_NAME}</b>
-                <span className="muted">Plain-text policy sample</span>
+                <span className="muted">Searchable PDF extract | Version 3.2 | Fictional organization</span>
               </div>
               <span className="badge">Read only</span>
             </div>
-            <pre className="irp-demo-excerpt">{DEMO_POLICY_TEXT}</pre>
+            <article className="irp-demo-document" aria-label="Sample incident response plan">
+              <header>
+                <span className="mono">Internal use</span>
+                <h3>Johnson Community Health Center</h3>
+                <h4>Information Security Incident Response Plan</h4>
+                <dl>
+                  <div><dt>Document ID</dt><dd>JCHC-SEC-IR-001</dd></div>
+                  <div><dt>Version</dt><dd>3.2</dd></div>
+                  <div><dt>Effective</dt><dd>March 1, 2026</dd></div>
+                  <div><dt>Owner</dt><dd>Chief Information Security Officer</dd></div>
+                </dl>
+              </header>
+              {DEMO_POLICY_SECTIONS.map((section) => (
+                <section key={section.number}>
+                  <h5>{section.number}. {section.title}</h5>
+                  {(section.paragraphs || []).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                  {section.bullets?.length ? <ul>{section.bullets.map((item) => <li key={item}>{item}</li>)}</ul> : null}
+                </section>
+              ))}
+            </article>
           </section>
           <section className="irp-demo-scope">
             <div className="mono">Assessment scope</div>
             <dl>
-              <div><dt>Organization</dt><dd>{demoOrgName("health-center")}</dd></div>
+              <div><dt>Organization</dt><dd>{demoOrgName("health-center")} <span className="muted">(fictional)</span></dd></div>
               <div><dt>Industry</dt><dd>Health Center / Healthcare</dd></div>
               <div><dt>Standards</dt><dd>HIPAA Security / Privacy and NIST SP 800-53 Rev. 5</dd></div>
               <div><dt>Output</dt><dd>Scored findings and remediation roadmap</dd></div>
@@ -596,14 +692,31 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         ) : null}
         {result ? (
           <>
-            <h2>{result.organization_name}</h2>
-            <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-              <div className="stat">{result.compliance_score}</div>
+            <div className="irp-report-heading">
               <div>
-                <b>{result.overall_posture}</b>
-                <p className="muted" style={{ margin: 0 }}>{result.posture_summary}</p>
+                <span className="mono">Incident Response Plan gap analysis</span>
+                <h2>{result.organization_name}</h2>
+                <p className="muted">{result.document_name || "Incident Response Plan"}{demo ? " | Fictional demonstration report" : ""}</p>
+              </div>
+              <span className="badge">{result.overall_posture}</span>
+            </div>
+            <div className="irp-executive-summary">
+              <div className="irp-score-block">
+                <span className="mono">Overall score</span>
+                <div className="stat">{result.compliance_score}<span>/100</span></div>
+              </div>
+              <div>
+                <h3>Executive summary</h3>
+                <p>{result.posture_summary}</p>
+                <p className="muted">The score reflects the submitted document only. Operational effectiveness should be validated through interviews, evidence review, and exercises.</p>
               </div>
             </div>
+            {result.counts ? <div className="irp-gap-summary">
+              <div><span>Total controls</span><b>{result.counts.total}</b></div>
+              <div><span>Critical gaps</span><b>{result.counts.critical}</b></div>
+              <div><span>High gaps</span><b>{result.counts.high}</b></div>
+              <div><span>Medium gaps</span><b>{result.counts.medium}</b></div>
+            </div> : null}
             {result.score_breakdown ? (
               <div style={{ marginTop: 16 }}>
                 <div className="mono">Selected standard scores</div>
@@ -619,16 +732,39 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                 </div>
               </div>
             ) : null}
-            <h3>Findings</h3>
+            <div className="irp-section-heading">
+              <div><span className="mono">Control review</span><h3>Detailed findings</h3></div>
+              <span className="muted">Evidence is traced to the submitted policy.</span>
+            </div>
             {result.data_handling ? (
               <div className="card subcard" style={{ padding: 12, marginBottom: 12 }}>
                 <b>Data handling</b>
                 <p className="muted" style={{ margin: "5px 0 0", fontSize: 13 }}>{result.data_handling.message}</p>
               </div>
             ) : null}
-            <table className="table">
-              <tbody>{(result.findings || []).map((finding: any) => <tr key={finding.control_id + finding.finding}><td>{finding.control_id}</td><td>{finding.status}</td><td>{finding.risk_level}</td><td>{finding.finding}</td></tr>)}</tbody>
-            </table>
+            <div className="irp-findings-table-wrap">
+              <table className="table irp-findings-table">
+                <thead><tr><th>Control</th><th>Status</th><th>Risk</th><th>Evidence and finding</th></tr></thead>
+                <tbody>{(result.findings || []).map((finding: any) => <tr key={finding.control_id + finding.finding}>
+                  <td><b>{finding.control_id}</b><span>{(finding.standards || []).join(", ")}</span></td>
+                  <td><span className={finding.status === "Yes" ? "badge" : finding.status === "Partial" ? "badge warning" : "badge locked"}>{finding.status}</span></td>
+                  <td>{finding.risk_level}</td>
+                  <td><b>{finding.finding}</b><span>{finding.evidence}</span></td>
+                </tr>)}</tbody>
+              </table>
+            </div>
+            {result.remediation_roadmap?.phases?.length ? <section className="irp-roadmap">
+              <div className="irp-section-heading">
+                <div><span className="mono">Action plan</span><h3>30 / 60 / 90 day remediation roadmap</h3></div>
+              </div>
+              <div className="irp-roadmap-grid">
+                {result.remediation_roadmap.phases.map((phase: any) => <article key={phase.name}>
+                  <span className="mono">{phase.timeframe}</span>
+                  <h4>{phase.name}</h4>
+                  {phase.items?.length ? <ol>{phase.items.map((item: any) => <li key={`${phase.name}-${item.number}-${item.title}`}><b>{item.title}</b><span>{item.description}</span><small>{(item.references || []).join(", ")}</small></li>)}</ol> : <p className="muted">No actions assigned to this phase.</p>}
+                </article>)}
+              </div>
+            </section> : null}
             {assessments.length ? (
               <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
                 {assessments.map((assessment) => (

@@ -12,6 +12,18 @@ import {
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest } from "../lib/document-integrity";
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
 import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
+import { demoAssessment } from "../lib/analysis/engine";
+
+test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
+  const result = demoAssessment("", "health-center");
+  assert.equal(result.organization_name, "Johnson Community Health Center");
+  assert.equal(result.document_name, "JCHC-Incident-Response-Plan-v3.2-2026.pdf");
+  assert.ok(result.findings.length >= 8);
+  assert.ok(result.findings.some((finding: any) => finding.status === "Yes"));
+  assert.ok(result.findings.some((finding: any) => finding.status === "Partial"));
+  assert.ok(result.findings.some((finding: any) => finding.status === "No"));
+  assert.ok(result.remediation_roadmap.phases.flatMap((phase: any) => phase.items).length >= 5);
+});
 
 test("evidence chunking preserves every character without truncation", () => {
   const text = `${"A".repeat(59995)}\n${"B".repeat(70010)}`;

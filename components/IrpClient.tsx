@@ -99,10 +99,17 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
     updateOrg(orgId, { status: "Reading documents..." });
     try {
       const nextDocuments = await Promise.all(
-        [...files].map(async (file) => ({
-          name: file.name,
-          text: await file.text()
-        }))
+        [...files].map(async (file) => {
+          const isPdf = file.type === "application/pdf" || file.name.toLocaleLowerCase().endsWith(".pdf");
+          if (!isPdf) return { name: file.name, text: await file.text() };
+
+          const form = new FormData();
+          form.append("file", file, file.name);
+          const response = await fetch("/api/policy-documents/extract", { method: "POST", body: form });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(`${file.name}: ${result.error || "PDF text extraction failed."}`);
+          return { name: file.name, text: String(result.text || "") };
+        })
       );
       const text = nextDocuments.map((doc) => `# ${doc.name}\n\n${doc.text}`).join("\n\n");
       updateOrg(orgId, {
@@ -241,12 +248,13 @@ export function IrpClient({ demo, characterLimitPerOrg, availableStandardsByIndu
                 </label>
                 <label>
                   Policy uploads
-                  <input className="input" type="file" multiple accept=".txt,.md,.csv,.json,.html,.xml" onChange={(e) => readFiles(org.id, e.target.files)} />
+                  <input className="input" type="file" multiple accept=".pdf,application/pdf,.txt,.md,.csv,.json,.html,.xml" onChange={(e) => readFiles(org.id, e.target.files)} />
                 </label>
                 {org.status ? <p className="muted" style={{ fontSize: 13, margin: 0 }}>{org.status}</p> : null}
                 <p className="muted" style={{ fontSize: 13, margin: "6px 0 0" }}>
                   {(org.documents.length ? org.documents.reduce((sum, doc) => sum + doc.text.length, 0) : org.text.length).toLocaleString()} of {characterLimitPerOrg.toLocaleString()} characters. Oversized submissions are blocked before checkout and are never truncated.
                 </p>
+                <p className="muted" style={{ fontSize: 13, margin: "4px 0 0" }}>PDF documents are converted to flat text in memory before analysis. Scanned PDFs require searchable text or OCR.</p>
                 {org.documents.length ? (
                   <div style={{ marginTop: 8 }}>
                     {org.documents.map((doc) => <span className="badge" key={`${org.id}-${doc.name}`} style={{ marginRight: 6, marginBottom: 6 }}>{doc.name}</span>)}

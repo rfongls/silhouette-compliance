@@ -369,13 +369,24 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         : "Failed";
 
   return (
-    <div className="grid" style={{ gridTemplateColumns: "minmax(340px,.95fr) minmax(320px,1.05fr)" }}>
-      <div className="card">
-        <div className="mono">Upload console</div>
-        <h2>Incident Response Plan</h2>
+    <div className="irp-flow">
+      <section className="card irp-process-card">
+        <div className="mono">Policy processing</div>
+        <h2>Configure IRP assessment</h2>
+        <p className="muted irp-process-intro">Define the assessment scope, choose the published standards, then attach the policy set for each organization being reviewed.</p>
+        <div className="irp-flow-steps" aria-label="Assessment workflow">
+          <span><b>1</b> Assessment</span>
+          <span><b>2</b> Standards</span>
+          <span><b>3</b> Policy files</span>
+          <span><b>4</b> Run and report</span>
+        </div>
         <div className="form">
-          <fieldset className="card subcard" style={{ padding: 14, margin: 0 }}>
-            <legend style={{ padding: "0 6px" }}>Who is this assessment for?</legend>
+          <div className="irp-config-grid">
+          <section className="irp-stage-panel">
+            <div className="mono">1. Assessment</div>
+            <h3>Scope and industry</h3>
+          <fieldset className="irp-scope-control">
+            <legend>Who is this assessment for?</legend>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
               <button className={assessmentScope === "self" ? "btn" : "btn secondary"} type="button" onClick={() => changeAssessmentScope("self")} aria-pressed={assessmentScope === "self"}>
                 My organization
@@ -401,9 +412,13 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               <option value="retail">Retail</option>
             </select>
           </label>
+          </section>
 
-          <fieldset className="card subcard" style={{ padding: 14, margin: 0 }}>
-            <legend style={{ padding: "0 6px" }}>Standards used for scoring</legend>
+          <section className="irp-stage-panel">
+            <div className="mono">2. Standards</div>
+            <h3>Controls used for scoring</h3>
+          <fieldset className="irp-standards-control">
+            <legend className="sr-only">Standards used for scoring</legend>
             {standardOptions.length ? <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <input type="checkbox" checked={allStandardsSelected} onChange={toggleAllStandards} />
               <b>All {INDUSTRY_STANDARDS[industry]?.label || "domain"} standards</b>
@@ -416,21 +431,25 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                 </label>
               ))}
             </div>
-            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>The estimate and final report use only these published control boards.</p>
+            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>The assessment and final report use only these published control boards.</p>
           </fieldset>
+          </section>
+          </div>
 
-          <div className="card subcard" style={{ padding: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 12 }}>
+          <section className="irp-policy-stage">
+            <div className="irp-stage-heading">
               <div>
-                <div className="mono">{assessmentScope === "self" ? "Organization assessed" : "Organizations assessed"}</div>
+                <div className="mono">3. Policy files</div>
+                <h3>Organizations and policy documents</h3>
                 <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
                   {assessmentScope === "self" ? "This organization is one $250 IRP assessment." : "Each named organization becomes a separate $250 IRP invoice line item."}
                 </p>
               </div>
               {assessmentScope === "network" ? <button className="btn secondary" type="button" onClick={addOrg}>Add org</button> : null}
             </div>
+            <div className={assessmentScope === "network" ? "irp-org-grid" : undefined}>
             {(assessmentScope === "self" ? orgs.slice(0, 1) : orgs).map((org, index) => (
-              <div key={org.id} className="card nested-card" style={{ padding: 12, marginTop: 10 }}>
+              <div key={org.id} className="irp-org-entry">
                 <label>
                   {assessmentScope === "self" ? "Organization name" : `Organization ${index + 1}`}
                   <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder={assessmentScope === "self" ? "Your organization name" : "Organization being assessed"} />
@@ -456,10 +475,11 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                 {assessmentScope === "network" ? <button className="btn ghost" type="button" onClick={() => removeOrg(org.id)} disabled={orgs.length === 1}>Remove org</button> : null}
               </div>
             ))}
-          </div>
+            </div>
+          </section>
 
           {!demo ? (
-            <label className="card subcard" style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 14 }}>
+            <label className="irp-attestation">
               <input
                 type="checkbox"
                 checked={phiAttested}
@@ -478,14 +498,22 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             </label>
           ) : null}
 
+          <div className="irp-run-stage">
+          <div>
+            <div className="mono">4. Run and report</div>
+            <p className="muted">{isAdmin ? "Review the internal run estimate if needed, then start the assessment." : "Start the assessment using the organization credits already assigned to your account."}</p>
+          </div>
+          <div className="irp-run-actions">
           {!demo && isAdmin ? <button className="btn secondary" onClick={estimate} disabled={quoting || !phiAttested}>{quoting ? "Estimating..." : "Estimate run"}</button> : null}
-          {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
           <button className="btn" onClick={run} disabled={operationActive || quoting || (!demo && !phiAttested)}>{operationActive ? "Assessment running" : quoting ? "Preparing assessment..." : demo ? "Run demo" : "Run assessment"}</button>
-          <p className="muted" style={{ fontSize: 13 }}>{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Your purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
+          </div>
+          </div>
+          {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
+          <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Your purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
         </div>
-      </div>
-      <div className="card">
-        <div className="mono">Result</div>
+      </section>
+      {operation || result ? <section className="card irp-result-card">
+        <div className="mono">Assessment result</div>
         {operation ? (
           <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "12px 0 18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -573,8 +601,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               </div>
             ) : assessmentId ? null : <span className="badge">Demo exports disabled</span>}
           </>
-        ) : <p className="muted">{operationActive ? "The completed report will appear here automatically." : "Generated reports appear here. Demo mode returns static sample data and never calls the model."}</p>}
-      </div>
+        ) : null}
+      </section> : null}
     </div>
   );
 }

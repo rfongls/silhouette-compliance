@@ -75,6 +75,8 @@
 .irp-demo-scope dt{color:var(--muted);font-size:12px}
 .irp-demo-scope dd{margin:0;font-weight:700;line-height:1.45}
 .irp-demo-scope .btn{width:100%;margin-top:auto}
+.module-entry{display:grid;gap:12px;max-width:760px}
+.module-entry-back{width:max-content;padding-left:0}
 @media(max-width:900px){.irp-config-grid{grid-template-columns:1fr}.irp-org-grid{grid-template-columns:1fr}.irp-run-stage{align-items:flex-start;flex-direction:column}.irp-run-actions{width:100%;justify-content:flex-start}}
 @media(max-width:900px){.irp-demo-grid{grid-template-columns:1fr}}
 @media(max-width:620px){.irp-process-card,.irp-result-card{padding:18px}.irp-flow-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.irp-flow-steps span:nth-child(2){border-right:0}.irp-flow-steps span:nth-child(-n+2){border-bottom:1px solid var(--line)}.irp-stage-heading{align-items:flex-start;flex-direction:column}.irp-stage-heading .btn{width:100%}.irp-run-actions{display:grid}.irp-run-actions .btn{width:100%}}

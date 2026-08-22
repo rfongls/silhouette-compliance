@@ -25,14 +25,16 @@ const copy = {
 export function ModulePaywall({ module, demoHref }: { module: "irp" | "sra" | "proposal"; demoHref: string }) {
   const item = copy[module];
   return (
-    <div className="card" style={{ maxWidth: 760 }}>
-      <div className="mono">{item.eyebrow}</div>
-      <h2>{item.title}</h2>
-      <p className="muted">{item.body}</p>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <CheckoutButton module={module}>{item.action}</CheckoutButton>
-        <Link className="btn secondary" href={demoHref}>Try demo</Link>
-        <Link className="btn ghost" href="/app">Back to launcher</Link>
+    <div className="module-entry">
+      <Link className="btn ghost module-entry-back" href="/app">Return to main</Link>
+      <div className="card">
+        <div className="mono">{item.eyebrow}</div>
+        <h2>{item.title}</h2>
+        <p className="muted">{item.body}</p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <CheckoutButton module={module}>{item.action}</CheckoutButton>
+          <Link className="btn secondary" href={demoHref}>Try demo</Link>
+        </div>
       </div>
     </div>
   );

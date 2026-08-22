@@ -78,9 +78,11 @@
 .irp-demo-document dt{color:#675b78;font-size:10px;text-transform:uppercase}
 .irp-demo-document dd{margin:0;font-size:12px;font-weight:700}
 .irp-demo-document section{padding:16px 0 0}
+.irp-demo-document section+section{margin-top:16px;border-top:1px solid #ded9e5}
 .irp-demo-document h5{margin:0 0 7px;font-size:14px}
 .irp-demo-document p,.irp-demo-document li{font-size:12px;line-height:1.6}
 .irp-demo-document p{margin:0}
+.irp-demo-document p+p{margin-top:9px}
 .irp-demo-document ul{margin:6px 0 0;padding-left:20px}
 .irp-report-heading,.irp-section-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
 .irp-report-heading{padding-bottom:18px;border-bottom:1px solid var(--line)}

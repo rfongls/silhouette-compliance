@@ -13,6 +13,7 @@ import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quote
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
 import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
 import { demoAssessment } from "../lib/analysis/engine";
+import { DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT } from "../lib/analysis/irp-demo";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
   const result = demoAssessment("", "health-center");
@@ -23,6 +24,16 @@ test("healthcare demo uses a realistic fictional IRP and complete sample report"
   assert.ok(result.findings.some((finding: any) => finding.status === "Partial"));
   assert.ok(result.findings.some((finding: any) => finding.status === "No"));
   assert.ok(result.remediation_roadmap.phases.flatMap((phase: any) => phase.items).length >= 5);
+});
+
+test("healthcare demo policy has substantive, traceable content in all 12 sections", () => {
+  assert.equal(DEMO_POLICY_SECTIONS.length, 12);
+  assert.ok(DEMO_POLICY_TEXT.length > 12000);
+  for (const section of DEMO_POLICY_SECTIONS) {
+    const content = [...(section.paragraphs || []), ...(section.bullets || [])].join(" ");
+    assert.ok(content.length >= 300, `Section ${section.number} must contain substantive policy content`);
+  }
+  assert.equal(DEMO_POLICY_TEXT.includes("Assessment note:"), false);
 });
 
 test("evidence chunking preserves every character without truncation", () => {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { demoOrgName } from "@/lib/demo";
 import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
+import { DEMO_POLICY_NAME, DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT, demoAssessment } from "@/lib/analysis/irp-demo";
 import { RunQuoteSummary, type RunQuote } from "@/components/RunQuoteSummary";
 
 type UploadedDoc = {
@@ -19,95 +20,6 @@ type ReviewedOrg = {
 };
 
 type AssessmentScope = "self" | "network";
-
-type DemoPolicySection = {
-  number: string;
-  title: string;
-  paragraphs?: readonly string[];
-  bullets?: readonly string[];
-  note?: string;
-};
-
-const DEMO_POLICY_NAME = "JCHC-Incident-Response-Plan-v3.2-2026.pdf";
-const DEMO_POLICY_SECTIONS: readonly DemoPolicySection[] = [
-  {
-    number: "1",
-    title: "Purpose",
-    paragraphs: ["This plan establishes the coordinated process Johnson Community Health Center uses to identify, report, assess, contain, eradicate, and recover from information security incidents that may affect clinical operations, workforce members, patients, business partners, or protected information."]
-  },
-  {
-    number: "2",
-    title: "Scope",
-    paragraphs: ["This plan applies to all workforce members, facilities, information systems, medical devices, cloud services, vendors, and records owned or operated by JCHC. It covers suspected and confirmed events involving electronic protected health information, personally identifiable information, payment information, or interruption of essential patient-care services."]
-  },
-  {
-    number: "3",
-    title: "Authority and References",
-    bullets: ["HIPAA Security Rule, 45 CFR Part 164", "HITECH Act breach notification requirements", "NIST SP 800-53 Rev. 5 incident response controls", "JCHC Business Continuity and Disaster Recovery Plan"]
-  },
-  {
-    number: "4",
-    title: "Incident Classification",
-    bullets: ["Severity 1: active threat to patient safety, widespread outage, or confirmed large-scale disclosure", "Severity 2: confirmed compromise with limited operational impact", "Severity 3: suspected event requiring investigation", "Severity 4: policy violation or low-impact event contained by routine operations"]
-  },
-  {
-    number: "5",
-    title: "Roles and Responsibilities",
-    bullets: ["Incident Commander: Chief Information Security Officer", "Privacy Officer: evaluates privacy impact and required notifications", "IT Operations: isolates affected systems, preserves logs, and restores services", "Clinical Operations: coordinates downtime procedures and patient-care priorities", "Communications Lead: prepares approved internal and external messaging", "Legal Counsel: advises on regulatory, contractual, and law-enforcement obligations"]
-  },
-  {
-    number: "6",
-    title: "Reporting and Activation",
-    paragraphs: ["Workforce members must immediately report suspected incidents to the Service Desk or Privacy Office. The Service Desk records the event, alerts the on-call security lead, and opens an incident record. The Incident Commander determines severity and activates the response team when escalation is required."]
-  },
-  {
-    number: "7",
-    title: "Response Procedures",
-    bullets: ["Identification: validate the event, affected systems, data types, and business impact", "Containment: isolate affected assets while preserving patient-care continuity", "Eradication: remove malicious artifacts, close exploited access paths, and validate remediation", "Recovery: restore from approved backups, monitor restored systems, and obtain operational approval", "Closure: document decisions, evidence, costs, notifications, and corrective actions"]
-  },
-  {
-    number: "8",
-    title: "Communications and Notification",
-    paragraphs: ["The Privacy Officer determines whether patients, regulators, business partners, law enforcement, or the media require notification. Communications must be approved by Legal Counsel and the Communications Lead before release. Notification timing will follow applicable legal and contractual requirements."],
-    note: "The plan does not include a notification decision matrix, named regulatory clocks, or after-hours contact procedures."
-  },
-  {
-    number: "9",
-    title: "Evidence Handling",
-    paragraphs: ["Responders must preserve relevant logs, system images, messages, access records, and decision notes. Evidence is recorded in the incident record with the collector, date, source, and storage location. Legal Counsel may initiate formal chain-of-custody procedures when litigation or law-enforcement involvement is anticipated."]
-  },
-  {
-    number: "10",
-    title: "Recovery and Return to Operations",
-    paragraphs: ["System owners validate that security controls are restored before production use. Clinical Operations confirms that patient-care workflows are available, and the Incident Commander authorizes return to normal operations. Enhanced monitoring remains in place until the response team closes the incident."]
-  },
-  {
-    number: "11",
-    title: "Testing, Training, and Improvement",
-    paragraphs: ["New workforce members receive incident reporting training. The Security Office may schedule tabletop exercises based on available resources. Material incidents are reviewed for lessons learned, and recommended improvements are presented to the Compliance Committee."],
-    note: "The plan does not define a required exercise cadence, accountable owner, completion deadline, or method for tracking corrective actions."
-  },
-  {
-    number: "12",
-    title: "Records Retention and Review",
-    paragraphs: ["Incident records, supporting evidence, and after-action documentation are retained for three years. The Security Office reviews this plan annually and after material changes to technology, operations, or regulatory requirements."],
-    note: "The three-year retention period does not meet the six-year HIPAA documentation retention requirement."
-  }
-];
-
-const DEMO_POLICY_TEXT = [
-  "JOHNSON COMMUNITY HEALTH CENTER",
-  "INFORMATION SECURITY INCIDENT RESPONSE PLAN",
-  "Document ID: JCHC-SEC-IR-001 | Version: 3.2 | Effective: March 1, 2026",
-  "Owner: Chief Information Security Officer | Classification: Internal Use",
-  "Approved by: Compliance and Risk Committee",
-  ...DEMO_POLICY_SECTIONS.flatMap((section) => [
-    `\n${section.number}. ${section.title}`,
-    ...(section.paragraphs || []),
-    ...(section.bullets || []).map((item) => `- ${item}`),
-    ...("note" in section ? [`Assessment note: ${section.note}`] : [])
-  ])
-].join("\n");
 
 type AssessmentProgress = {
   id: string;
@@ -389,6 +301,21 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   }
 
   async function run() {
+    if (demo) {
+      const demoResult = demoAssessment("", industry);
+      setElapsedSeconds(0);
+      setResult(demoResult);
+      setAssessmentId("demo");
+      setAssessments([{ assessmentId: "demo", orgName: demoResult.organization_name, result: demoResult }]);
+      setOperation({
+        state: "COMPLETED",
+        quoteId: "demo",
+        startedAt: Date.now(),
+        message: "Curated sample report ready. No upload or external AI request was made.",
+        rows: []
+      });
+      return;
+    }
     const runQuote = !demo && !acceptedQuote ? await createRunQuote() : acceptedQuote;
     if (!demo && !runQuote) return;
     if (!demo && runQuote && !runQuote.withinGuard) return alert("This document set exceeds the current processing guard. Reduce the upload size or split the run.");
@@ -484,6 +411,10 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                   <div><dt>Version</dt><dd>3.2</dd></div>
                   <div><dt>Effective</dt><dd>March 1, 2026</dd></div>
                   <div><dt>Owner</dt><dd>Chief Information Security Officer</dd></div>
+                  <div><dt>Approved by</dt><dd>Compliance and Risk Committee</dd></div>
+                  <div><dt>Classification</dt><dd>Internal Use</dd></div>
+                  <div><dt>Review cycle</dt><dd>Annual and event driven</dd></div>
+                  <div><dt>Next review</dt><dd>March 1, 2027</dd></div>
                 </dl>
               </header>
               {DEMO_POLICY_SECTIONS.map((section) => (

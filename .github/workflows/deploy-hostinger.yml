@@ -90,21 +90,29 @@ jobs:
 
       - name: Verify SSH deploy target
         run: |
-          ssh -i ~/.ssh/hostinger_deploy_key \
-            -o StrictHostKeyChecking=accept-new \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o ServerAliveInterval=20 \
-            -o ServerAliveCountMax=6 \
-            -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
-            "set -e
-             echo 'SSH auth succeeded.'
-             test -d '$DEPLOY_PATH'
-             test -w '$DEPLOY_PATH'
-             case '$DEPLOY_PATH' in
-               */domains/complianceapp.silhouettellc.com/public_html) ;;
-               *) echo 'Unexpected deploy path: $DEPLOY_PATH' >&2; exit 1 ;;
-             esac
-             echo 'Deploy path verified.'"
+          for attempt in 1 2 3; do
+            if ssh -i ~/.ssh/hostinger_deploy_key \
+              -o StrictHostKeyChecking=accept-new \
+              -o UserKnownHostsFile=~/.ssh/known_hosts \
+              -o ConnectTimeout=30 \
+              -o ServerAliveInterval=20 \
+              -o ServerAliveCountMax=3 \
+              -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+              "set -e
+               echo 'SSH auth succeeded.'
+               test -d '$DEPLOY_PATH'
+               test -w '$DEPLOY_PATH'
+               case '$DEPLOY_PATH' in
+                 */domains/complianceapp.silhouettellc.com/public_html) ;;
+                 *) echo 'Unexpected deploy path: $DEPLOY_PATH' >&2; exit 1 ;;
+               esac
+               echo 'Deploy path verified.'"; then
+              exit 0
+            fi
+            echo "SSH verification attempt $attempt failed; retrying..."
+            sleep 10
+          done
+          exit 1
 
       - name: Upload deploy artifact
         run: |

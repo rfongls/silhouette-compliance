@@ -1,6 +1,5 @@
 import { Nav } from "@/components/Nav";
 import { IrpClient } from "@/components/IrpClient";
-import { auth } from "@/auth";
 import { isEffectiveAdmin } from "@/lib/view-role";
 import { getEntitlementBalance } from "@/lib/entitlements";
 import { EntKind } from "@prisma/client";
@@ -10,10 +9,14 @@ import { prisma } from "@/lib/prisma";
 
 export default async function IrpPage({ searchParams }: { searchParams: { demo?: string } }) {
   const demo = searchParams.demo === "1";
+  if (demo) {
+    return <main><Nav publicOnly/><section className="wrap"><div className="mono">Curated demo</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1><IrpClient demo isAdmin={false} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={{}}/></section></main>;
+  }
+  const { auth } = await import("@/auth");
   const session = await auth();
   const isAdmin = isEffectiveAdmin(session);
   const balance = session?.user?.accountId ? await getEntitlementBalance(session.user.accountId, EntKind.ASSESSMENT_CREDIT).catch(() => 0) : 0;
-  const publishedBoards = demo ? [] : await prisma.controlBoard.findMany({
+  const publishedBoards = await prisma.controlBoard.findMany({
     where: { status: "PUBLISHED" },
     select: { industry: true, standardKey: true },
     orderBy: [{ industry: "asc" }, { standardKey: "asc" }]
@@ -22,6 +25,6 @@ export default async function IrpPage({ searchParams }: { searchParams: { demo?:
     industry,
     publishedBoards.filter((board) => board.industry === industry).map((board) => board.standardKey)
   ]));
-  const canLoad = demo || isAdmin || balance > 0;
-  return <main><Nav/><section className="wrap"><div className="mono">{demo ? "Curated demo" : isAdmin ? "Admin comped module" : "Client assessment"}</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1>{canLoad ? <IrpClient demo={demo} isAdmin={isAdmin} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={availableStandardsByIndustry}/> : <ModulePaywall module="irp" demoHref="/app/irp?demo=1" />}</section></main>;
+  const canLoad = isAdmin || balance > 0;
+  return <main><Nav/><section className="wrap"><div className="mono">{isAdmin ? "Admin comped module" : "Client assessment"}</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1>{canLoad ? <IrpClient demo={false} isAdmin={isAdmin} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={availableStandardsByIndustry}/> : <ModulePaywall module="irp" demoHref="/app/irp?demo=1" />}</section></main>;
 }

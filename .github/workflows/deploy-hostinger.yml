@@ -154,7 +154,15 @@ jobs:
                echo 'Skipping Prisma migrations because COMPLIANCE_HOSTINGER_RUN_MIGRATIONS is not true.'
              fi
              mkdir -p tmp
-             printf 'restart=%s\ncommit=${GITHUB_SHA}\n' \"\$(date -u +%FT%TZ)\" > tmp/restart.txt"
+             printf 'restart=%s\ncommit=${GITHUB_SHA}\n' \"\$(date -u +%FT%TZ)\" > tmp/restart.txt
+             ACTIVE_NODE_PATH=\"\$(dirname '$DEPLOY_PATH')/hbuilds/current/nodejs\"
+             if [ ! -d \"\$ACTIVE_NODE_PATH\" ]; then
+               echo \"Active Passenger target was not found: \$ACTIVE_NODE_PATH\" >&2
+               exit 1
+             fi
+             mkdir -p \"\$ACTIVE_NODE_PATH/tmp\"
+             printf 'restart=%s\ncommit=${GITHUB_SHA}\nreason=github-action\n' \"\$(date -u +%FT%TZ)\" > \"\$ACTIVE_NODE_PATH/tmp/restart.txt\"
+             echo \"Restarted active Passenger target: \$ACTIVE_NODE_PATH\""
 
       - name: Smoke test
         run: |
@@ -174,3 +182,5 @@ jobs:
 
           check_url "$HEALTHCHECK_URL"
           check_url https://complianceapp.silhouettellc.com/api/auth/providers
+          check_url https://complianceapp.silhouettellc.com/signin/
+          check_url https://complianceapp.silhouettellc.com/app/irp/?demo=1

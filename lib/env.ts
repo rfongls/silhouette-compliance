@@ -38,6 +38,10 @@ export function bootstrapComplianceEnv() {
     process.env[name] ||= process.env[`${prefix}${name}`];
   }
 
-  process.env.AUTH_URL ||= env("NEXTAUTH_URL");
+  const authUrl = env("AUTH_URL") || env("NEXTAUTH_URL") || env("APP_BASE_URL");
+  if (authUrl) {
+    process.env.AUTH_URL ||= authUrl;
+    process.env.NEXTAUTH_URL ||= authUrl;
+  }
   process.env.AUTH_SECRET ||= env("NEXTAUTH_SECRET");
 }

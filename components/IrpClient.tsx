@@ -587,7 +587,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       )}
       {operation || result ? <section className="card irp-result-card">
         <div className="mono">Assessment result</div>
-        {operation ? (
+        {operation && !result ? (
           <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "12px 0 18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <div>

@@ -90,7 +90,6 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       >
         <span>{severity}</span>
         <b>{severityCounts[severity]}</b>
-        <small>actionable finding{severityCounts[severity] === 1 ? "" : "s"}</small>
       </button>)}
     </section>
 

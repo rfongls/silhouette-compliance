@@ -104,7 +104,7 @@
 .severity-high{--severity:var(--high)}
 .severity-medium{--severity:var(--medium)}
 .severity-low{--severity:var(--low)}
-.irp-severity-card:hover,.irp-severity-card.active{border-color:var(--severity);box-shadow:inset 3px 0 0 var(--severity)}
+.irp-severity-card:hover,.irp-severity-card.active{border-color:var(--severity);background:color-mix(in srgb,var(--severity) 13%,var(--surface-nested))}
 .irp-severity-card span{color:var(--severity);font:700 11px/1 "DM Mono",monospace;text-transform:uppercase}
 .irp-severity-card b{font-size:28px;line-height:1.1}
 .irp-severity-card small{overflow-wrap:anywhere;color:var(--muted)}

@@ -19,7 +19,7 @@ export function normalizeResult(raw: unknown, fallbackOrg?: string) {
   const r = sanitizeForExport(raw) as any;
   const score = Number(r.compliance_score ?? r.score ?? 0);
   const posture = r.overall_posture || (score >= 85 ? "Compliant" : score >= 50 ? "Partially Compliant" : "Non-Compliant");
-  r.organization_name = r.organization_name || fallbackOrg || "Unknown Organization";
+  r.organization_name = fallbackOrg || r.organization_name || "Unknown Organization";
   r.compliance_score = Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 0;
   r.overall_posture = posture;
   r.findings = Array.isArray(r.findings) ? r.findings : [];

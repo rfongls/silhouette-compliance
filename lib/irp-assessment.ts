@@ -13,6 +13,7 @@ import { estimateRunQuote, normalizeOrgNames } from "@/lib/run-quotes";
 import { getAIConfig } from "@/lib/settings";
 import { centsForKind } from "@/lib/stripe";
 import { isEffectiveAdmin } from "@/lib/view-role";
+import { buildNetworkReport } from "@/lib/network-report";
 
 function organizationKey(name: string) {
   return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "organization";
@@ -61,6 +62,11 @@ export async function handleIrpAssessment(req: Request) {
 
   const accountId = guard.session.user.accountId;
   const isAdmin = isEffectiveAdmin(guard.session);
+  const assessmentScope = body.assessmentScope === "network" ? "network" : "self";
+  const parentOrgName = assessmentScope === "network" ? String(body.parentOrgName || "").trim() : null;
+  if (assessmentScope === "network" && !parentOrgName) {
+    return NextResponse.json({ error: "Enter the network or parent organization name." }, { status: 400 });
+  }
   const industry = String(body.industry || "health-center");
   const standards = normalizeStandards(industry, body.standards, body.allStandards === true);
   const quoteId = typeof body.quoteId === "string" ? body.quoteId : "";
@@ -78,8 +84,8 @@ export async function handleIrpAssessment(req: Request) {
 
   const quotedOrgNames = Array.isArray(quote.orgNames) ? quote.orgNames.map((name) => String(name || "").trim()).filter(Boolean) : [];
   const orgNamesMatch = quotedOrgNames.length === orgNames.length && quotedOrgNames.every((name, index) => name === orgNames[index]);
-  const quoteContext = JSON.stringify({ industry, standards: [...standards].sort() });
-  if (!orgNamesMatch || quote.sourceDigest !== quoteSourceDigest(documents, quoteContext)) {
+  const quoteContext = JSON.stringify({ industry, standards: [...standards].sort(), assessmentScope, parentOrgName });
+  if (!orgNamesMatch || quote.assessmentScope !== assessmentScope || (quote.parentOrgName || null) !== parentOrgName || quote.sourceDigest !== quoteSourceDigest(documents, quoteContext)) {
     return NextResponse.json({ error: "Uploaded documents, domain, or selected standards changed while preparing the run. Start the run again." }, { status: 409 });
   }
 
@@ -114,8 +120,9 @@ export async function handleIrpAssessment(req: Request) {
   }
 
   if (!pending.length) {
-    await prisma.runQuote.update({ where: { id: quote.id }, data: { status: "CONSUMED" } });
-    return NextResponse.json({ assessments: cached, assessmentId: cached[0]?.assessmentId, result: cached[0]?.result, reused: true });
+    const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, cached) : null;
+    await prisma.runQuote.update({ where: { id: quote.id }, data: { status: "CONSUMED", networkResult: networkReport || undefined, networkGeneratedAt: networkReport ? new Date() : undefined } });
+    return NextResponse.json({ assessments: cached, networkReport, quoteId: quote.id, assessmentId: cached[0]?.assessmentId, result: cached[0]?.result, reused: true });
   }
 
   const aiConfig = await getAIConfig();
@@ -259,5 +266,12 @@ export async function handleIrpAssessment(req: Request) {
   if (!delivered.length) {
     return NextResponse.json({ error: "Assessment processing failed. Purchased credits were restored.", failed }, { status: 500 });
   }
-  return NextResponse.json({ assessments: delivered, failed, assessmentId: delivered[0].assessmentId, result: delivered[0].result });
+  const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, delivered) : null;
+  if (networkReport) {
+    await prisma.runQuote.update({
+      where: { id: quote.id },
+      data: { networkResult: networkReport, networkGeneratedAt: new Date() }
+    });
+  }
+  return NextResponse.json({ assessments: delivered, networkReport, quoteId: quote.id, failed, assessmentId: delivered[0].assessmentId, result: delivered[0].result });
 }

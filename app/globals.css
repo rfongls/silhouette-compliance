@@ -177,6 +177,22 @@
 .irp-assessment-exports{margin-top:10px}
 .irp-assessment-exports>div:not(.irp-section-heading){display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
 .irp-assessment-exports .badge{margin-left:8px}
+.irp-report-selector{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested)}
+.irp-report-selector button{min-height:38px;padding:8px 12px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--muted);font:700 12px/1.25 "DM Sans",sans-serif;cursor:pointer}
+.irp-report-selector button:hover,.irp-report-selector button.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text)}
+.irp-network-org-table{min-width:840px;margin:0}
+.irp-network-org-table .irp-posture-badge{font-size:9px}
+.irp-network-gap-table{min-width:1080px;margin:0;table-layout:fixed}
+.irp-network-gap-table td{vertical-align:top;overflow-wrap:anywhere}
+.irp-network-gap-table td:first-child span{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+.irp-network-sort{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px}
+.irp-network-sort .select{min-width:210px}
+.irp-network-priority-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.irp-network-priority-list article{padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested)}
+.irp-network-priority-list article>div{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.irp-network-priority-list h4{margin:12px 0 6px}
+.irp-network-priority-list p{margin:0;color:var(--muted);line-height:1.5}
+.irp-network-priority-list small{display:block;margin-top:12px;color:var(--accent);line-height:1.45}
 .irp-demo-scope{display:flex;flex-direction:column}
 .irp-demo-scope dl{display:grid;gap:0;margin:12px 0 20px}
 .irp-demo-scope dl>div{display:grid;gap:4px;padding:12px 0;border-bottom:1px solid var(--line)}

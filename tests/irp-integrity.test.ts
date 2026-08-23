@@ -10,6 +10,7 @@ import {
   validateEvidenceStatus
 } from "../lib/analysis/scoring";
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest } from "../lib/document-integrity";
+import { normalizeResult } from "../lib/analysis/engine";
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
 import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
 import { demoAssessment } from "../lib/analysis/engine";
@@ -86,6 +87,11 @@ test("duplicate content and document-set digests are deterministic", () => {
   const integrity = documentSetIntegrity(documents);
   assert.equal(integrity.duplicateHashes.length, 1);
   assert.equal(quoteSourceDigest(documents), quoteSourceDigest([...documents].reverse()));
+});
+
+test("the entered organization name is authoritative in the report", () => {
+  const result = normalizeResult({ organization_name: "Model supplied name", compliance_score: 80 }, "Entered Health Center");
+  assert.equal(result.organization_name, "Entered Health Center");
 });
 
 test("quote digest binds the selected domain control set", () => {

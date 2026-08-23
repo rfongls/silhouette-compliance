@@ -37,5 +37,13 @@ export async function GET(req: Request) {
       ledger: { select: { quoteId: true } }
     }
   });
-  return NextResponse.json({ assessments: assessments.map(({ ledger, ...assessment }) => ({ ...assessment, quoteId: ledger?.quoteId || null })) });
+  const quote = quoteId ? await prisma.runQuote.findFirst({
+    where: { id: quoteId, accountId: guard.session.user.accountId },
+    select: { id: true, assessmentScope: true, parentOrgName: true, networkResult: true, networkGeneratedAt: true }
+  }) : null;
+  return NextResponse.json({
+    assessments: assessments.map(({ ledger, ...assessment }) => ({ ...assessment, quoteId: ledger?.quoteId || null })),
+    networkReport: quote?.networkResult || null,
+    network: quote ? { quoteId: quote.id, assessmentScope: quote.assessmentScope, parentOrgName: quote.parentOrgName, generatedAt: quote.networkGeneratedAt } : null
+  });
 }

@@ -208,6 +208,8 @@ model RunQuote {
   module                  String
   kind                    EntKind
   orgNames                Json?
+  assessmentScope         String    @default("self")
+  parentOrgName           String?
   orgCount                Int       @default(1)
   documentCount           Int       @default(0)
   charCount               Int       @default(0)
@@ -221,6 +223,8 @@ model RunQuote {
   status                  String    @default("QUOTED")
   stripeRef               String?
   acceptedAt              DateTime?
+  networkResult           Json?
+  networkGeneratedAt      DateTime?
   expiresAt               DateTime
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt

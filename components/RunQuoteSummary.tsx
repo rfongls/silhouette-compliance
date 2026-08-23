@@ -2,6 +2,8 @@
 
 export type RunQuote = {
   id: string;
+  assessmentScope?: "self" | "network";
+  parentOrgName?: string | null;
   orgNames: string[];
   orgCount: number;
   documentCount: number;
@@ -41,6 +43,7 @@ export function RunQuoteSummary({ quote }: { quote: RunQuote }) {
         Largest organization: {quote.maxCharsPerOrg.toLocaleString()} of {quote.characterLimitPerOrg.toLocaleString()} characters. Accepted text is analyzed in full and is never silently truncated.
       </p>
       {quote.orgNames?.length ? <p className="muted" style={{ fontSize: 13, margin: "8px 0 0" }}>Invoice line items: {quote.orgNames.join(", ")}</p> : null}
+      {quote.assessmentScope === "network" && quote.parentOrgName ? <p className="muted" style={{ fontSize: 13, margin: "8px 0 0" }}>Consolidated report: {quote.parentOrgName}</p> : null}
       {quote.warning ? <p className="badge locked" style={{ display: "inline-flex", margin: "12px 0 0" }}>{quote.warning}</p> : null}
     </div>
   );

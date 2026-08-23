@@ -5,7 +5,7 @@ import { demoOrgName } from "@/lib/demo";
 import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
 import { DEMO_POLICY_NAME, DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT, demoAssessment } from "@/lib/analysis/irp-demo";
 import { RunQuoteSummary, type RunQuote } from "@/components/RunQuoteSummary";
-import { IrpReport } from "@/components/IrpReport";
+import { IrpReportBundle } from "@/components/IrpReportBundle";
 
 type UploadedDoc = {
   name: string;
@@ -80,6 +80,7 @@ function availableDefaults(industry: string, available: Record<string, string[]>
 
 export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
   const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>("self");
+  const [parentOrgName, setParentOrgName] = useState("");
   const [industry, setIndustry] = useState("health-center");
   const [standards, setStandards] = useState(availableDefaults("health-center", availableStandardsByIndustry, demo));
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
@@ -109,6 +110,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const [result, setResult] = useState<any>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Array<{ assessmentId: string; orgName: string; result: any; reused?: boolean }>>([]);
+  const [networkReport, setNetworkReport] = useState<any>(null);
+  const [reportQuoteId, setReportQuoteId] = useState<string | null>(null);
   const [operation, setOperation] = useState<AssessmentOperation | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const deployedStandards = demo ? null : new Set(availableStandardsByIndustry[industry] || []);
@@ -173,6 +176,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
           setResult(delivered[0].result);
           setAssessmentId(delivered[0].id);
           setAssessments(delivered.map((row) => ({ assessmentId: row.id, orgName: row.orgName || "Organization", result: row.result })));
+          setNetworkReport(data.networkReport || null);
+          setReportQuoteId(operation.quoteId);
         }
       } catch {
         // Keep the last persisted status visible while a poll temporarily fails.
@@ -192,6 +197,11 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
 
   function changeAssessmentScope(nextScope: AssessmentScope) {
     setAssessmentScope(nextScope);
+    clearQuote();
+  }
+
+  function changeParentOrgName(value: string) {
+    setParentOrgName(value);
     clearQuote();
   }
 
@@ -265,6 +275,10 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       alert("Add at least one organization being reviewed.");
       return null;
     }
+    if (assessmentScope === "network" && !parentOrgName.trim()) {
+      alert("Enter the network or parent organization name.");
+      return null;
+    }
     if (!standards.length) {
       alert("No published base control board is available for this domain. An administrator must publish one before an assessment can run.");
       return null;
@@ -283,7 +297,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       const res = await fetch("/api/run-quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ module: "irp", industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
+        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -308,6 +322,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       setResult(demoResult);
       setAssessmentId("demo");
       setAssessments([{ assessmentId: "demo", orgName: demoResult.organization_name, result: demoResult }]);
+      setNetworkReport(null);
+      setReportQuoteId("demo");
       setOperation({
         state: "COMPLETED",
         quoteId: "demo",
@@ -329,6 +345,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
     setResult(null);
     setAssessmentId(null);
     setAssessments([]);
+    setNetworkReport(null);
+    setReportQuoteId(runQuote?.id || null);
     setOperation({
       state: "SUBMITTING",
       quoteId: runQuote?.id || null,
@@ -342,6 +360,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           demo,
+          assessmentScope,
+          parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null,
           orgName: validOrgs[0]?.name,
           industry,
           standards,
@@ -362,6 +382,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       setResult(data.result);
       setAssessmentId(data.assessmentId || null);
       setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || validOrgs[0]?.name || "Organization", result: data.result }] : []);
+      setNetworkReport(data.networkReport || null);
+      setReportQuoteId(data.quoteId || runQuote?.id || null);
       setOperation((current) => current ? {
         ...current,
         state: "COMPLETED",
@@ -469,10 +491,15 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             </div>
             <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>
               {assessmentScope === "self"
-                ? "Assess one IRP for your own organization."
-                : "Assess one or more organizations on behalf of a client or parent network. Include the parent as an organization if its own policy should be scored."}
+                ? "Your organization name will appear on the single organization report."
+                : "The top-level name will appear on the consolidated network report. Every organization listed beneath it receives an independent report."}
             </p>
           </fieldset>
+          {assessmentScope === "network" ? <label>
+            Network or parent organization name
+            <input className="input" value={parentOrgName} onChange={(event) => changeParentOrgName(event.target.value)} placeholder="Network, association, or parent organization" />
+            <span className="muted" style={{ display: "block", fontSize: 12, marginTop: 5 }}>This name labels the consolidated network report and is not an additional billed organization.</span>
+          </label> : null}
           <label>
             Industry
             <select className="select" value={industry} onChange={(e) => changeIndustry(e.target.value)}>
@@ -512,9 +539,9 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             <div className="irp-stage-heading">
               <div>
                 <div className="mono">3. Policy files</div>
-                <h3>Organizations and policy documents</h3>
+                <h3>{assessmentScope === "self" ? "Organization and policy documents" : "Network organizations and policy documents"}</h3>
                 <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                  {assessmentScope === "self" ? "This organization is one $250 IRP assessment." : "Each named organization becomes a separate $250 IRP invoice line item."}
+                  {assessmentScope === "self" ? "Enter your organization once. Its name will appear on the report." : `Add every organization or health center beneath ${parentOrgName.trim() || "the network"}. Each receives an independent report and becomes one $250 invoice line item.`}
                 </p>
               </div>
               {assessmentScope === "network" ? <button className="btn secondary" type="button" onClick={addOrg}>Add org</button> : null}
@@ -523,8 +550,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             {(assessmentScope === "self" ? orgs.slice(0, 1) : orgs).map((org, index) => (
               <div key={org.id} className="irp-org-entry">
                 <label>
-                  {assessmentScope === "self" ? "Organization name" : `Organization ${index + 1}`}
-                  <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder={assessmentScope === "self" ? "Your organization name" : "Organization being assessed"} />
+                  {assessmentScope === "self" ? "Organization name" : `Organization or health center ${index + 1}`}
+                  <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder={assessmentScope === "self" ? "Your organization name" : "Organization or health center name"} />
                 </label>
                 <label>
                   Policy uploads
@@ -622,7 +649,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             {operationActive ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>Keep this tab open while policy text remains in request memory. Progress updates after each completed model pass.</p> : null}
           </div>
         ) : null}
-        {result ? <IrpReport result={result} assessments={assessments} demo={demo} /> : null}
+        {result ? <IrpReportBundle assessments={assessments} networkReport={networkReport} quoteId={reportQuoteId} demo={demo} /> : null}
       </section> : null}
     </div>
   );

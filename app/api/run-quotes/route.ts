@@ -27,7 +27,12 @@ export async function POST(req: Request) {
   let analysisRequestCount: number | undefined;
   let quoteIndustry = "";
   let quoteStandards: string[] = [];
+  const assessmentScope = body.assessmentScope === "network" ? "network" : "self";
+  const parentOrgName = assessmentScope === "network" ? String(body.parentOrgName || "").trim() : null;
   if (module === "irp") {
+    if (assessmentScope === "network" && !parentOrgName) {
+      return NextResponse.json({ error: "Enter the network or parent organization name." }, { status: 400 });
+    }
     const industry = String(body.industry || "health-center");
     const standards = normalizeStandards(industry, body.standards, body.allStandards === true);
     quoteIndustry = industry;
@@ -62,7 +67,7 @@ export async function POST(req: Request) {
         name: String(document?.name || "document.txt"),
         text: String(document?.text || ""),
         orgName: String(document?.orgName || estimate.orgNames[0] || "Organization 1")
-      })), JSON.stringify({ industry: quoteIndustry, standards: [...quoteStandards].sort() }))
+      })), JSON.stringify({ industry: quoteIndustry, standards: [...quoteStandards].sort(), assessmentScope, parentOrgName }))
     : undefined;
   const isAdmin = isEffectiveAdmin(guard.session);
   if (module === "irp" && !isAdmin) {
@@ -78,6 +83,8 @@ export async function POST(req: Request) {
       module: estimate.module,
       kind: estimate.kind,
       orgNames: estimate.orgNames,
+      assessmentScope,
+      parentOrgName,
       orgCount: estimate.orgCount,
       documentCount: estimate.documentCount,
       charCount: estimate.charCount,
@@ -95,10 +102,12 @@ export async function POST(req: Request) {
   });
 
   const quoteResponse = isAdmin
-    ? { id: quote.id, ...estimate, expiresAt: quote.expiresAt }
+    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, expiresAt: quote.expiresAt }
     : {
         id: quote.id,
         orgNames: estimate.orgNames,
+        assessmentScope,
+        parentOrgName,
         orgCount: estimate.orgCount,
         documentCount: estimate.documentCount,
         customerAmountCents: estimate.customerAmountCents,

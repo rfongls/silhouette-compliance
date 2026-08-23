@@ -1,4 +1,28 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 const prefix = "COMPLIANCE_";
+let runtimeEnvLoaded = false;
+
+function loadHostingerRuntimeEnv() {
+  if (runtimeEnvLoaded) return;
+  runtimeEnvLoaded = true;
+
+  const candidates = [
+    path.resolve(process.cwd(), "../../config/.env"),
+    path.resolve(process.cwd(), "../../../config/.env")
+  ];
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) continue;
+    try {
+      process.loadEnvFile(candidate);
+      return;
+    } catch {
+      // Existing process variables remain usable if Hostinger's file is unreadable.
+    }
+  }
+}
 
 export function env(name: string, fallback = "") {
   return process.env[`${prefix}${name}`] || process.env[name] || fallback;
@@ -13,6 +37,8 @@ export function envList(name: string) {
 }
 
 export function bootstrapComplianceEnv() {
+  loadHostingerRuntimeEnv();
+
   const names = [
     "DATABASE_URL",
     "NEXTAUTH_URL",

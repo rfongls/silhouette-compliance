@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { EntKind } from "@prisma/client";
-import { grantEntitlement } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { env } from "@/lib/env";
@@ -20,10 +19,19 @@ export async function POST(req: Request) {
     const kind = session.metadata?.kind as EntKind | undefined;
     const quantity = Math.max(1, Number(session.metadata?.quantity || 1));
     const quoteId = session.metadata?.quoteId || undefined;
-    if (accountId && kind) {
-      await grantEntitlement(accountId, kind, quantity, session.id);
-      if (quoteId) await prisma.runQuote.updateMany({ where: { id: quoteId, accountId }, data: { status: "PAID", stripeRef: session.id, acceptedAt: new Date() } });
-      await prisma.usageLedger.create({ data: { accountId, kind: "purchase", status: "succeeded", amountCents: Number(session.metadata?.amountCents || session.amount_total || 0), stripeRef: session.id, quoteId, orgsBilled: kind === "ASSESSMENT_CREDIT" ? quantity : undefined } });
+    if (accountId && kind && session.payment_status === "paid") {
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${session.id}))`;
+        const existing = await tx.usageLedger.findFirst({ where: { stripeRef: session.id, kind: "purchase", status: "succeeded" } });
+        if (existing) return;
+        if (quoteId) {
+          const quote = await tx.runQuote.findFirst({ where: { id: quoteId, accountId } });
+          if (!quote || quote.creditsToPurchase !== quantity) throw new Error("Stripe checkout does not match its run quote.");
+          await tx.runQuote.update({ where: { id: quote.id }, data: { status: "PAID", stripeRef: session.id, acceptedAt: new Date() } });
+        }
+        await tx.entitlement.create({ data: { accountId, kind, balance: quantity, stripeRef: session.id, status: "ACTIVE" } });
+        await tx.usageLedger.create({ data: { accountId, kind: "purchase", status: "succeeded", amountCents: Number(session.metadata?.amountCents || session.amount_total || 0), stripeRef: session.id, quoteId, orgsBilled: kind === "ASSESSMENT_CREDIT" ? quantity : undefined } });
+      });
     }
   }
   return NextResponse.json({ received: true });

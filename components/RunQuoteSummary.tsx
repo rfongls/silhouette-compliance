@@ -6,6 +6,11 @@ export type RunQuote = {
   parentOrgName?: string | null;
   orgNames: string[];
   orgCount: number;
+  creditsApplied?: number;
+  creditsToPurchase?: number;
+  purchaseAmountCents?: number;
+  status?: string;
+  reportRecipient?: string | null;
   documentCount: number;
   charCount: number;
   estimatedInputTokens: number;

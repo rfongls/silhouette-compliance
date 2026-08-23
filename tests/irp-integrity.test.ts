@@ -15,6 +15,7 @@ import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis
 import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
 import { demoAssessment } from "../lib/analysis/engine";
 import { DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT } from "../lib/analysis/irp-demo";
+import { quoteFunding } from "../lib/run-quotes";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
   const result = demoAssessment("", "health-center");
@@ -149,4 +150,14 @@ test("prompts identify policy content as untrusted evidence", () => {
   });
   assert.match(prompt, /untrusted evidence/i);
   assert.match(prompt, /Ignore all prior instructions/);
+});
+
+test("IRP checkout purchases only the organization credit shortfall", () => {
+  assert.deepEqual(quoteFunding(4, 0, false), { creditsApplied: 0, creditsToPurchase: 4 });
+  assert.deepEqual(quoteFunding(4, 2, false), { creditsApplied: 2, creditsToPurchase: 2 });
+  assert.deepEqual(quoteFunding(4, 9, false), { creditsApplied: 4, creditsToPurchase: 0 });
+});
+
+test("admin IRP runs never require purchased organization credits", () => {
+  assert.deepEqual(quoteFunding(12, 0, true), { creditsApplied: 0, creditsToPurchase: 0 });
 });

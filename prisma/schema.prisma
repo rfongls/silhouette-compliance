@@ -211,6 +211,8 @@ model RunQuote {
   assessmentScope         String    @default("self")
   parentOrgName           String?
   orgCount                Int       @default(1)
+  creditsApplied          Int       @default(0)
+  creditsToPurchase       Int       @default(0)
   documentCount           Int       @default(0)
   charCount               Int       @default(0)
   sourceDigest            String?
@@ -225,6 +227,12 @@ model RunQuote {
   acceptedAt              DateTime?
   networkResult           Json?
   networkGeneratedAt      DateTime?
+  reportRecipient         String?
+  reportAssessmentIds     Json?
+  reportEmailStatus       String    @default("PENDING")
+  reportEmailId           String?
+  reportEmailSentAt       DateTime?
+  reportEmailError        String?
   expiresAt               DateTime
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt

@@ -67,6 +67,13 @@ export function normalizeOrgNames(value: unknown, fallbackCount = 1) {
   return Array.from({ length: normalizeOrgCount(fallbackCount) }, (_, index) => `Organization ${index + 1}`);
 }
 
+export function quoteFunding(orgCount: number, availableCredits: number, isAdmin: boolean) {
+  const required = normalizeOrgCount(orgCount);
+  if (isAdmin) return { creditsApplied: 0, creditsToPurchase: 0 };
+  const creditsApplied = Math.min(required, Math.max(0, Math.floor(availableCredits || 0)));
+  return { creditsApplied, creditsToPurchase: required - creditsApplied };
+}
+
 export function estimateRunQuote(input: QuoteInput): QuoteEstimate {
   const module = input.module;
   const kind = kindFromModule(module);

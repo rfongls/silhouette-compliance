@@ -16,15 +16,17 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const quoteId = typeof body.quoteId === "string" ? body.quoteId : "";
   const quote = quoteId ? await prisma.runQuote.findFirst({
-    where: { id: quoteId, accountId: guard.session.user.accountId, status: "QUOTED", expiresAt: { gt: new Date() } }
+    where: { id: quoteId, accountId: guard.session.user.accountId, status: { in: ["QUOTED", "CHECKOUT_STARTED"] }, expiresAt: { gt: new Date() } }
   }) : null;
+  if (quoteId && !quote) return NextResponse.json({ error: "This run quote is no longer available for checkout." }, { status: 409 });
   const kind = quote?.kind || kindFromModule(String(body.module || "irp"));
-  const quantity = quote ? quote.orgCount : Math.max(1, Math.min(100, Number(body.quantity || body.orgCount || 1)));
+  const quantity = quote ? quote.creditsToPurchase : Math.max(1, Math.min(100, Number(body.quantity || body.orgCount || 1)));
+  if (quote && quantity <= 0) return NextResponse.json({ error: "This run is already funded." }, { status: 409 });
   const price = priceForKind(kind);
   if (!price) return NextResponse.json({ error: `Missing Stripe price for ${kind}` }, { status: 500 });
   const baseUrl = env("APP_BASE_URL") || env("NEXTAUTH_URL", "http://localhost:3000");
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = quote && kind === "ASSESSMENT_CREDIT"
-    ? quoteOrgNames(quote.orgNames, quantity).map((name) => ({
+    ? quoteOrgNames(quote.orgNames, quote.orgCount).slice(quote.creditsApplied, quote.creditsApplied + quantity).map((name) => ({
       price_data: {
         currency: env("STRIPE_CURRENCY", "usd"),
         unit_amount: centsForKind(kind),
@@ -38,8 +40,8 @@ export async function POST(req: Request) {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
-      success_url: `${baseUrl}/app?checkout=success&module=${kind}`,
-      cancel_url: `${baseUrl}/app?checkout=cancelled&module=${kind}`,
+      success_url: quote ? `${baseUrl}/app/irp/checkout-complete?status=success&quoteId=${quote.id}` : `${baseUrl}/app?checkout=success&module=${kind}`,
+      cancel_url: quote ? `${baseUrl}/app/irp/checkout-complete?status=cancelled&quoteId=${quote.id}` : `${baseUrl}/app?checkout=cancelled&module=${kind}`,
       metadata: {
         accountId: guard.session.user.accountId,
         kind,

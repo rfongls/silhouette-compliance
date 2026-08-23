@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { demoOrgName } from "@/lib/demo";
 import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
 import { DEMO_POLICY_NAME, DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT, demoAssessment } from "@/lib/analysis/irp-demo";
@@ -78,7 +78,7 @@ function availableDefaults(industry: string, available: Record<string, string[]>
   return defaults.length ? defaults : deployed.slice(0, 1);
 }
 
-export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
+export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; userEmail: string | null; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
   const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>("self");
   const [parentOrgName, setParentOrgName] = useState("");
   const [industry, setIndustry] = useState("health-center");
@@ -88,6 +88,10 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
     documents: [{ name: DEMO_POLICY_NAME, text: DEMO_POLICY_TEXT }]
   }] : [newOrg("")]);
   const [quoting, setQuoting] = useState(false);
+  const [emailReport, setEmailReport] = useState(true);
+  const [checkoutState, setCheckoutState] = useState<"IDLE" | "OPENING" | "WAITING" | "PAID" | "FAILED">("IDLE");
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const assessmentStarting = useRef(false);
   const [phiAttested, setPhiAttested] = useState(demo);
   const [acceptedQuote, setAcceptedQuote] = useState<RunQuote | null>(demo ? {
     id: "demo",
@@ -192,7 +196,11 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   }, [demo, operationActive, operation?.quoteId]);
 
   function clearQuote() {
-    if (!demo) setAcceptedQuote(null);
+    if (!demo) {
+      setAcceptedQuote(null);
+      setCheckoutState("IDLE");
+      setCheckoutMessage("");
+    }
   }
 
   function changeAssessmentScope(nextScope: AssessmentScope) {
@@ -297,7 +305,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       const res = await fetch("/api/run-quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
+        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested, emailReport })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -311,8 +319,117 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
     }
   }
 
-  async function estimate() {
-    await createRunQuote();
+  async function executeAssessment(runQuote: RunQuote) {
+    if (assessmentStarting.current) return;
+    if (!runQuote.withinGuard) return alert("This document set exceeds the current processing guard. Reduce the upload size or split the run.");
+    const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
+    const validOrgs = scopedOrgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
+    const documents = orgDocuments(validOrgs);
+    if (!documents.length) return alert("Upload or paste policy text before running.");
+    if (!phiAttested) return alert("Confirm that you reviewed the files and removed PHI before running.");
+    assessmentStarting.current = true;
+    setElapsedSeconds(0);
+    setResult(null);
+    setAssessmentId(null);
+    setAssessments([]);
+    setNetworkReport(null);
+    setReportQuoteId(runQuote.id);
+    setOperation({
+      state: "SUBMITTING",
+      quoteId: runQuote.id,
+      startedAt: Date.now(),
+      message: "Submitting the assessment and verifying payment, quote integrity, and published control boards.",
+      rows: []
+    });
+    try {
+      const res = await fetch("/api/assess", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          demo: false,
+          assessmentScope,
+          parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null,
+          orgName: validOrgs[0]?.name,
+          industry,
+          standards,
+          orgNames: validOrgs.map((org) => org.name),
+          orgCount: validOrgs.length,
+          quoteId: runQuote.id,
+          phiAttested,
+          documents
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = data.error || "Assessment failed";
+        setOperation((current) => current ? { ...current, state: "FAILED", message } : current);
+        alert(message);
+        return;
+      }
+      setResult(data.result);
+      setAssessmentId(data.assessmentId || null);
+      setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || validOrgs[0]?.name || "Organization", result: data.result }] : []);
+      setNetworkReport(data.networkReport || null);
+      setReportQuoteId(data.quoteId || runQuote.id);
+      setOperation((current) => current ? {
+        ...current,
+        state: "COMPLETED",
+        message: Array.isArray(data.failed) && data.failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed.",
+        rows: current.rows.map((row) => row.status === "RUNNING" ? { ...row, status: "DELIVERED", progressStage: "DELIVERED", progressMessage: "Assessment and report completed.", progressCurrent: row.progressTotal } : row)
+      } : current);
+    } catch {
+      setOperation((current) => current ? {
+        ...current,
+        state: current.rows.some((row) => row.status === "RUNNING") ? "RUNNING" : "FAILED",
+        message: current.rows.some((row) => row.status === "RUNNING")
+          ? "The browser connection closed, but the server-side assessment is still running. Persisted progress will continue updating here."
+          : "The assessment request could not be completed. No active server-side assessment was found."
+      } : current);
+    } finally {
+      assessmentStarting.current = false;
+    }
+  }
+
+  async function waitForPayment(quoteId: string) {
+    for (let attempt = 0; attempt < 300; attempt += 1) {
+      const response = await fetch(`/api/run-quotes?id=${encodeURIComponent(quoteId)}`, { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not verify checkout status.");
+      if (data.quote?.status === "PAID") return;
+      if (["EXPIRED", "CANCELLED", "FAILED"].includes(data.quote?.status)) throw new Error("Checkout did not complete. Prepare a new run when you are ready.");
+      setCheckoutMessage("Waiting for verified payment. Complete checkout in the new window and keep this assessment tab open.");
+      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
+    throw new Error("Payment verification timed out. Your confirmed payment remains on the account; prepare the run again to continue.");
+  }
+
+  async function purchaseAndRun(runQuote: RunQuote) {
+    if (checkoutState === "OPENING" || checkoutState === "WAITING") return;
+    const checkoutWindow = window.open("", "_blank");
+    setCheckoutState("OPENING");
+    setCheckoutMessage("Opening secure checkout...");
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ quoteId: runQuote.id })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) throw new Error(data.error || "Checkout could not be opened.");
+      if (checkoutWindow) checkoutWindow.location.href = data.url;
+      else throw new Error("Your browser blocked the checkout window. Allow popups for this site and try again.");
+      setCheckoutState("WAITING");
+      await waitForPayment(runQuote.id);
+      setCheckoutState("PAID");
+      setCheckoutMessage("Payment verified. Starting the confirmed assessment now.");
+      await executeAssessment({ ...runQuote, status: "PAID" });
+    } catch (error) {
+      checkoutWindow?.close();
+      const message = error instanceof Error ? error.message : "Checkout could not be completed.";
+      setCheckoutState("FAILED");
+      setCheckoutMessage(message);
+      alert(message);
+    }
   }
 
   async function run() {
@@ -333,72 +450,12 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       });
       return;
     }
-    const runQuote = !demo && !acceptedQuote ? await createRunQuote() : acceptedQuote;
-    if (!demo && !runQuote) return;
-    if (!demo && runQuote && !runQuote.withinGuard) return alert("This document set exceeds the current processing guard. Reduce the upload size or split the run.");
-    const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
-    const validOrgs = scopedOrgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
-    const documents = orgDocuments(validOrgs);
-    if (!documents.length) return alert("Upload or paste policy text before running.");
-    if (!demo && !phiAttested) return alert("Confirm that you reviewed the files and removed PHI before running.");
-    setElapsedSeconds(0);
-    setResult(null);
-    setAssessmentId(null);
-    setAssessments([]);
-    setNetworkReport(null);
-    setReportQuoteId(runQuote?.id || null);
-    setOperation({
-      state: "SUBMITTING",
-      quoteId: runQuote?.id || null,
-      startedAt: Date.now(),
-      message: "Submitting the assessment and verifying payment, quote integrity, and published control boards.",
-      rows: []
-    });
-    try {
-      const res = await fetch("/api/assess", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          demo,
-          assessmentScope,
-          parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null,
-          orgName: validOrgs[0]?.name,
-          industry,
-          standards,
-          orgNames: validOrgs.map((org) => org.name),
-          orgCount: validOrgs.length,
-          quoteId: runQuote?.id,
-          phiAttested,
-          documents
-        })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const message = data.error || "Assessment failed";
-        setOperation((current) => current ? { ...current, state: "FAILED", message } : current);
-        alert(message);
-        return;
-      }
-      setResult(data.result);
-      setAssessmentId(data.assessmentId || null);
-      setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || validOrgs[0]?.name || "Organization", result: data.result }] : []);
-      setNetworkReport(data.networkReport || null);
-      setReportQuoteId(data.quoteId || runQuote?.id || null);
-      setOperation((current) => current ? {
-        ...current,
-        state: "COMPLETED",
-        message: Array.isArray(data.failed) && data.failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed.",
-        rows: current.rows.map((row) => row.status === "RUNNING" ? { ...row, status: "DELIVERED", progressStage: "DELIVERED", progressMessage: "Assessment and report completed.", progressCurrent: row.progressTotal } : row)
-      } : current);
-    } catch {
-      setOperation((current) => current ? {
-        ...current,
-        state: current.rows.some((row) => row.status === "RUNNING") ? "RUNNING" : "FAILED",
-        message: current.rows.some((row) => row.status === "RUNNING")
-          ? "The browser connection closed, but the server-side assessment is still running. Persisted progress will continue updating here."
-          : "The assessment request could not be completed. No active server-side assessment was found."
-      } : current);
+    if (!acceptedQuote) {
+      await createRunQuote();
+      return;
     }
+    if ((acceptedQuote.creditsToPurchase || 0) > 0 && !isAdmin) await purchaseAndRun(acceptedQuote);
+    else await executeAssessment(acceptedQuote);
   }
 
   const operationProgress = operation ? progressPercent(operation.rows, operation.state) : 0;
@@ -597,16 +654,52 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             </label>
           ) : null}
 
+          {!demo ? <label className="irp-attestation">
+            <input
+              type="checkbox"
+              checked={emailReport}
+              onChange={(event) => {
+                setEmailReport(event.target.checked);
+                clearQuote();
+              }}
+            />
+            <span>
+              <b>Email completed reports to {userEmail || "my signed-in email"}</b>
+              <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 4 }}>
+                The email contains generated report files and secure account links. Uploaded policy source files are never attached or stored.
+              </span>
+            </span>
+          </label> : null}
+
           <div className="irp-run-stage">
           <div>
             <div className="mono">4. Run and report</div>
-            <p className="muted">{isAdmin ? "Review the internal run estimate if needed, then start the assessment." : "Start the assessment using the organization credits already assigned to your account."}</p>
+            <p className="muted">{acceptedQuote ? "Confirm the organization count and payment details below. The confirmed run is locked to this policy set." : "Prepare the run to confirm the organization count, invoice line items, and required payment before analysis starts."}</p>
           </div>
           <div className="irp-run-actions">
-          {!demo && isAdmin ? <button className="btn secondary" onClick={estimate} disabled={quoting || !phiAttested}>{quoting ? "Estimating..." : "Estimate run"}</button> : null}
-          <button className="btn" onClick={run} disabled={operationActive || quoting || (!demo && !phiAttested)}>{operationActive ? "Assessment running" : quoting ? "Preparing assessment..." : demo ? "Run demo" : "Run assessment"}</button>
+          {!acceptedQuote ? <button className="btn" onClick={run} disabled={operationActive || quoting || !phiAttested}>{quoting ? "Preparing confirmation..." : "Review and confirm"}</button> : null}
           </div>
           </div>
+          {acceptedQuote ? <section className="card subcard" style={{ padding: 18 }}>
+            <div className="mono">Run confirmation</div>
+            <h3 style={{ marginBottom: 6 }}>{acceptedQuote.orgCount} organization{acceptedQuote.orgCount === 1 ? "" : "s"} will be assessed</h3>
+            {acceptedQuote.assessmentScope === "network" && acceptedQuote.parentOrgName ? <p className="muted" style={{ marginTop: 0 }}>Network report: <b>{acceptedQuote.parentOrgName}</b>. The parent name is not an additional billed organization.</p> : null}
+            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 10, margin: "14px 0" }}>
+              <div><div className="mono">Invoice total</div><b>${(acceptedQuote.customerAmountCents / 100).toFixed(2)}</b></div>
+              {!isAdmin ? <div><div className="mono">Existing credits</div><b>{acceptedQuote.creditsApplied || 0}</b></div> : null}
+              <div><div className="mono">{isAdmin ? "Admin run" : "Purchase required"}</div><b>{isAdmin ? "Comped" : `$${((acceptedQuote.purchaseAmountCents || 0) / 100).toFixed(2)}`}</b></div>
+              <div><div className="mono">Report delivery</div><b>{acceptedQuote.reportRecipient || "Browser only"}</b></div>
+            </div>
+            <p className="muted" style={{ fontSize: 13 }}>Invoice line items: {acceptedQuote.orgNames.join(", ")}</p>
+            {checkoutMessage ? <p className={checkoutState === "FAILED" ? "badge locked" : "badge warning"} role="status" aria-live="polite">{checkoutMessage}</p> : null}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+              <button className="btn secondary" type="button" onClick={clearQuote} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>Edit assessment</button>
+              <button className="btn" type="button" onClick={run} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>
+                {operationActive ? "Assessment running" : checkoutState === "OPENING" ? "Opening checkout" : checkoutState === "WAITING" ? "Waiting for payment" : isAdmin || !(acceptedQuote.creditsToPurchase || 0) ? "Confirm and run" : `Purchase ${acceptedQuote.creditsToPurchase} org credit${acceptedQuote.creditsToPurchase === 1 ? "" : "s"} and run`}
+              </button>
+            </div>
+            {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>Checkout opens in a separate window. Keep this assessment tab open until it says the assessment was accepted. After acceptance, you may leave and the completion email will be sent when processing finishes.</p> : null}
+          </section> : null}
           {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
           <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Your purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
         </div>

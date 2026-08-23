@@ -150,10 +150,10 @@ jobs:
              rm -rf .next app components lib prisma scripts
              tar -xzf '$ARCHIVE_NAME'
              rm -f '$ARCHIVE_NAME'
-             RUNTIME_CONFIG_DIR="\$(dirname '$DEPLOY_PATH')/hbuilds/config"
-             mkdir -p "\$RUNTIME_CONFIG_DIR"
-             install -m 600 .env "\$RUNTIME_CONFIG_DIR/.env"
-             echo "Synchronized GitHub-managed environment: \$RUNTIME_CONFIG_DIR/.env"
+             RUNTIME_CONFIG_DIR=\"\$(dirname '$DEPLOY_PATH')/hbuilds/config\"
+             mkdir -p \"\$RUNTIME_CONFIG_DIR\"
+             install -m 600 .env \"\$RUNTIME_CONFIG_DIR/.env\"
+             echo \"Synchronized GitHub-managed environment: \$RUNTIME_CONFIG_DIR/.env\"
              export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/opt/alt/alt-nodejs20/root/usr/bin:/usr/local/bin:/usr/bin:/bin
              echo 'Installing deployment dependencies'
              npm ci --no-audit --no-fund

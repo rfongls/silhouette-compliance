@@ -83,6 +83,10 @@ acceptance checks in AGENTS.md §9 and §13.
 
 - Target state: work in feature branches; merging to `main` auto-deploys production through
   `.github/workflows/deploy-hostinger.yml`.
+- `COMPLIANCE_HOSTINGER_ENV_FILE` is the production environment source of truth. Each deployment
+  installs that bundle into Hostinger's active `hbuilds/config/.env` before restarting Passenger.
+  Update the GitHub secret whenever production configuration changes so a later deployment cannot
+  restore stale values.
 - GitHub Actions is the deployment authority for this repo. Hostinger hPanel remains the runtime
   host/configuration surface, but hPanel Git auto-deploy should not be used as the primary deploy
   path for this app.

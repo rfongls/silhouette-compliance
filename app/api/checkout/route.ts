@@ -33,19 +33,25 @@ export async function POST(req: Request) {
       quantity: 1
     }))
     : [{ price, quantity }];
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: lineItems,
-    success_url: `${baseUrl}/app?checkout=success&module=${kind}`,
-    cancel_url: `${baseUrl}/app?checkout=cancelled&module=${kind}`,
-    metadata: {
-      accountId: guard.session.user.accountId,
-      kind,
-      quantity: String(quantity),
-      amountCents: String(centsForKind(kind) * quantity),
-      quoteId: quote?.id || ""
-    }
-  });
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: lineItems,
+      success_url: `${baseUrl}/app?checkout=success&module=${kind}`,
+      cancel_url: `${baseUrl}/app?checkout=cancelled&module=${kind}`,
+      metadata: {
+        accountId: guard.session.user.accountId,
+        kind,
+        quantity: String(quantity),
+        amountCents: String(centsForKind(kind) * quantity),
+        quoteId: quote?.id || ""
+      }
+    });
+  } catch (error) {
+    console.error("Stripe checkout session creation failed", error);
+    return NextResponse.json({ error: "Checkout is temporarily unavailable. Please try again shortly." }, { status: 502 });
+  }
   if (quote) await prisma.runQuote.update({ where: { id: quote.id }, data: { status: "CHECKOUT_STARTED", acceptedAt: new Date(), stripeRef: session.id } });
   return NextResponse.json({ url: session.url });
 }

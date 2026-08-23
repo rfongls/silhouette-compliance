@@ -3,13 +3,15 @@ import { EntKind } from "@prisma/client";
 import { grantEntitlement } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { env } from "@/lib/env";
 
 export async function POST(req: Request) {
   const raw = await req.text();
   const sig = req.headers.get("stripe-signature");
-  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) return NextResponse.json({ error: "Webhook signature missing" }, { status: 400 });
+  const webhookSecret = env("STRIPE_WEBHOOK_SECRET");
+  if (!sig || !webhookSecret) return NextResponse.json({ error: "Webhook signature missing" }, { status: 400 });
   let event;
-  try { event = stripe.webhooks.constructEvent(raw, sig, process.env.STRIPE_WEBHOOK_SECRET); }
+  try { event = stripe.webhooks.constructEvent(raw, sig, webhookSecret); }
   catch (err) { return NextResponse.json({ error: `Invalid signature: ${(err as Error).message}` }, { status: 400 }); }
 
   if (event.type === "checkout.session.completed") {

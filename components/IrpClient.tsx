@@ -5,6 +5,7 @@ import { demoOrgName } from "@/lib/demo";
 import { defaultStandards, INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
 import { DEMO_POLICY_NAME, DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT, demoAssessment } from "@/lib/analysis/irp-demo";
 import { RunQuoteSummary, type RunQuote } from "@/components/RunQuoteSummary";
+import { IrpReport } from "@/components/IrpReport";
 
 type UploadedDoc = {
   name: string;
@@ -621,99 +622,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             {operationActive ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>Keep this tab open while policy text remains in request memory. Progress updates after each completed model pass.</p> : null}
           </div>
         ) : null}
-        {result ? (
-          <>
-            <div className="irp-report-heading">
-              <div>
-                <span className="mono">Incident Response Plan gap analysis</span>
-                <h2>{result.organization_name}</h2>
-                <p className="muted">{result.document_name || "Incident Response Plan"}{demo ? " | Fictional demonstration report" : ""}</p>
-              </div>
-              <span className="badge">{result.overall_posture}</span>
-            </div>
-            <div className="irp-executive-summary">
-              <div className="irp-score-block">
-                <span className="mono">Overall score</span>
-                <div className="stat">{result.compliance_score}<span>/100</span></div>
-              </div>
-              <div>
-                <h3>Executive summary</h3>
-                <p>{result.posture_summary}</p>
-                <p className="muted">The score reflects the submitted document only. Operational effectiveness should be validated through interviews, evidence review, and exercises.</p>
-              </div>
-            </div>
-            {result.counts ? <div className="irp-gap-summary">
-              <div><span>Total controls</span><b>{result.counts.total}</b></div>
-              <div><span>Critical gaps</span><b>{result.counts.critical}</b></div>
-              <div><span>High gaps</span><b>{result.counts.high}</b></div>
-              <div><span>Medium gaps</span><b>{result.counts.medium}</b></div>
-            </div> : null}
-            {result.score_breakdown ? (
-              <div style={{ marginTop: 16 }}>
-                <div className="mono">Selected standard scores</div>
-                <p className="muted" style={{ margin: "5px 0 10px", fontSize: 13 }}>Each selected standard is normalized to 100 points. The overall score is the equal average of these standard scores, with critical and high-priority controls weighted more heavily inside each standard.</p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-                  {Object.entries(result.score_breakdown).map(([standard, breakdown]: [string, any]) => (
-                    <div className="card subcard" key={standard} style={{ padding: 12 }}>
-                      <b>{standard.toLocaleUpperCase()}</b>
-                      <div className="stat" style={{ fontSize: 30 }}>{breakdown.score}<span style={{ fontSize: 14 }}>/100</span></div>
-                      <span className="muted" style={{ fontSize: 12 }}>{breakdown.controls_reviewed} controls reviewed</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <div className="irp-section-heading">
-              <div><span className="mono">Control review</span><h3>Detailed findings</h3></div>
-              <span className="muted">Evidence is traced to the submitted policy.</span>
-            </div>
-            {result.data_handling ? (
-              <div className="card subcard" style={{ padding: 12, marginBottom: 12 }}>
-                <b>Data handling</b>
-                <p className="muted" style={{ margin: "5px 0 0", fontSize: 13 }}>{result.data_handling.message}</p>
-              </div>
-            ) : null}
-            <div className="irp-findings-table-wrap">
-              <table className="table irp-findings-table">
-                <thead><tr><th>Control</th><th>Status</th><th>Risk</th><th>Evidence and finding</th></tr></thead>
-                <tbody>{(result.findings || []).map((finding: any) => <tr key={finding.control_id + finding.finding}>
-                  <td><b>{finding.control_id}</b><span>{(finding.standards || []).join(", ")}</span></td>
-                  <td><span className={finding.status === "Yes" ? "badge" : finding.status === "Partial" ? "badge warning" : "badge locked"}>{finding.status}</span></td>
-                  <td>{finding.risk_level}</td>
-                  <td><b>{finding.finding}</b><span>{finding.evidence}</span></td>
-                </tr>)}</tbody>
-              </table>
-            </div>
-            {result.remediation_roadmap?.phases?.length ? <section className="irp-roadmap">
-              <div className="irp-section-heading">
-                <div><span className="mono">Action plan</span><h3>30 / 60 / 90 day remediation roadmap</h3></div>
-              </div>
-              <div className="irp-roadmap-grid">
-                {result.remediation_roadmap.phases.map((phase: any) => <article key={phase.name}>
-                  <span className="mono">{phase.timeframe}</span>
-                  <h4>{phase.name}</h4>
-                  {phase.items?.length ? <ol>{phase.items.map((item: any) => <li key={`${phase.name}-${item.number}-${item.title}`}><b>{item.title}</b><span>{item.description}</span><small>{(item.references || []).join(", ")}</small></li>)}</ol> : <p className="muted">No actions assigned to this phase.</p>}
-                </article>)}
-              </div>
-            </section> : null}
-            {assessments.length ? (
-              <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
-                {assessments.map((assessment) => (
-                  <div className="card subcard" key={assessment.assessmentId} style={{ padding: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                      <div><b>{assessment.orgName}</b>{assessment.reused ? <span className="badge" style={{ marginLeft: 8 }}>Existing result reused</span> : null}</div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=report`} target="_blank">Report</a>
-                        <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=deck`} target="_blank">Deck</a>
-                        <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=json`} target="_blank">JSON</a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : demo ? <p className="muted" style={{ marginTop: 16 }}>This curated sample report is available in the demo view only.</p> : assessmentId ? null : null}
-          </>
-        ) : null}
+        {result ? <IrpReport result={result} assessments={assessments} demo={demo} /> : null}
       </section> : null}
     </div>
   );

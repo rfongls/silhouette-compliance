@@ -3,12 +3,13 @@ import { auth } from "@/auth";
 import { IrpReportBundle } from "@/components/IrpReportBundle";
 import { Nav } from "@/components/Nav";
 import { ReportDeliveryStatus } from "@/components/ReportDeliveryStatus";
+import { StoredReportActions } from "@/components/StoredReportActions";
 import { prisma } from "@/lib/prisma";
 
 export default async function IrpReportsPage({ params }: { params: { quoteId: string } }) {
   const session = await auth();
   if (!session?.user?.accountId) redirect("/signin");
-  const quote = await prisma.runQuote.findFirst({ where: { id: params.quoteId, accountId: session.user.accountId, module: "irp" } });
+  const quote = await prisma.runQuote.findFirst({ where: { id: params.quoteId, accountId: session.user.accountId, module: "irp", reportDeletedAt: null } });
   if (!quote) notFound();
   const assessmentIds = Array.isArray(quote.reportAssessmentIds) ? quote.reportAssessmentIds.map(String) : [];
   const rows = assessmentIds.length ? await prisma.assessment.findMany({
@@ -23,6 +24,7 @@ export default async function IrpReportsPage({ params }: { params: { quoteId: st
     <div className="mono">Assessment history</div>
     <h1 style={{ fontFamily: "EB Garamond", fontSize: 44, margin: "8px 0 22px" }}>{quote.parentOrgName || assessments[0]?.orgName || "IRP"} reports</h1>
     <ReportDeliveryStatus quoteId={quote.id} initialStatus={quote.reportEmailStatus} recipient={quote.reportRecipient} error={quote.reportEmailError}/>
+    <StoredReportActions quoteId={quote.id}/>
     <IrpReportBundle assessments={assessments} networkReport={quote.networkResult} quoteId={quote.id} demo={false}/>
   </section></main>;
 }

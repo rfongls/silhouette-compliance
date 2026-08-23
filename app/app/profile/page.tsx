@@ -25,7 +25,7 @@ export default async function ProfilePage() {
     getEntitlementBalance(accountId, EntKind.PROPOSAL_CREDIT).catch(() => 0),
     prisma.usageLedger.findMany({ where: { accountId }, orderBy: { createdAt: "desc" }, take: 50 }).catch(() => []),
     prisma.runQuote.findMany({
-      where: { accountId, module: "irp", status: "CONSUMED" },
+      where: { accountId, module: "irp", status: "CONSUMED", reportDeletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 25,
       select: { id: true, assessmentScope: true, parentOrgName: true, orgNames: true, orgCount: true, reportAssessmentIds: true, reportEmailStatus: true, reportEmailSentAt: true, createdAt: true }

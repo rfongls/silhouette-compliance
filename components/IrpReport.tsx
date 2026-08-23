@@ -165,10 +165,9 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       </div>
     </section> : null}
 
-    <footer className="irp-report-footer">
+    {!demo ? <footer className="irp-report-footer">
       <div><b>Data handling</b><span>{result.data_handling?.message || "Submitted policy text is processed in memory for this assessment and is not stored."}</span></div>
-      {demo ? <span className="irp-demo-note">Curated demo report. Downloads are disabled.</span> : null}
-    </footer>
+    </footer> : null}
 
     {!demo && assessments.length > 1 ? <section className="irp-assessment-exports">
       <div className="irp-section-heading"><div><span className="mono">Deliverables</span><h3>Organization reports</h3></div></div>

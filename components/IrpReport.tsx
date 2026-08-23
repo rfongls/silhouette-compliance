@@ -9,8 +9,10 @@ type AssessmentExport = {
 };
 
 type FindingFilter = "all" | "critical" | "high" | "medium" | "low" | `standard:${string}`;
+type PrioritySort = "none" | "high-first" | "low-first";
 
 const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
+const PRIORITY_ORDER = { Critical: 4, High: 3, Medium: 2, Low: 1 } as const;
 
 function findingSeverity(finding: any) {
   const value = String(finding?.risk_level || "Medium").toLocaleLowerCase();
@@ -35,11 +37,18 @@ function postureClass(score: number) {
 
 export function IrpReport({ result, assessments, demo }: { result: any; assessments: AssessmentExport[]; demo: boolean }) {
   const [filter, setFilter] = useState<FindingFilter>("all");
+  const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
   const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([result.remediation_roadmap?.phases?.[0]?.name].filter(Boolean)));
   const findings = Array.isArray(result.findings) ? result.findings : [];
   const actionable = findings.filter((finding: any) => finding.status !== "Yes");
   const standards = useMemo<string[]>(() => [...new Set<string>(findings.flatMap((finding: any) => finding.standards || []).map(String))], [findings]);
   const visibleFindings = findings.filter((finding: any) => findingMatches(finding, filter));
+  if (prioritySort !== "none") {
+    visibleFindings.sort((left: any, right: any) => {
+      const difference = PRIORITY_ORDER[findingSeverity(right)] - PRIORITY_ORDER[findingSeverity(left)];
+      return prioritySort === "high-first" ? difference : -difference;
+    });
+  }
   const severityCounts = Object.fromEntries(SEVERITIES.map((severity) => [
     severity,
     actionable.filter((finding: any) => findingSeverity(finding) === severity).length
@@ -120,13 +129,14 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       </div>
       <div className="irp-findings-table-wrap">
         <table className="table irp-findings-table">
-          <thead><tr><th>Control</th><th>Requirement</th><th>Status</th><th>Evidence in plan</th><th>Finding</th></tr></thead>
+          <thead><tr><th>Control</th><th>Requirement</th><th>Status</th><th>Evidence in plan</th><th aria-sort={prioritySort === "none" ? "none" : prioritySort === "high-first" ? "descending" : "ascending"}><button type="button" className="irp-sort-button" onClick={() => setPrioritySort((current) => current === "high-first" ? "low-first" : "high-first")}>Priority <span>{prioritySort === "high-first" ? "H-L" : prioritySort === "low-first" ? "L-H" : "Sort"}</span></button></th><th>Finding</th></tr></thead>
           <tbody>{visibleFindings.map((finding: any) => <tr key={`${finding.control_id}-${finding.finding}`}>
             <td><b>{finding.control_id}</b><span>{(finding.standards || []).join(", ")}</span></td>
             <td>{finding.requirement || finding.control_name}</td>
             <td><span className={`irp-status status-${String(finding.status).toLocaleLowerCase()}`}>{finding.status}</span></td>
             <td>{finding.evidence || "Not addressed"}</td>
-            <td><span className={`irp-priority severity-${findingSeverity(finding).toLocaleLowerCase()}`}>{findingSeverity(finding)}</span><p>{finding.finding}</p></td>
+            <td><span className={`irp-priority severity-${findingSeverity(finding).toLocaleLowerCase()}`}>{findingSeverity(finding)}</span></td>
+            <td><p>{finding.finding}</p></td>
           </tr>)}</tbody>
         </table>
         {!visibleFindings.length ? <div className="irp-empty-filter">No findings match this filter.</div> : null}

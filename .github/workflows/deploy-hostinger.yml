@@ -49,6 +49,7 @@ jobs:
 
       - name: Pack deploy artifact
         run: |
+          cp package-lock.json package-lock.deploy.json
           tar \
             --exclude='.next/cache' \
             --exclude='node_modules' \
@@ -66,6 +67,7 @@ jobs:
             next.config.js \
             package.json \
             package-lock.json \
+            package-lock.deploy.json \
             prisma \
             scripts \
             server.js \
@@ -73,6 +75,8 @@ jobs:
             types.d.ts \
             uploads/silhouette-proposal-template.html \
             .next
+          tar -tzf "$ARCHIVE_NAME" | grep -Fx 'package-lock.deploy.json'
+          rm -f package-lock.deploy.json
 
       - name: Configure SSH
         run: |
@@ -150,6 +154,10 @@ jobs:
              rm -rf .next app components lib prisma scripts
              tar -xzf '$ARCHIVE_NAME'
              rm -f '$ARCHIVE_NAME'
+             test -s package-lock.deploy.json
+             install -m 644 package-lock.deploy.json package-lock.json
+             rm -f package-lock.deploy.json
+             test -s package-lock.json
              RUNTIME_CONFIG_DIR=\"\$(dirname '$DEPLOY_PATH')/hbuilds/config\"
              mkdir -p \"\$RUNTIME_CONFIG_DIR\"
              install -m 600 .env \"\$RUNTIME_CONFIG_DIR/.env\"

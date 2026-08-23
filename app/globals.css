@@ -84,24 +84,24 @@
 .irp-demo-document p{margin:0}
 .irp-demo-document p+p{margin-top:9px}
 .irp-demo-document ul{margin:6px 0 0;padding-left:20px}
-.irp-web-report{--critical:#ff6b6b;--high:#ffaa4a;--medium:#5ab4ff;--low:#4fd98e;display:grid;width:100%;max-width:100%;min-width:0;gap:0;container-type:inline-size}
+.irp-web-report{--critical:#ff6b6b;--high:#ffaa4a;--medium:#5ab4ff;--low:#4fd98e;display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr);gap:0;overflow:hidden;container-type:inline-size}
 .irp-report-heading,.irp-section-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
 .irp-report-heading{padding-bottom:20px;border-bottom:1px solid var(--line)}
 .irp-report-heading>div{min-width:0}
 .irp-report-heading>div:first-child{flex:1 1 auto}
 .irp-report-heading h2{margin:6px 0 4px;font-size:clamp(28px,4vw,44px);overflow-wrap:anywhere}
 .irp-report-heading p{margin:0;color:var(--muted);overflow-wrap:anywhere}
-.irp-report-heading-actions{display:flex;flex:0 1 auto;max-width:100%;min-width:0;flex-direction:column;align-items:flex-end;gap:10px}
+.irp-report-heading-actions{display:flex;flex:0 1 260px;max-width:min(260px,100%);min-width:0;flex-direction:column;align-items:flex-end;gap:10px}
 .irp-export-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 .irp-export-actions .btn{min-height:38px;padding:8px 12px;font-size:12px}
-.irp-posture-badge{display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:32px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;font:700 11px/1.3 "DM Mono",monospace;text-align:center;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere}
+.irp-posture-badge{display:inline-flex;align-items:center;justify-content:center;width:fit-content;max-width:100%;min-height:32px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;font:700 11px/1.3 "DM Mono",monospace;text-align:center;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere}
 .irp-posture-badge.strong,.irp-overall-score.strong{--posture:var(--low)}
 .irp-posture-badge.moderate,.irp-overall-score.moderate{--posture:var(--medium)}
 .irp-posture-badge.limited,.irp-overall-score.limited{--posture:var(--high)}
 .irp-posture-badge.weak,.irp-overall-score.weak{--posture:var(--critical)}
 .irp-posture-badge{border-color:color-mix(in srgb,var(--posture) 55%,var(--line));background:color-mix(in srgb,var(--posture) 10%,transparent);color:var(--posture)}
-.irp-severity-strip{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:10px;margin:20px 0}
-.irp-severity-card{--severity:var(--medium);display:grid;gap:3px;min-width:0;padding:14px;text-align:left;border:1px solid color-mix(in srgb,var(--severity) 38%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--severity) 8%,var(--surface-nested));color:var(--text);cursor:pointer}
+.irp-severity-strip{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
+.irp-severity-card{--severity:var(--medium);display:grid;width:100%;max-width:100%;gap:3px;min-width:0;padding:14px;text-align:left;border:1px solid color-mix(in srgb,var(--severity) 38%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--severity) 8%,var(--surface-nested));color:var(--text);cursor:pointer;overflow:hidden}
 .severity-critical{--severity:var(--critical)}
 .severity-high{--severity:var(--high)}
 .severity-medium{--severity:var(--medium)}
@@ -109,7 +109,7 @@
 .irp-severity-card:hover,.irp-severity-card.active{border-color:var(--severity);background:color-mix(in srgb,var(--severity) 13%,var(--surface-nested))}
 .irp-severity-card span{color:var(--severity);font:700 11px/1 "DM Mono",monospace;text-transform:uppercase}
 .irp-severity-card b{font-size:28px;line-height:1.1}
-.irp-posture-panel{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1.25fr) minmax(260px,.9fr) 180px;gap:20px;align-items:stretch;padding:22px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested)}
+.irp-posture-panel{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1.25fr) minmax(220px,.9fr) minmax(150px,180px);gap:20px;align-items:stretch;padding:22px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested);overflow:hidden}
 .irp-posture-panel>*{min-width:0}
 .irp-posture-copy h3{margin:6px 0 8px;font-size:25px}
 .irp-posture-copy p{margin:0;line-height:1.55}
@@ -123,7 +123,7 @@
 .irp-score-track{height:7px;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--muted) 18%,transparent)}
 .irp-score-track span{display:block;height:100%;border-radius:inherit;background:var(--accent)}
 .irp-standard-score strong{font-size:12px;text-align:right}
-.irp-overall-score{display:grid;align-content:center;justify-items:center;padding:14px;border:1px solid color-mix(in srgb,var(--posture) 45%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--posture) 8%,transparent)}
+.irp-overall-score{display:grid;width:100%;max-width:100%;min-width:0;align-content:center;justify-items:center;padding:14px;border:1px solid color-mix(in srgb,var(--posture) 45%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--posture) 8%,transparent);overflow:hidden}
 .irp-overall-score>span{color:var(--muted);font-size:11px;text-transform:uppercase}
 .irp-overall-score b{font-size:58px;line-height:1;color:var(--posture)}
 .irp-overall-score small{color:var(--muted)}
@@ -134,7 +134,7 @@
 .irp-filter-bar button{display:inline-flex;gap:7px;align-items:center;min-height:34px;padding:7px 11px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);font:700 11px/1 "DM Sans",sans-serif;cursor:pointer}
 .irp-filter-bar button span{min-width:18px;padding:3px 5px;border-radius:999px;background:var(--surface-nested);color:var(--text);font-size:9px;text-align:center}
 .irp-filter-bar button:hover,.irp-filter-bar button.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text)}
-.irp-findings-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.irp-findings-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:8px}
 .irp-findings-table{min-width:1120px;margin:0}
 .irp-findings-table th{font-size:10px}
 .irp-findings-table td{min-width:0;vertical-align:top;line-height:1.45}

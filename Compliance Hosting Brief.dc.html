@@ -68,7 +68,7 @@ table.spec td.k{font-weight:600;color:#111;white-space:nowrap;}
 
       <div class="kicker">Silhouette Compliance · Technical Brief</div>
       <h1 class="title">Compliance Gap Analyzer — Hosting &amp; Integration Requirements</h1>
-      <div class="sub">What it takes to move the analyzer and portal from standalone HTML prototypes to a hosted module inside your existing Next.js / Prisma / PostgreSQL application — without compromising the stateless, no-data-stored posture.</div>
+      <div class="sub">What it takes to move the analyzer and portal from standalone HTML prototypes to a hosted module inside your existing Next.js / Prisma / PostgreSQL application while preserving source-file statelessness and secure report retention.</div>
       <div class="meta">Prepared June 26, 2026 · Target stack: Node / Next.js · Prisma ORM · PostgreSQL · Stripe · Anthropic API</div>
       <div class="rule"></div>
 
@@ -114,7 +114,7 @@ Response → render report → export PDF/JSON</div>
       </ul>
       <div class="callout">
         <div class="lbl">Provider setting, not code</div>
-        <p>Enable the Anthropic API zero-data-retention (ZDR) tier on the production account so prompts and outputs are not retained provider-side. This is what makes the "we store nothing" claim true end-to-end, not just on your servers.</p>
+        <p>Configure the selected AI provider with the production account's contracted data controls. Do not advertise provider-side zero retention unless that protection is enabled and verified for the deployed account.</p>
       </div>
 
       <h2 class="sec"><span class="n">03</span>Data model (Prisma)</h2>
@@ -255,7 +255,7 @@ model Session {
       <h2 class="sec"><span class="n">08</span>Control boards — store, version, refresh</h2>
       <p class="lead">The single biggest cost lever. Pre-fetch and cache control sets once, shared across all customers, instead of paying to enumerate them per run.</p>
       <ul class="body">
-        <li><strong>Reference data, not customer data</strong> — public framework controls (PCI, NIST, …). Storing them does not touch the no-data-stored posture.</li>
+        <li><strong>Reference data, not customer data</strong> — public framework controls (PCI, NIST, …). Storing them does not affect the source-file retention boundary.</li>
         <li><strong>Admin workflow:</strong> Fetch → DRAFT → review → Publish as version N. Customers always score against the latest PUBLISHED version.</li>
         <li><strong>Versioned + date-stamped</strong> so a report can cite "PCI DSS 4.0.1, control set rev. 2026-05" and a past assessment is reproducible.</li>
         <li><strong>Scheduled snapshot export</strong> (weekly / monthly cron) writes an archived copy — your durable record and the admin-export feature already designed in the portal.</li>

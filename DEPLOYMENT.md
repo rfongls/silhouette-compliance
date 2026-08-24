@@ -27,8 +27,8 @@ acceptance checks in AGENTS.md §9 and §13.
       `http://localhost:3000/api/auth/callback/google` now; production URL later.
 - [ ] **Microsoft Entra ID app registration** — callback
       `http://localhost:3000/api/auth/callback/azure-ad` now; production URL later.
-- [ ] **Anthropic API key** (console.anthropic.com). Optional: request zero-data-retention so the
-      "we store nothing" claim is contractually backed end-to-end.
+- [ ] **AI provider API key** — configure the selected provider server-side. Document the provider's
+      contracted data controls and do not advertise zero retention unless it is enabled for the production account.
 - [ ] **S3-compatible storage** for SRA evidence (e.g. Cloudflare R2, Backblaze B2).
 
 ## Phase 3 — Test locally (do NOT skip)

@@ -1,7 +1,7 @@
 # Silhouette
 
-**Repo: `silhouette-compliance`** — the Silhouette compliance suite. AI-assisted compliance, risk, and proposal tooling. **Stateless by design** — the service never
-persists uploaded source documents or patient/client data.
+**Repo: `silhouette-compliance`** — the Silhouette compliance suite. AI-assisted compliance, risk, and proposal tooling. **Source-file stateless by design** — the service never
+persists uploaded source documents. It does retain completed reports, including generated findings and supporting evidence excerpts, for account access until the user deletes them.
 
 **Start here: [`AGENTS.md`](AGENTS.md)** — the complete build specification for turning these
 prototypes into a hosted SaaS (Next.js + Prisma + PostgreSQL + Stripe + Anthropic). It defines the
@@ -63,7 +63,7 @@ Stripe webhook, decremented server-side at the point of use. Payment always prec
 
 1. The Anthropic key lives server-side only; every model call goes through the metering proxy.
 2. No run without confirmed funds (webhook-verified); auto-refund on failed runs.
-3. Never persist uploaded documents. Exception: SRA evidence (infrastructure data, never patient
-   records) — encrypted at rest, account-scoped, purgeable.
+3. Never persist uploaded source documents. Persist completed reports and their generated findings/evidence excerpts so users can retrieve or delete them. Exception: SRA evidence
+   is deliberately stored for the engagement and must be encrypted at rest, account-scoped, and purgeable.
 4. Exports strip em dashes (replace with `-`) in all report/deck/JSON output.
 5. Demo mode is free, static, and never calls the model.

@@ -23,4 +23,11 @@ for (const token of ["ControlBoard", "Assessment", "UsageLedger", "Entitlement",
 }
 const evidence = fs.readFileSync(path.join(root, "lib/sra/storage.ts"), "utf8");
 if (!evidence.includes("aes-256-gcm") || !evidence.includes("PutObjectCommand")) throw new Error("SRA evidence must encrypt before external object storage");
+const landing = fs.readFileSync(path.join(root, "components/LandingSections.tsx"), "utf8");
+for (const staleClaim of ["We store nothing", "without storing your private data", "No PHI / client data collected", "Analysis runs on a zero-retention tier"]) {
+  if (landing.includes(staleClaim)) throw new Error(`Landing page contains outdated retention claim: ${staleClaim}`);
+}
+if (!landing.includes("Silhouette does not retain uploaded source files") || !landing.includes("Completed reports are stored securely for account access")) {
+  throw new Error("Landing page must distinguish discarded source files from retained completed reports");
+}
 console.log("Acceptance static checks passed");

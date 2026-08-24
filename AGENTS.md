@@ -5,7 +5,7 @@ multi-module compliance SaaS offering integrated into an existing Next.js + Pris
 Users land on a marketing page, sign in (Google/Microsoft), and access modules they have purchased.
 
 **Modules:**
-1. **Incident Response Plan (IRP) Gap Analysis** (§2–§10) — per-organization IRP gap analysis on uploaded policy docs. **Stateless.**
+1. **Incident Response Plan (IRP) Gap Analysis** (§2–§10) — per-organization IRP gap analysis on uploaded policy docs. **Source-file stateless; completed reports are retained.**
 2. **Security Risk Assessment / Pen Test (SRA)** (§11) — a guided multi-step risk-assessment engagement. **Stores evidence** (deliberate departure — see §11).
 3. **Proposals** (§12) — RFP/proposal generation, billed per proposal. Mostly client-side; light backend.
 
@@ -36,8 +36,9 @@ push the commit to `main` -> allow `.github/workflows/deploy-hostinger.yml` to d
 These rules override any older deployment notes elsewhere in this file or repository.
 
 > **Prime directive — data minimization:** the Gap Analysis module never persists uploaded source
-> documents or any patient/client data (document in memory for one request only). You DO persist
-> generated *results*, accounts, billing, control boards, and entitlements. The SRA module is the one
+> documents (document in memory for one request only). You DO persist generated *results*, including
+> findings and evidence excerpts, plus accounts, billing, control boards, and entitlements. Users are
+> instructed not to upload PHI; suspected PHI is flagged in the generated report. The SRA module is the one
 > exception: it stores **evidence artifacts** (infrastructure/config data — never patient records) for
 > a multi-week engagement; see §11 for its stricter handling rules.
 
@@ -67,7 +68,7 @@ paper `#eef1ef`. Accent must remain themeable.
 - Prisma ORM → PostgreSQL
 - Auth.js (NextAuth) with Prisma adapter — Google + Microsoft Entra ID (OIDC)
 - Stripe (Checkout + webhooks) in test mode for local dev
-- Anthropic API (server-side only), zero-data-retention tier in production
+- Configured AI provider API (server-side only). Provider retention claims must match the production account's contracted data controls.
 
 ---
 

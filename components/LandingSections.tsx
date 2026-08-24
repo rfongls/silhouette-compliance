@@ -55,15 +55,15 @@ const modules = [
 ];
 
 const neverStored = [
-  { title: "Your source documents", body: "Held in memory for one run, then discarded. Never written to disk." },
-  { title: "Patient & client records", body: "Never collected. Assessments read policies and configurations, not records." },
-  { title: "Your data for AI training", body: "Analysis runs on a zero-retention tier. Prompts and outputs are not kept." },
+  { title: "Your uploaded source files", body: "Processed in memory for one run, then discarded. They are not written to persistent storage." },
+  { title: "Full extracted source text", body: "Discarded after analysis. Only findings and evidence excerpts included in the completed report are retained." },
+  { title: "Your data for Silhouette training", body: "Silhouette does not use uploaded files or completed reports to train its own models." },
 ];
 
 const weKeep = [
   { title: "Your account", body: "SSO identity and role, so your access and history follow you." },
   { title: "Entitlements & billing ledger", body: "What you purchased and what each run cost - your audit trail." },
-  { title: "The results you generate", body: "Assessment scores, findings, and exports stay available to you." },
+  { title: "The reports you generate", body: "Scores, findings, evidence excerpts, and exports stay available until you delete the report." },
 ];
 
 const steps = [
@@ -190,13 +190,13 @@ export function LandingSections() {
             Stateless by Design
           </h1>
           <p className="fu" style={{ fontSize: 17.5, lineHeight: 1.65, color: "#eadff0", maxWidth: 620, margin: "0 auto 34px" }}>
-            AI-assisted compliance, risk, and proposal tools that turn your security documentation into audit-ready assessments without storing your private data.
+            AI-assisted compliance, risk, and proposal tools that turn security documentation into audit-ready assessments without retaining uploaded source files.
           </p>
           <div className="fu" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/app?demo=1" style={{ fontSize: 15, color: pillText, fontWeight: 800, padding: "14px 30px", background: `linear-gradient(135deg, ${accentLight}, ${accent})`, borderRadius: 999, whiteSpace: "nowrap" }}>View Demo</Link>
           </div>
           <div className="fu" style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginTop: 36, fontSize: 12.5, color: accentLight }}>
-            {["We store nothing", "No PHI / client data collected", "Google, Microsoft & GitHub SSO"].map(check)}
+            {["Source files are not retained", "Reports stay in your account", "Google, Microsoft & GitHub SSO"].map(check)}
           </div>
         </div>
       </div>
@@ -233,12 +233,12 @@ export function LandingSections() {
         <div style={{ maxWidth: 1080, margin: "auto", padding: "44px 28px", color: text, width: "100%" }}>
           <div style={{ textAlign: "center", maxWidth: 680, margin: "0 auto 40px" }}>
             {sectionEyebrow("Stateless by design", accentLight)}
-            <h2 style={{ fontFamily: serif, fontSize: 38, fontWeight: 600, lineHeight: 1.12, margin: "0 0 16px", color: text }}>Your documents are never stored</h2>
-            <p style={{ fontSize: 15, lineHeight: 1.7, color: accentLight, margin: 0 }}>Your policies and evidence are held in memory for a single analysis, then discarded. Here is exactly where the line sits:</p>
+            <h2 style={{ fontFamily: serif, fontSize: 38, fontWeight: 600, lineHeight: 1.12, margin: "0 0 16px", color: text }}>Your source files are not retained</h2>
+            <p style={{ fontSize: 15, lineHeight: 1.7, color: accentLight, margin: 0 }}>Silhouette does not retain uploaded source files. Completed reports are stored securely for account access and can be downloaded or deleted by the user.</p>
           </div>
           <div className="stack-m sec-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", maxWidth: 880, margin: "0 auto", border: "1px solid rgba(255,255,255,.14)", borderRadius: 16, overflow: "hidden" }}>
             <div style={{ padding: "28px 30px", borderRight: "1px solid rgba(255,255,255,.14)" }}>
-              <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#fb7185", marginBottom: 18 }}>Never stored</div>
+              <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "#fb7185", marginBottom: 18 }}>Not retained by Silhouette</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {neverStored.map((t) => (
                   <div key={t.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>

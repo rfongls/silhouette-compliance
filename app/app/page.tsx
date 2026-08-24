@@ -14,7 +14,7 @@ export default async function AppLauncher() {
   const isAdmin = isEffectiveAdmin(session);
   const [irp, sra, proposal] = accountId ? await Promise.all([balance(accountId, "ASSESSMENT_CREDIT"), balance(accountId, "SRA_CREDIT"), balance(accountId, "PROPOSAL_CREDIT")]) : [0,0,0];
   const modules = [
-    { key: "irp", title: "Incident Response Plan", price: "$250 / org", credits: irp, href: "/app/irp", body: "Upload policy text for a stateless gap analysis. Exports remain downloadable from history." },
+    { key: "irp", title: "Incident Response Plan", price: "$250 / org", credits: irp, href: "/app/irp", body: "Run a source-file-minimized gap analysis. Completed reports remain available in your account until you delete them." },
     { key: "sra", title: "Security Risk Assessment", price: "$1,500 / engagement", credits: sra, href: "/app/sra", body: "Scope, inventory, encrypted evidence, human-approved findings, and remediation roadmap." },
     { key: "proposal", title: "Proposals", price: "$99 / proposal", credits: proposal, href: "/app/proposals", body: "Proposal builder with pricing, project plan, checklist, references, and print exports." }
   ] as const;

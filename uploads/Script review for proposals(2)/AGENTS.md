@@ -5,9 +5,10 @@ existing Next.js + Prisma + PostgreSQL application. The goal: let users sign in 
 pay per organization assessed, run a compliance gap analysis on uploaded policy documents, and
 re-download their results. Operators (admins) manage the control boards used for scoring.
 
-> **Prime directive — statelessness:** never persist uploaded source documents or any patient/client
-> data. The document exists in memory only for the duration of one analysis request. You DO persist
-> generated *results* (findings/score/roadmap), accounts, billing, and control boards.
+> **Prime directive — source-file statelessness:** never persist uploaded source documents. The
+> document exists in memory only for the duration of one analysis request. You DO persist generated
+> *results* (findings, scores, roadmaps, and supporting evidence excerpts), accounts, billing, and
+> control boards until the user deletes the applicable report.
 
 ---
 
@@ -35,7 +36,7 @@ paper `#eef1ef`. Accent must remain themeable.
 - Prisma ORM → PostgreSQL
 - Auth.js (NextAuth) with Prisma adapter — Google + Microsoft Entra ID (OIDC)
 - Stripe (Checkout + webhooks) in test mode for local dev
-- Anthropic API (server-side only), zero-data-retention tier in production
+- Configured AI provider API (server-side only). Provider retention claims must match the production account's contracted data controls.
 
 ---
 

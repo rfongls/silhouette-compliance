@@ -22,6 +22,25 @@ type ReviewedOrg = {
 
 type AssessmentScope = "self" | "network";
 
+type IrpWizardStep = 1 | 2 | 3 | 4 | 5;
+
+const IRP_WIZARD_STEPS: Array<{ id: IrpWizardStep; label: string }> = [
+  { id: 1, label: "Organization type" },
+  { id: 2, label: "Industry" },
+  { id: 3, label: "Standards" },
+  { id: 4, label: "Policy files" },
+  { id: 5, label: "Review and run" }
+];
+
+const INDUSTRY_CHOICES = [
+  { value: "health-center", label: "Health Center / Healthcare", description: "Healthcare providers, health centers, care networks, and covered entities." },
+  { value: "financial", label: "Financial", description: "Banks, credit unions, financial services, and regulated finance organizations." },
+  { value: "education", label: "Education", description: "Schools, districts, colleges, universities, and education systems." },
+  { value: "public-sector", label: "Public Sector", description: "Government agencies, municipalities, and public service organizations." },
+  { value: "manufacturing", label: "Manufacturing / OT", description: "Manufacturers and organizations operating industrial or operational technology." },
+  { value: "retail", label: "Retail", description: "Retailers, commerce platforms, and organizations handling payment environments." }
+] as const;
+
 type AssessmentProgress = {
   id: string;
   orgName: string | null;
@@ -79,6 +98,9 @@ function availableDefaults(industry: string, available: Record<string, string[]>
 }
 
 export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; userEmail: string | null; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
+  const [wizardStep, setWizardStep] = useState<IrpWizardStep>(1);
+  const [furthestWizardStep, setFurthestWizardStep] = useState<IrpWizardStep>(1);
+  const [wizardError, setWizardError] = useState("");
   const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>("self");
   const [parentOrgName, setParentOrgName] = useState("");
   const [industry, setIndustry] = useState("health-center");
@@ -147,6 +169,8 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
           message: "Restored an assessment currently running for this account.",
           rows
         });
+        setWizardStep(5);
+        setFurthestWizardStep(5);
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
@@ -201,6 +225,53 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
       setCheckoutState("IDLE");
       setCheckoutMessage("");
     }
+  }
+
+  function wizardStepError(step: IrpWizardStep) {
+    if (step === 1 && assessmentScope === "network" && !parentOrgName.trim()) {
+      return "Enter the network or parent organization name before continuing.";
+    }
+    if (step === 3 && !standards.length) {
+      return "Select at least one published standard before continuing.";
+    }
+    if (step === 4) {
+      const scopedOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
+      if (!scopedOrgs.length || scopedOrgs.some((org) => !org.name.trim())) {
+        return assessmentScope === "self"
+          ? "Enter the organization name before continuing."
+          : "Enter a name for every organization or health center before continuing.";
+      }
+      if (scopedOrgs.some((org) => !org.documents.length && !org.text.trim())) {
+        return "Upload or paste policy content for every organization before continuing.";
+      }
+      if (!phiAttested) {
+        return "Confirm that the uploaded files were reviewed and PHI was removed before continuing.";
+      }
+    }
+    return "";
+  }
+
+  function showWizardStep(step: IrpWizardStep) {
+    if (step > furthestWizardStep) return;
+    setWizardError("");
+    setWizardStep(step);
+  }
+
+  function continueWizard() {
+    const error = wizardStepError(wizardStep);
+    if (error) {
+      setWizardError(error);
+      return;
+    }
+    const nextStep = Math.min(5, wizardStep + 1) as IrpWizardStep;
+    setWizardError("");
+    setWizardStep(nextStep);
+    setFurthestWizardStep((current) => Math.max(current, nextStep) as IrpWizardStep);
+  }
+
+  function backWizard() {
+    setWizardError("");
+    setWizardStep((current) => Math.max(1, current - 1) as IrpWizardStep);
   }
 
   function changeAssessmentScope(nextScope: AssessmentScope) {
@@ -463,6 +534,11 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
     : operation?.state === "RUNNING" ? "Running"
       : operation?.state === "COMPLETED" ? "Completed"
         : "Failed";
+  const reviewOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
+  const selectedIndustry = INDUSTRY_CHOICES.find((choice) => choice.value === industry);
+  const selectedStandardLabels = standardOptions
+    .filter((standard) => standards.includes(standard.key))
+    .map((standard) => standard.label);
 
   return (
     <div className="irp-flow">
@@ -523,185 +599,170 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
       ) : (
       <section className="card irp-process-card">
         <div className="mono">Policy processing</div>
-        <h2>Configure IRP assessment</h2>
-        <p className="muted irp-process-intro">Define the assessment scope, choose the published standards, then attach the policy set for each organization being reviewed.</p>
+        <h2>{IRP_WIZARD_STEPS.find((step) => step.id === wizardStep)?.label}</h2>
+        <p className="muted irp-process-intro">Complete each step to configure the assessment, confirm its scope, and start the report.</p>
         <div className="irp-flow-steps" aria-label="Assessment workflow">
-          <span><b>1</b> Assessment</span>
-          <span><b>2</b> Standards</span>
-          <span><b>3</b> Policy files</span>
-          <span><b>4</b> Run and report</span>
+          {IRP_WIZARD_STEPS.map((step) => (
+            <button
+              key={step.id}
+              type="button"
+              className={step.id === wizardStep ? "active" : step.id < wizardStep || step.id <= furthestWizardStep ? "complete" : ""}
+              onClick={() => showWizardStep(step.id)}
+              disabled={step.id > furthestWizardStep}
+              aria-current={step.id === wizardStep ? "step" : undefined}
+            >
+              <b>{step.id}</b>
+              <span>{step.label}</span>
+            </button>
+          ))}
         </div>
         <div className="form">
-          <div className="irp-config-grid">
-          <section className="irp-stage-panel">
-            <div className="mono">1. Assessment</div>
-            <h3>Scope and industry</h3>
-          <fieldset className="irp-scope-control">
-            <legend>Who is this assessment for?</legend>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
-              <button className={assessmentScope === "self" ? "btn" : "btn secondary"} type="button" onClick={() => changeAssessmentScope("self")} aria-pressed={assessmentScope === "self"}>
-                My organization
+          {wizardStep === 1 ? <section className="irp-wizard-page">
+            <div className="mono">Step 1 of 5</div>
+            <h3>Who is this assessment for?</h3>
+            <p className="muted">Choose whether the report covers your organization or a group of organizations beneath a client, association, or network.</p>
+            <div className="irp-choice-grid">
+              <button className={`irp-choice${assessmentScope === "self" ? " selected" : ""}`} type="button" onClick={() => changeAssessmentScope("self")} aria-pressed={assessmentScope === "self"}>
+                <b>My organization</b>
+                <span>Assess one incident response plan for your own organization.</span>
               </button>
-              <button className={assessmentScope === "network" ? "btn" : "btn secondary"} type="button" onClick={() => changeAssessmentScope("network")} aria-pressed={assessmentScope === "network"}>
-                Client or network
+              <button className={`irp-choice${assessmentScope === "network" ? " selected" : ""}`} type="button" onClick={() => changeAssessmentScope("network")} aria-pressed={assessmentScope === "network"}>
+                <b>Client or network</b>
+                <span>Assess multiple organizations and produce independent reports plus a consolidated network report.</span>
               </button>
             </div>
-            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>
-              {assessmentScope === "self"
-                ? "Your organization name will appear on the single organization report."
-                : "The top-level name will appear on the consolidated network report. Every organization listed beneath it receives an independent report."}
-            </p>
-          </fieldset>
-          {assessmentScope === "network" ? <label>
-            Network or parent organization name
-            <input className="input" value={parentOrgName} onChange={(event) => changeParentOrgName(event.target.value)} placeholder="Network, association, or parent organization" />
-            <span className="muted" style={{ display: "block", fontSize: 12, marginTop: 5 }}>This name labels the consolidated network report and is not an additional billed organization.</span>
-          </label> : null}
-          <label>
-            Industry
-            <select className="select" value={industry} onChange={(e) => changeIndustry(e.target.value)}>
-              <option value="health-center">Health Center / Healthcare</option>
-              <option value="financial">Financial</option>
-              <option value="education">Education</option>
-              <option value="public-sector">Public Sector</option>
-              <option value="manufacturing">Manufacturing / OT</option>
-              <option value="retail">Retail</option>
-            </select>
-          </label>
-          </section>
+            {assessmentScope === "network" ? <label className="irp-wizard-field">
+              Network or parent organization name
+              <input className="input" value={parentOrgName} onChange={(event) => changeParentOrgName(event.target.value)} placeholder="Network, association, or parent organization" />
+              <span className="muted">This name labels the consolidated report and is not an additional billed organization.</span>
+            </label> : null}
+          </section> : null}
 
-          <section className="irp-stage-panel">
-            <div className="mono">2. Standards</div>
-            <h3>Controls used for scoring</h3>
-          <fieldset className="irp-standards-control">
-            <legend className="sr-only">Standards used for scoring</legend>
-            {standardOptions.length ? <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <input type="checkbox" checked={allStandardsSelected} onChange={toggleAllStandards} />
-              <b>All {INDUSTRY_STANDARDS[industry]?.label || "domain"} standards</b>
-            </label> : <div className="badge locked">No published base controls are available for this domain.</div>}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
-              {standardOptions.map((standard) => (
-                <label key={standard.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="checkbox" checked={standards.includes(standard.key)} onChange={() => toggleStandard(standard.key)} />
-                  <span>{standard.label}{standard.default ? " (default)" : ""}</span>
-                </label>
+          {wizardStep === 2 ? <section className="irp-wizard-page">
+            <div className="mono">Step 2 of 5</div>
+            <h3>What industry is this assessment for?</h3>
+            <p className="muted">The selected industry determines which published control boards are available for scoring.</p>
+            <div className="irp-choice-grid irp-industry-grid">
+              {INDUSTRY_CHOICES.map((choice) => (
+                <button key={choice.value} className={`irp-choice${industry === choice.value ? " selected" : ""}`} type="button" onClick={() => changeIndustry(choice.value)} aria-pressed={industry === choice.value}>
+                  <b>{choice.label}</b>
+                  <span>{choice.description}</span>
+                </button>
               ))}
             </div>
-            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>The assessment and final report use only these published control boards.</p>
-          </fieldset>
-          </section>
-          </div>
+          </section> : null}
 
-          <section className="irp-policy-stage">
+          {wizardStep === 3 ? <section className="irp-wizard-page">
+            <div className="mono">Step 3 of 5</div>
+            <h3>Which standards should be used for scoring?</h3>
+            <p className="muted">Select all applicable published control boards. Each standard receives its own weighted score in the final report.</p>
+            <fieldset className="irp-standards-control">
+              <legend className="sr-only">Standards used for scoring</legend>
+              {standardOptions.length ? <label className="irp-standard-option irp-standard-all">
+                <input type="checkbox" checked={allStandardsSelected} onChange={toggleAllStandards} />
+                <span><b>All {INDUSTRY_STANDARDS[industry]?.label || "domain"} standards</b><small>Use every published standard available for this industry.</small></span>
+              </label> : <div className="badge locked">No published base controls are available for this domain.</div>}
+              <div className="irp-standard-grid">
+                {standardOptions.map((standard) => (
+                  <label className="irp-standard-option" key={standard.key}>
+                    <input type="checkbox" checked={standards.includes(standard.key)} onChange={() => toggleStandard(standard.key)} />
+                    <span><b>{standard.label}</b>{standard.default ? <small>Recommended default</small> : null}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </section> : null}
+
+          {wizardStep === 4 ? <section className="irp-wizard-page">
             <div className="irp-stage-heading">
               <div>
-                <div className="mono">3. Policy files</div>
-                <h3>{assessmentScope === "self" ? "Organization and policy documents" : "Network organizations and policy documents"}</h3>
-                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                  {assessmentScope === "self" ? "Enter your organization once. Its name will appear on the report." : `Add every organization or health center beneath ${parentOrgName.trim() || "the network"}. Each receives an independent report and becomes one $250 invoice line item.`}
+                <div className="mono">Step 4 of 5</div>
+                <h3>{assessmentScope === "self" ? "Add the organization and policy files" : "Add the organizations and policy files"}</h3>
+                <p className="muted">
+                  {assessmentScope === "self" ? "The organization name appears on its completed report." : `Each organization beneath ${parentOrgName.trim()} receives an independent report and becomes one $250 invoice line item.`}
                 </p>
               </div>
-              {assessmentScope === "network" ? <button className="btn secondary" type="button" onClick={addOrg}>Add org</button> : null}
+              {assessmentScope === "network" ? <button className="btn secondary" type="button" onClick={addOrg}>Add organization</button> : null}
             </div>
             <div className={assessmentScope === "network" ? "irp-org-grid" : undefined}>
-            {(assessmentScope === "self" ? orgs.slice(0, 1) : orgs).map((org, index) => (
-              <div key={org.id} className="irp-org-entry">
-                <label>
-                  {assessmentScope === "self" ? "Organization name" : `Organization or health center ${index + 1}`}
-                  <input className="input" value={org.name} onChange={(e) => updateOrg(org.id, { name: e.target.value })} placeholder={assessmentScope === "self" ? "Your organization name" : "Organization or health center name"} />
-                </label>
-                <label>
-                  Policy uploads
-                  <input className="input" type="file" multiple accept=".pdf,application/pdf,.txt,.md,.csv,.json,.html,.xml" onChange={(e) => readFiles(org.id, e.target.files)} />
-                </label>
-                {org.status ? <p className="muted" style={{ fontSize: 13, margin: 0 }}>{org.status}</p> : null}
-                <p className="muted" style={{ fontSize: 13, margin: "6px 0 0" }}>
-                  {(org.documents.length ? org.documents.reduce((sum, doc) => sum + doc.text.length, 0) : org.text.length).toLocaleString()} of {characterLimitPerOrg.toLocaleString()} characters. Oversized submissions are blocked before checkout and are never truncated.
-                </p>
-                <p className="muted" style={{ fontSize: 13, margin: "4px 0 0" }}>PDF documents are converted to flat text in memory before analysis. Scanned PDFs require searchable text or OCR.</p>
-                {org.documents.length ? (
-                  <div style={{ marginTop: 8 }}>
-                    {org.documents.map((doc) => <span className="badge" key={`${org.id}-${doc.name}`} style={{ marginRight: 6, marginBottom: 6 }}>{doc.name}</span>)}
-                  </div>
-                ) : null}
-                <label>
-                  Paste policy text
-                  <textarea className="textarea" value={org.text} onChange={(e) => updateOrg(org.id, { text: e.target.value, documents: [] })} placeholder="Paste extracted policy text for this organization." />
-                </label>
-                {assessmentScope === "network" ? <button className="btn ghost" type="button" onClick={() => removeOrg(org.id)} disabled={orgs.length === 1}>Remove org</button> : null}
-              </div>
-            ))}
+              {reviewOrgs.map((org, index) => (
+                <div key={org.id} className="irp-org-entry">
+                  <label>
+                    {assessmentScope === "self" ? "Organization name" : `Organization or health center ${index + 1}`}
+                    <input className="input" value={org.name} onChange={(event) => updateOrg(org.id, { name: event.target.value })} placeholder={assessmentScope === "self" ? "Your organization name" : "Organization or health center name"} />
+                  </label>
+                  <label>
+                    Policy files
+                    <input className="input" type="file" multiple accept=".pdf,application/pdf,.txt,.md,.csv,.json,.html,.xml" onChange={(event) => readFiles(org.id, event.target.files)} />
+                  </label>
+                  {org.status ? <p className="muted irp-file-status">{org.status}</p> : null}
+                  <p className="muted irp-file-help">
+                    {(org.documents.length ? org.documents.reduce((sum, document) => sum + document.text.length, 0) : org.text.length).toLocaleString()} of {characterLimitPerOrg.toLocaleString()} characters. Oversized submissions are blocked before checkout and are never truncated.
+                  </p>
+                  <p className="muted irp-file-help">Searchable PDFs are converted to flat text in memory. Scanned PDFs require OCR.</p>
+                  {org.documents.length ? <div className="irp-file-list">{org.documents.map((document) => <span className="badge" key={`${org.id}-${document.name}`}>{document.name}</span>)}</div> : null}
+                  <label>
+                    Or paste policy text
+                    <textarea className="textarea" value={org.text} onChange={(event) => updateOrg(org.id, { text: event.target.value, documents: [] })} placeholder="Paste extracted policy text for this organization." />
+                  </label>
+                  {assessmentScope === "network" ? <button className="btn ghost" type="button" onClick={() => removeOrg(org.id)} disabled={orgs.length === 1}>Remove organization</button> : null}
+                </div>
+              ))}
             </div>
-          </section>
-
-          {!demo ? (
             <label className="irp-attestation">
-              <input
-                type="checkbox"
-                checked={phiAttested}
-                onChange={(event) => {
-                  setPhiAttested(event.target.checked);
-                  clearQuote();
-                }}
-                style={{ marginTop: 3 }}
-              />
-              <span>
-                <b>Uploader data review</b>
-                <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 4 }}>
-                  I confirm that I reviewed these files and removed protected health information (PHI). Silhouette does not inspect, classify, or certify uploads for PHI. This attestation will appear in the assessment report.
-                </span>
-              </span>
+              <input type="checkbox" checked={phiAttested} onChange={(event) => { setPhiAttested(event.target.checked); clearQuote(); }} />
+              <span><b>Uploader data review</b><span className="muted">I confirm that I reviewed these files and removed protected health information (PHI). This attestation appears in the assessment report.</span></span>
             </label>
-          ) : null}
-
-          {!demo ? <label className="irp-attestation">
-            <input
-              type="checkbox"
-              checked={emailReport}
-              onChange={(event) => {
-                setEmailReport(event.target.checked);
-                clearQuote();
-              }}
-            />
-            <span>
-              <b>Email completed reports to {userEmail || "my signed-in email"}</b>
-              <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 4 }}>
-                The email contains generated report files and secure account links. Uploaded policy source files are never attached or stored.
-              </span>
-            </span>
-          </label> : null}
-
-          <div className="irp-run-stage">
-          <div>
-            <div className="mono">4. Run and report</div>
-            <p className="muted">{acceptedQuote ? "Confirm the organization count and payment details below. The confirmed run is locked to this policy set." : "Prepare the run to confirm the organization count, invoice line items, and required payment before analysis starts."}</p>
-          </div>
-          <div className="irp-run-actions">
-          {!acceptedQuote ? <button className="btn" onClick={run} disabled={operationActive || quoting || !phiAttested}>{quoting ? "Preparing confirmation..." : "Review and confirm"}</button> : null}
-          </div>
-          </div>
-          {acceptedQuote ? <section className="card subcard" style={{ padding: 18 }}>
-            <div className="mono">Run confirmation</div>
-            <h3 style={{ marginBottom: 6 }}>{acceptedQuote.orgCount} organization{acceptedQuote.orgCount === 1 ? "" : "s"} will be assessed</h3>
-            {acceptedQuote.assessmentScope === "network" && acceptedQuote.parentOrgName ? <p className="muted" style={{ marginTop: 0 }}>Network report: <b>{acceptedQuote.parentOrgName}</b>. The parent name is not an additional billed organization.</p> : null}
-            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 10, margin: "14px 0" }}>
-              <div><div className="mono">Invoice total</div><b>${(acceptedQuote.customerAmountCents / 100).toFixed(2)}</b></div>
-              {!isAdmin ? <div><div className="mono">Existing credits</div><b>{acceptedQuote.creditsApplied || 0}</b></div> : null}
-              <div><div className="mono">{isAdmin ? "Admin run" : "Purchase required"}</div><b>{isAdmin ? "Comped" : `$${((acceptedQuote.purchaseAmountCents || 0) / 100).toFixed(2)}`}</b></div>
-              <div><div className="mono">Report delivery</div><b>{acceptedQuote.reportRecipient || "Browser only"}</b></div>
-            </div>
-            <p className="muted" style={{ fontSize: 13 }}>Invoice line items: {acceptedQuote.orgNames.join(", ")}</p>
-            {checkoutMessage ? <p className={checkoutState === "FAILED" ? "badge locked" : "badge warning"} role="status" aria-live="polite">{checkoutMessage}</p> : null}
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-              <button className="btn secondary" type="button" onClick={clearQuote} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>Edit assessment</button>
-              <button className="btn" type="button" onClick={run} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>
-                {operationActive ? "Assessment running" : checkoutState === "OPENING" ? "Opening checkout" : checkoutState === "WAITING" ? "Waiting for payment" : isAdmin || !(acceptedQuote.creditsToPurchase || 0) ? "Confirm and run" : `Purchase ${acceptedQuote.creditsToPurchase} org credit${acceptedQuote.creditsToPurchase === 1 ? "" : "s"} and run`}
-              </button>
-            </div>
-            {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>Checkout opens in a separate window. Keep this assessment tab open until it says the assessment was accepted. After acceptance, you may leave and the completion email will be sent when processing finishes.</p> : null}
+            <label className="irp-attestation">
+              <input type="checkbox" checked={emailReport} onChange={(event) => { setEmailReport(event.target.checked); clearQuote(); }} />
+              <span><b>Email completed reports to {userEmail || "my signed-in email"}</b><span className="muted">The email contains generated report files and secure account links. Uploaded policy source files are never attached or stored.</span></span>
+            </label>
           </section> : null}
-          {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
-          <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Your purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. The uploader is responsible for reviewing and removing PHI. IRP billing is fixed at $250 per organization assessed.</p>
+
+          {wizardStep === 5 ? <section className="irp-wizard-page">
+            <div className="mono">Step 5 of 5</div>
+            <h3>Review and run the assessment</h3>
+            <p className="muted">Confirm the scope below before preparing the run. Once confirmed, the quote is locked to this organization and policy set.</p>
+            <dl className="irp-review-summary">
+              <div><dt>Assessment</dt><dd>{assessmentScope === "self" ? "My organization" : `Client or network: ${parentOrgName.trim()}`}</dd></div>
+              <div><dt>Industry</dt><dd>{selectedIndustry?.label || industry}</dd></div>
+              <div><dt>Standards</dt><dd>{selectedStandardLabels.join(", ")}</dd></div>
+              <div><dt>Organizations</dt><dd>{reviewOrgs.length}: {reviewOrgs.map((org) => org.name.trim()).join(", ")}</dd></div>
+              <div><dt>Delivery</dt><dd>{emailReport ? `Email and account access for ${userEmail || "the signed-in user"}` : "Secure account access"}</dd></div>
+            </dl>
+            {!acceptedQuote ? <div className="irp-run-stage">
+              <div><b>Ready to prepare the run</b><p className="muted">This confirms the organization count, invoice line items, and required payment before analysis starts.</p></div>
+              <button className="btn" type="button" onClick={run} disabled={operationActive || quoting}>{quoting ? "Preparing confirmation..." : "Prepare run"}</button>
+            </div> : null}
+            {acceptedQuote ? <section className="irp-confirmation">
+              <div className="mono">Run confirmation</div>
+              <h3>{acceptedQuote.orgCount} organization{acceptedQuote.orgCount === 1 ? "" : "s"} will be assessed</h3>
+              {acceptedQuote.assessmentScope === "network" && acceptedQuote.parentOrgName ? <p className="muted">Network report: <b>{acceptedQuote.parentOrgName}</b>. The parent name is not an additional billed organization.</p> : null}
+              <div className="irp-confirmation-grid">
+                <div><span className="mono">Invoice total</span><b>${(acceptedQuote.customerAmountCents / 100).toFixed(2)}</b></div>
+                {!isAdmin ? <div><span className="mono">Existing credits</span><b>{acceptedQuote.creditsApplied || 0}</b></div> : null}
+                <div><span className="mono">{isAdmin ? "Admin run" : "Purchase required"}</span><b>{isAdmin ? "Comped" : `$${((acceptedQuote.purchaseAmountCents || 0) / 100).toFixed(2)}`}</b></div>
+                <div><span className="mono">Report delivery</span><b>{acceptedQuote.reportRecipient || "Account access"}</b></div>
+              </div>
+              <p className="muted irp-invoice-lines">Invoice line items: {acceptedQuote.orgNames.join(", ")}</p>
+              {checkoutMessage ? <p className={checkoutState === "FAILED" ? "badge locked" : "badge warning"} role="status" aria-live="polite">{checkoutMessage}</p> : null}
+              <div className="irp-confirmation-actions">
+                <button className="btn secondary" type="button" onClick={() => { clearQuote(); setWizardStep(4); }} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>Edit assessment</button>
+                <button className="btn" type="button" onClick={run} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>
+                  {operationActive ? "Assessment running" : checkoutState === "OPENING" ? "Opening checkout" : checkoutState === "WAITING" ? "Waiting for payment" : isAdmin || !(acceptedQuote.creditsToPurchase || 0) ? "Confirm and run" : `Purchase ${acceptedQuote.creditsToPurchase} org credit${acceptedQuote.creditsToPurchase === 1 ? "" : "s"} and run`}
+                </button>
+              </div>
+              {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Processing continues after acceptance and completed reports are sent by email.</p> : null}
+            </section> : null}
+            {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
+            <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. IRP billing is fixed at $250 per organization assessed.</p>
+          </section> : null}
+
+          {wizardError ? <p className="irp-wizard-error" role="alert">{wizardError}</p> : null}
+          <div className="irp-wizard-actions">
+            {wizardStep > 1 ? <button className="btn secondary" type="button" onClick={backWizard} disabled={operationActive}>Back</button> : <span />}
+            {wizardStep < 5 ? <button className="btn" type="button" onClick={continueWizard}>Continue</button> : null}
+          </div>
         </div>
       </section>
       )}

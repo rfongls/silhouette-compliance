@@ -2,7 +2,6 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { IrpReportBundle } from "@/components/IrpReportBundle";
 import { Nav } from "@/components/Nav";
-import { ReportDeliveryStatus } from "@/components/ReportDeliveryStatus";
 import { StoredReportActions } from "@/components/StoredReportActions";
 import { prisma } from "@/lib/prisma";
 
@@ -23,7 +22,7 @@ export default async function IrpReportsPage({ params }: { params: { quoteId: st
   return <main><Nav/><section className="wrap">
     <div className="mono">Assessment history</div>
     <h1 style={{ fontFamily: "EB Garamond", fontSize: 44, margin: "8px 0 22px" }}>{quote.parentOrgName || assessments[0]?.orgName || "IRP"} reports</h1>
-    {quote.reportEmailStatus === "IMPORTED" ? <section className="card subcard" style={{ padding: 14, marginBottom: 18 }}><div className="mono">Report source</div><p style={{ marginBottom: 0 }}><span className="badge">Imported</span> Portable Silhouette report package</p></section> : <ReportDeliveryStatus quoteId={quote.id} initialStatus={quote.reportEmailStatus} recipient={quote.reportRecipient} error={quote.reportEmailError}/>}
+    <section className="card subcard" style={{ padding: 14, marginBottom: 18 }}><div className="mono">Account report</div><p style={{ marginBottom: 0 }}><span className="badge">Available</span> Stored securely in your report history</p></section>
     <StoredReportActions quoteId={quote.id}/>
     <IrpReportBundle assessments={assessments} networkReport={quote.networkResult} quoteId={quote.id} demo={false}/>
   </section></main>;

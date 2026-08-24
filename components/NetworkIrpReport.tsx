@@ -35,7 +35,6 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         <div className="irp-export-actions">
           <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report`} target="_blank">Export report</a>
           <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck`} target="_blank">Export deck</a>
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=json`} target="_blank">Export JSON</a>
         </div>
       </div>
     </header>

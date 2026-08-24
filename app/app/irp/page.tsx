@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export default async function IrpPage({ searchParams }: { searchParams: { demo?: string } }) {
   const demo = searchParams.demo === "1";
   if (demo) {
-    return <main><Nav publicOnly/><section className="wrap"><div className="mono">Curated demo</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1><IrpClient demo isAdmin={false} userEmail={null} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={{}}/></section></main>;
+    return <main><Nav publicOnly/><section className="wrap"><div className="mono">Curated demo</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1><IrpClient demo isAdmin={false} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={{}}/></section></main>;
   }
   const { auth } = await import("@/auth");
   const session = await auth();
@@ -21,5 +21,5 @@ export default async function IrpPage({ searchParams }: { searchParams: { demo?:
     industry,
     publishedBoards.filter((board) => board.industry === industry).map((board) => board.standardKey)
   ]));
-  return <main><Nav/><section className="wrap"><div className="mono">{isAdmin ? "Admin comped module" : "Client assessment"}</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1><IrpClient demo={false} isAdmin={isAdmin} userEmail={session?.user?.email || null} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={availableStandardsByIndustry}/></section></main>;
+  return <main><Nav/><section className="wrap"><div className="mono">{isAdmin ? "Admin comped module" : "Client assessment"}</div><h1 style={{fontFamily:"EB Garamond",fontSize:44,margin:"8px 0 22px"}}>IRP Gap Analysis</h1><IrpClient demo={false} isAdmin={isAdmin} characterLimitPerOrg={irpCharacterLimitPerOrg()} availableStandardsByIndustry={availableStandardsByIndustry}/></section></main>;
 }

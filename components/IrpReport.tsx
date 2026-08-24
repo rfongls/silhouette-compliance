@@ -76,7 +76,6 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         {!demo && assessments.length === 1 ? <div className="irp-export-actions">
           <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=report`} target="_blank">Export report</a>
           <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=deck`} target="_blank">Export deck</a>
-          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=json`} target="_blank">Export JSON</a>
         </div> : null}
       </div>
     </header>
@@ -176,7 +175,6 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         <div className="irp-export-actions">
           <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=report`} target="_blank">Report</a>
           <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=deck`} target="_blank">Deck</a>
-          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=json`} target="_blank">JSON</a>
         </div>
       </div>)}
     </section> : null}

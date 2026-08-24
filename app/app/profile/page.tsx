@@ -2,7 +2,6 @@ import { EntKind } from "@prisma/client";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { Nav } from "@/components/Nav";
-import { ReportImport } from "@/components/ReportImport";
 import { prisma } from "@/lib/prisma";
 import { getEntitlementBalance } from "@/lib/entitlements";
 
@@ -39,8 +38,6 @@ export default async function ProfilePage() {
         orgCount: true,
         reportAssessmentIds: true,
         networkGeneratedAt: true,
-        reportEmailStatus: true,
-        reportEmailSentAt: true,
         createdAt: true
       }
     }).catch(() => [])
@@ -55,7 +52,6 @@ export default async function ProfilePage() {
   return <main><Nav/><section className="wrap" style={{ maxWidth: 1180 }}>
     <div className="mono">Profile</div>
     <h1 style={{ fontFamily: "EB Garamond", fontSize: 44, margin: "8px 0 24px" }}>Usage & Billing</h1>
-    <ReportImport/>
     <div className="grid" style={{ marginBottom: 18 }}>
       <div className="card"><div className="mono">Account</div><h2>{session.user.name || session.user.email || "Signed-in user"}</h2><p className="muted" style={{ marginBottom: 0 }}>{session.user.email}</p><p className="muted" style={{ marginTop: 8 }}>Role: <b>{session.user.role}</b></p></div>
       <div className="card"><div className="mono">Credits</div><h2>Active Balances</h2><p>Assessments: <b>{assessmentCredits}</b></p><p>SRA: <b>{sraCredits}</b></p><p>Proposals: <b>{proposalCredits}</b></p></div>
@@ -63,9 +59,9 @@ export default async function ProfilePage() {
     </div>
     {reportQuotes.length ? <div className="card" style={{ marginBottom: 18 }}>
       <div className="mono">Report history</div><h2>Completed IRP reports</h2>
-      <table className="table"><thead><tr><th>Date</th><th>Assessment</th><th>Organizations</th><th>Delivery</th><th>Report</th></tr></thead><tbody>{reportQuotes.map((quote) => {
+      <table className="table"><thead><tr><th>Date</th><th>Assessment</th><th>Organizations</th><th>Status</th><th>Report</th></tr></thead><tbody>{reportQuotes.map((quote) => {
         const names = Array.isArray(quote.orgNames) ? quote.orgNames.map(String) : [];
-        return <tr key={quote.id}><td>{quote.createdAt.toLocaleDateString()}</td><td>{quote.parentOrgName || names[0] || "IRP assessment"}</td><td>{quote.orgCount}</td><td><span className={quote.reportEmailStatus === "SENT" || quote.reportEmailStatus === "IMPORTED" ? "badge" : "badge warning"}>{quote.reportEmailStatus}</span></td><td><Link className="btn secondary" href={`/app/irp/reports/${quote.id}`}>Open</Link></td></tr>;
+        return <tr key={quote.id}><td>{quote.createdAt.toLocaleDateString()}</td><td>{quote.parentOrgName || names[0] || "IRP assessment"}</td><td>{quote.orgCount}</td><td><span className="badge">Available</span></td><td><Link className="btn secondary" href={`/app/irp/reports/${quote.id}`}>Open</Link></td></tr>;
       })}</tbody></table>
     </div> : null}
     <div className="card"><h2>Usage Ledger</h2><table className="table"><thead><tr><th>Date</th><th>Kind</th><th>Status</th><th>Tracked Amount</th><th>Tokens</th><th>Reference</th></tr></thead><tbody>{ledgers.map((row) => <tr key={row.id}><td>{row.createdAt.toLocaleDateString()}</td><td>{row.kind}</td><td><span className={row.status === "succeeded" ? "badge" : "badge locked"}>{row.status}</span></td><td>{money(row.amountCents)}</td><td>{tokens(row.inputTokens, row.outputTokens)}</td><td>{row.stripeRef || row.assessmentId || "-"}</td></tr>)}{!ledgers.length ? <tr><td colSpan={6}>No usage yet.</td></tr> : null}</tbody></table></div>

@@ -32,12 +32,11 @@ export function StoredReportActions({ quoteId }: { quoteId: string }) {
     <div>
       <div className="mono">Report storage</div>
       <h2 id="stored-report-heading">Your completed report</h2>
-      <p className="muted">Stateless by design. Silhouette does not retain uploaded source files. Completed reports are stored securely for account access and can be downloaded or deleted by the user.</p>
+      <p className="muted">Silhouette does not retain uploaded source files. Completed reports are stored securely in this account and can be viewed, exported as rendered deliverables, or deleted by the user.</p>
     </div>
     <div className="stored-report-delete">
-      <a className="btn secondary" href={`/api/run-quotes/${encodeURIComponent(quoteId)}/export?format=package`} download>Export report package</a>
       {!confirming ? <button className="btn secondary" type="button" onClick={() => setConfirming(true)}>Delete report</button> : <>
-        <p>This permanently deletes this report package. Billing and usage receipts remain in your account.</p>
+        <p>This permanently deletes the completed report. Billing and usage receipts remain in your account.</p>
         <div>
           <button className="btn ghost" type="button" disabled={deleting} onClick={() => setConfirming(false)}>Cancel</button>
           <button className="btn report-delete-button" type="button" disabled={deleting} onClick={deleteReport}>{deleting ? "Deleting" : "Delete permanently"}</button>

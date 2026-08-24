@@ -14,7 +14,6 @@ import { getAIConfig } from "@/lib/settings";
 import { centsForKind } from "@/lib/stripe";
 import { isEffectiveAdmin } from "@/lib/view-role";
 import { buildNetworkReport } from "@/lib/network-report";
-import { sendIrpCompletionEmail } from "@/lib/report-email";
 
 function organizationKey(name: string) {
   return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "organization";
@@ -123,8 +122,7 @@ export async function handleIrpAssessment(req: Request) {
   if (!pending.length) {
     const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, cached) : null;
     await prisma.runQuote.update({ where: { id: quote.id }, data: { status: "CONSUMED", reportAssessmentIds: cached.map((row) => row.assessmentId), networkResult: networkReport || undefined, networkGeneratedAt: networkReport ? new Date() : undefined } });
-    const reportEmail = await sendIrpCompletionEmail(quote.id);
-    return NextResponse.json({ assessments: cached, networkReport, reportEmail, quoteId: quote.id, assessmentId: cached[0]?.assessmentId, result: cached[0]?.result, reused: true });
+    return NextResponse.json({ assessments: cached, networkReport, quoteId: quote.id, assessmentId: cached[0]?.assessmentId, result: cached[0]?.result, reused: true });
   }
 
   const aiConfig = await getAIConfig();
@@ -277,6 +275,5 @@ export async function handleIrpAssessment(req: Request) {
       networkGeneratedAt: networkReport ? new Date() : undefined
     }
   });
-  const reportEmail = await sendIrpCompletionEmail(quote.id);
-  return NextResponse.json({ assessments: delivered, networkReport, reportEmail, quoteId: quote.id, failed, assessmentId: delivered[0].assessmentId, result: delivered[0].result });
+  return NextResponse.json({ assessments: delivered, networkReport, quoteId: quote.id, failed, assessmentId: delivered[0].assessmentId, result: delivered[0].result });
 }

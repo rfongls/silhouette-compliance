@@ -39,14 +39,6 @@
 .report-delete-button{border-color:var(--bad);background:rgba(251,113,133,.12);color:var(--bad)}
 .report-delete-error{color:var(--bad)!important}
 @media(max-width:760px){.stored-report-actions{flex-direction:column}.stored-report-delete{width:100%;flex-basis:auto;text-align:left}.stored-report-delete>div{justify-content:flex-start}}
-.report-import-card{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:18px}
-.report-import-card>div:first-child{max-width:760px}
-.report-import-card h2{margin-top:5px}
-.report-import-card p{margin-bottom:0}
-.report-import-action{flex:0 0 260px;text-align:right}
-.report-import-action .btn{width:100%}
-.report-import-action p{font-size:12px;margin-top:10px}
-@media(max-width:760px){.report-import-card{align-items:flex-start;flex-direction:column}.report-import-action{width:100%;flex-basis:auto;text-align:left}}
 .form label{display:grid;gap:6px}
 
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

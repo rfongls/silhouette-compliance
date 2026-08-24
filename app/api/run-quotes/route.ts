@@ -98,14 +98,14 @@ export async function POST(req: Request) {
       withinGuard: estimate.withinGuard,
       status: funding.creditsToPurchase === 0 ? "PAID" : "QUOTED",
       acceptedAt: funding.creditsToPurchase === 0 ? new Date() : undefined,
-      reportRecipient: body.emailReport === false ? null : guard.session.user.email || null,
-      reportEmailStatus: body.emailReport === false ? "DISABLED" : "PENDING",
+      reportRecipient: null,
+      reportEmailStatus: "DISABLED",
       expiresAt: quoteExpiresAt()
     }
   });
 
   const quoteResponse = isAdmin
-    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, ...funding, status: quote.status, reportRecipient: quote.reportRecipient, expiresAt: quote.expiresAt }
+    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, ...funding, status: quote.status, expiresAt: quote.expiresAt }
     : {
         id: quote.id,
         orgNames: estimate.orgNames,
@@ -118,7 +118,6 @@ export async function POST(req: Request) {
         customerAmountCents: estimate.customerAmountCents,
         purchaseAmountCents: funding.creditsToPurchase * centsForKind(EntKind.ASSESSMENT_CREDIT),
         status: quote.status,
-        reportRecipient: quote.reportRecipient,
         withinGuard: estimate.withinGuard,
         warning: estimate.withinGuard ? undefined : "This submission exceeds the current processing limits. Reduce the upload size or split the run.",
         expiresAt: quote.expiresAt
@@ -141,10 +140,6 @@ export async function GET(req: Request) {
       creditsApplied: true,
       creditsToPurchase: true,
       customerAmountCents: true,
-      reportRecipient: true,
-      reportEmailStatus: true,
-      reportEmailSentAt: true,
-      reportEmailError: true,
       expiresAt: true
     }
   });

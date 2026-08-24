@@ -97,7 +97,7 @@ function availableDefaults(industry: string, available: Record<string, string[]>
   return defaults.length ? defaults : deployed.slice(0, 1);
 }
 
-export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; userEmail: string | null; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
+export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
   const [wizardStep, setWizardStep] = useState<IrpWizardStep>(1);
   const [furthestWizardStep, setFurthestWizardStep] = useState<IrpWizardStep>(1);
   const [wizardError, setWizardError] = useState("");
@@ -110,7 +110,6 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
     documents: [{ name: DEMO_POLICY_NAME, text: DEMO_POLICY_TEXT }]
   }] : [newOrg("")]);
   const [quoting, setQuoting] = useState(false);
-  const [emailReport, setEmailReport] = useState(true);
   const [checkoutState, setCheckoutState] = useState<"IDLE" | "OPENING" | "WAITING" | "PAID" | "FAILED">("IDLE");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const assessmentStarting = useRef(false);
@@ -376,7 +375,7 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
       const res = await fetch("/api/run-quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested, emailReport })
+        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -713,10 +712,6 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
               <input type="checkbox" checked={phiAttested} onChange={(event) => { setPhiAttested(event.target.checked); clearQuote(); }} />
               <span><b>Uploader data review</b><span className="muted">I confirm that I reviewed these files and removed protected health information (PHI). This attestation appears in the assessment report.</span></span>
             </label>
-            <label className="irp-attestation">
-              <input type="checkbox" checked={emailReport} onChange={(event) => { setEmailReport(event.target.checked); clearQuote(); }} />
-              <span><b>Email completed reports to {userEmail || "my signed-in email"}</b><span className="muted">The email contains generated report files and secure account links. Uploaded policy source files are never attached or stored.</span></span>
-            </label>
           </section> : null}
 
           {wizardStep === 5 ? <section className="irp-wizard-page">
@@ -728,7 +723,7 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
               <div><dt>Industry</dt><dd>{selectedIndustry?.label || industry}</dd></div>
               <div><dt>Standards</dt><dd>{selectedStandardLabels.join(", ")}</dd></div>
               <div><dt>Organizations</dt><dd>{reviewOrgs.length}: {reviewOrgs.map((org) => org.name.trim()).join(", ")}</dd></div>
-              <div><dt>Delivery</dt><dd>{emailReport ? `Email and account access for ${userEmail || "the signed-in user"}` : "Secure account access"}</dd></div>
+              <div><dt>Report access</dt><dd>Secure account history</dd></div>
             </dl>
             {!acceptedQuote ? <div className="irp-run-stage">
               <div><b>Ready to prepare the run</b><p className="muted">This confirms the organization count, invoice line items, and required payment before analysis starts.</p></div>
@@ -742,7 +737,7 @@ export function IrpClient({ demo, isAdmin, userEmail, characterLimitPerOrg, avai
                 <div><span className="mono">Invoice total</span><b>${(acceptedQuote.customerAmountCents / 100).toFixed(2)}</b></div>
                 {!isAdmin ? <div><span className="mono">Existing credits</span><b>{acceptedQuote.creditsApplied || 0}</b></div> : null}
                 <div><span className="mono">{isAdmin ? "Admin run" : "Purchase required"}</span><b>{isAdmin ? "Comped" : `$${((acceptedQuote.purchaseAmountCents || 0) / 100).toFixed(2)}`}</b></div>
-                <div><span className="mono">Report delivery</span><b>{acceptedQuote.reportRecipient || "Account access"}</b></div>
+                <div><span className="mono">Report access</span><b>Saved to this account</b></div>
               </div>
               <p className="muted irp-invoice-lines">Invoice line items: {acceptedQuote.orgNames.join(", ")}</p>
               {checkoutMessage ? <p className={checkoutState === "FAILED" ? "badge locked" : "badge warning"} role="status" aria-live="polite">{checkoutMessage}</p> : null}

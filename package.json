@@ -14,7 +14,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "admin:set-role": "node scripts/set-user-role.mjs",
     "acceptance": "node scripts/acceptance-checks.mjs",
-    "test:irp": "tsx --test tests/irp-integrity.test.ts tests/control-extraction.test.ts tests/ai-provider-validation.test.ts tests/policy-documents.test.ts tests/network-report.test.ts tests/stored-reports.test.ts tests/report-import.test.ts"
+    "test:irp": "tsx --test tests/irp-integrity.test.ts tests/control-extraction.test.ts tests/ai-provider-validation.test.ts tests/policy-documents.test.ts tests/network-report.test.ts tests/stored-reports.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",

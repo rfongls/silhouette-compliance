@@ -35,6 +35,7 @@ export function StoredReportActions({ quoteId }: { quoteId: string }) {
       <p className="muted">Stateless by design. Silhouette does not retain uploaded source files. Completed reports are stored securely for account access and can be downloaded or deleted by the user.</p>
     </div>
     <div className="stored-report-delete">
+      <a className="btn secondary" href={`/api/run-quotes/${encodeURIComponent(quoteId)}/export?format=package`} download>Export report package</a>
       {!confirming ? <button className="btn secondary" type="button" onClick={() => setConfirming(true)}>Delete report</button> : <>
         <p>This permanently deletes this report package. Billing and usage receipts remain in your account.</p>
         <div>

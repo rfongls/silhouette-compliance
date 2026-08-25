@@ -436,6 +436,17 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         alert(message);
         return;
       }
+      if (data.processing) {
+        const rows = Array.isArray(data.assessments) ? data.assessments as AssessmentProgress[] : [];
+        setOperation((current) => current ? {
+          ...current,
+          state: "RUNNING",
+          quoteId: data.quoteId || runQuote.id,
+          message: "This assessment is already processing. Reconnected to its persisted progress.",
+          rows
+        } : current);
+        return;
+      }
       setResult(data.result);
       setAssessmentId(data.assessmentId || null);
       setAssessments(Array.isArray(data.assessments) ? data.assessments : data.assessmentId ? [{ assessmentId: data.assessmentId, orgName: data.result?.organization_name || validOrgs[0]?.name || "Organization", result: data.result }] : []);

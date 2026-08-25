@@ -20,12 +20,87 @@ function organizationKey(name: string) {
   return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "organization";
 }
 
+class QuoteAlreadyClaimedError extends Error {}
+
 function dataHandlingAttestation() {
   return {
     status: "UPLOADER_ATTESTED_NO_KNOWN_PHI",
     message: "The uploader attested that they reviewed the submitted files and removed PHI. Silhouette did not inspect, classify, or certify the uploads for PHI.",
     affects_score: false
   };
+}
+
+async function consumedQuoteResponse(quote: any, accountId: string) {
+  if (quote.reportDeletedAt) {
+    return NextResponse.json({ error: "This report package was deleted. Prepare a new assessment to run it again." }, { status: 410 });
+  }
+
+  const reportAssessmentIds: string[] = Array.isArray(quote.reportAssessmentIds)
+    ? quote.reportAssessmentIds.map((value: unknown) => String(value)).filter(Boolean)
+    : [];
+  if (reportAssessmentIds.length) {
+    const stored = await prisma.assessment.findMany({
+      where: {
+        id: { in: reportAssessmentIds },
+        accountId,
+        status: "DELIVERED"
+      },
+      select: { id: true, orgName: true, result: true }
+    });
+    const byId = new Map(stored.map((assessment) => [assessment.id, assessment]));
+    const assessments = reportAssessmentIds
+      .map((id) => byId.get(id))
+      .filter((assessment): assessment is NonNullable<typeof assessment> => Boolean(assessment?.result))
+      .map((assessment) => ({
+        assessmentId: assessment.id,
+        orgName: assessment.orgName || "Organization",
+        result: assessment.result,
+        reused: true
+      }));
+    if (assessments.length) {
+      return NextResponse.json({
+        assessments,
+        networkReport: quote.networkResult || null,
+        quoteId: quote.id,
+        assessmentId: assessments[0].assessmentId,
+        result: assessments[0].result,
+        reused: true
+      });
+    }
+  }
+
+  const linked = await prisma.assessment.findMany({
+    where: {
+      accountId,
+      ledger: { is: { quoteId: quote.id } }
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      orgName: true,
+      status: true,
+      progressStage: true,
+      progressMessage: true,
+      progressCurrent: true,
+      progressTotal: true,
+      progressUpdatedAt: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
+  if (linked.some((assessment) => assessment.status === "RUNNING" || assessment.status === "PENDING")) {
+    return NextResponse.json({
+      processing: true,
+      quoteId: quote.id,
+      assessments: linked.map((assessment) => ({ ...assessment, quoteId: quote.id }))
+    }, { status: 202 });
+  }
+
+  return NextResponse.json({
+    error: linked.length
+      ? "The previous assessment attempt did not complete. Prepare a new run to continue."
+      : "This run authorization was already used. Open report history or prepare a new run."
+  }, { status: 409 });
 }
 
 export async function handleIrpAssessment(req: Request) {
@@ -75,12 +150,15 @@ export async function handleIrpAssessment(req: Request) {
     where: {
       id: quoteId,
       accountId,
-      module: "irp",
-      status: { in: isAdmin ? ["QUOTED", "CHECKOUT_STARTED", "PAID"] : ["PAID"] },
-      expiresAt: { gt: new Date() }
+      module: "irp"
     }
   }) : null;
   if (!quote) return NextResponse.json({ error: "A current run authorization is required before assessment." }, { status: 428 });
+  if (quote.status === "CONSUMED") return consumedQuoteResponse(quote, accountId);
+  const allowedStatuses = isAdmin ? ["QUOTED", "CHECKOUT_STARTED", "PAID"] : ["PAID"];
+  if (!allowedStatuses.includes(quote.status) || quote.expiresAt <= new Date()) {
+    return NextResponse.json({ error: "A current run authorization is required before assessment." }, { status: 428 });
+  }
   if (!quote.withinGuard) return NextResponse.json({ error: "Quote exceeds the configured processing guard." }, { status: 413 });
   if (!quote.preflightAt || !quote.preflight) {
     return NextResponse.json({ error: "This run authorization predates the required provider preflight. Prepare the run again before assessment." }, { status: 428 });
@@ -125,7 +203,15 @@ export async function handleIrpAssessment(req: Request) {
 
   if (!pending.length) {
     const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, cached) : null;
-    await prisma.runQuote.update({ where: { id: quote.id }, data: { status: "CONSUMED", reportAssessmentIds: cached.map((row) => row.assessmentId), networkResult: networkReport || undefined, networkGeneratedAt: networkReport ? new Date() : undefined } });
+    const claimed = await prisma.runQuote.updateMany({
+      where: { id: quote.id, accountId, module: "irp", status: quote.status },
+      data: { status: "CONSUMED", reportAssessmentIds: cached.map((row) => row.assessmentId), networkResult: networkReport || undefined, networkGeneratedAt: networkReport ? new Date() : undefined }
+    });
+    if (claimed.count !== 1) {
+      const current = await prisma.runQuote.findFirst({ where: { id: quote.id, accountId, module: "irp" } });
+      if (current?.status === "CONSUMED") return consumedQuoteResponse(current, accountId);
+      return NextResponse.json({ error: "This run authorization changed while the assessment was starting. Prepare the run again." }, { status: 409 });
+    }
     return NextResponse.json({ assessments: cached, networkReport, quoteId: quote.id, assessmentId: cached[0]?.assessmentId, result: cached[0]?.result, reused: true });
   }
 
@@ -133,8 +219,12 @@ export async function handleIrpAssessment(req: Request) {
   let created;
   try {
     created = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.runQuote.updateMany({
+        where: { id: quote.id, accountId, module: "irp", status: quote.status },
+        data: { status: "CONSUMED" }
+      });
+      if (claimed.count !== 1) throw new QuoteAlreadyClaimedError();
       if (!isAdmin) await consumeEntitlementTx(tx, accountId, EntKind.ASSESSMENT_CREDIT, pending.length);
-      await tx.runQuote.update({ where: { id: quote.id }, data: { status: "CONSUMED" } });
       return Promise.all(pending.map(async (item) => {
         const ledger = await tx.usageLedger.create({
           data: {
@@ -177,6 +267,11 @@ export async function handleIrpAssessment(req: Request) {
       }));
     });
   } catch (error) {
+    if (error instanceof QuoteAlreadyClaimedError) {
+      const current = await prisma.runQuote.findFirst({ where: { id: quote.id, accountId, module: "irp" } });
+      if (current?.status === "CONSUMED") return consumedQuoteResponse(current, accountId);
+      return NextResponse.json({ error: "This run authorization changed while the assessment was starting. Prepare the run again." }, { status: 409 });
+    }
     if (error instanceof PaymentRequiredError) return NextResponse.json({ error: "Confirmed assessment credit required." }, { status: 402 });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not start assessment." }, { status: 500 });
   }

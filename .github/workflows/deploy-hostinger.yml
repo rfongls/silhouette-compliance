@@ -76,6 +76,9 @@ jobs:
             uploads/silhouette-proposal-template.html \
             .next
           tar -tzf "$ARCHIVE_NAME" | grep -Fx 'package-lock.deploy.json'
+          tar -tzf "$ARCHIVE_NAME" | grep -Fx 'prisma/schema.prisma'
+          tar -tzf "$ARCHIVE_NAME" | grep -Fx '.next/BUILD_ID'
+          tar -tzf "$ARCHIVE_NAME" | grep -Fx 'app/api/irp/analyze/route.ts'
           rm -f package-lock.deploy.json
 
       - name: Configure SSH
@@ -151,9 +154,21 @@ jobs:
                */domains/complianceapp.silhouettellc.com/public_html) ;;
                *) echo \"Refusing to deploy into unexpected path: \$PWD\" >&2; exit 1 ;;
              esac
+             STAGING_DIR='.deploy-staging'
+             rm -rf \"\$STAGING_DIR\"
+             mkdir -p \"\$STAGING_DIR\"
+             tar -xzf '$ARCHIVE_NAME' -C \"\$STAGING_DIR\"
+             test -s \"\$STAGING_DIR/package.json\"
+             test -s \"\$STAGING_DIR/package-lock.deploy.json\"
+             test -s \"\$STAGING_DIR/prisma/schema.prisma\"
+             test -s \"\$STAGING_DIR/.next/BUILD_ID\"
+             echo 'Validated staged deployment artifact.'
              rm -rf .next app components lib prisma scripts
-             tar -xzf '$ARCHIVE_NAME'
+             cp -a \"\$STAGING_DIR/.\" .
+             rm -rf \"\$STAGING_DIR\"
              rm -f '$ARCHIVE_NAME'
+             test -s prisma/schema.prisma
+             test -s .next/BUILD_ID
              test -s package-lock.deploy.json
              install -m 644 package-lock.deploy.json package-lock.json
              rm -f package-lock.deploy.json

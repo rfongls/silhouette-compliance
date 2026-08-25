@@ -97,6 +97,49 @@ function availableDefaults(industry: string, available: Record<string, string[]>
   return defaults.length ? defaults : deployed.slice(0, 1);
 }
 
+function AssessmentStatusPanel({ operation, progress, elapsedSeconds }: { operation: AssessmentOperation; progress: number; elapsedSeconds: number }) {
+  const label = operation.state === "SUBMITTING" ? "Starting"
+    : operation.state === "RUNNING" ? "Running"
+      : operation.state === "COMPLETED" ? "Completed"
+        : "Failed";
+  const active = operation.state === "SUBMITTING" || operation.state === "RUNNING";
+  return (
+    <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "16px 0 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div>
+          <div className="mono">Live job status</div>
+          <b>{operation.state === "COMPLETED" ? "Report ready" : operation.state === "FAILED" ? "Assessment stopped" : "Assessment processing"}</b>
+        </div>
+        <span className={operation.state === "FAILED" ? "badge locked" : active ? "badge warning" : "badge"}>{label}</span>
+      </div>
+      <p className="muted" style={{ margin: "10px 0 8px" }}>{operation.message}</p>
+      <div style={{ height: 8, background: "var(--surface-nested)", borderRadius: 4, overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ height: "100%", width: `${progress}%`, background: "var(--accent)", transition: "width 220ms ease" }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: operation.rows.length ? 12 : 0 }}>
+        <span className="muted" style={{ fontSize: 13 }}>{progress}% complete</span>
+        <span className="muted" style={{ fontSize: 13 }}>Elapsed {formatElapsed(elapsedSeconds)}</span>
+      </div>
+      {operation.rows.length ? (
+        <table className="table">
+          <thead><tr><th>Organization</th><th>Stage</th><th>Progress</th></tr></thead>
+          <tbody>{operation.rows.map((row) => (
+            <tr key={row.id}>
+              <td>{row.orgName || "Organization"}</td>
+              <td><span className={row.status === "FAILED" || row.status === "REFUNDED" ? "badge locked" : row.status === "RUNNING" ? "badge warning" : "badge"}>{row.progressStage || row.status}</span></td>
+              <td>
+                {row.progressMessage || "Waiting for the next status update."}
+                {row.progressTotal ? <><br/><span className="muted">{Math.min(row.progressCurrent, row.progressTotal)} of {row.progressTotal} analysis passes complete</span></> : null}
+              </td>
+            </tr>
+          ))}</tbody>
+        </table>
+      ) : null}
+      {active ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>This status is stored server-side and reconnects after a page refresh. Progress updates after each completed model pass.</p> : null}
+    </div>
+  );
+}
+
 export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStandardsByIndustry }: { demo: boolean; isAdmin: boolean; characterLimitPerOrg: number; availableStandardsByIndustry: Record<string, string[]> }) {
   const [wizardStep, setWizardStep] = useState<IrpWizardStep>(1);
   const [furthestWizardStep, setFurthestWizardStep] = useState<IrpWizardStep>(1);
@@ -550,10 +593,6 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   }
 
   const operationProgress = operation ? progressPercent(operation.rows, operation.state) : 0;
-  const operationLabel = operation?.state === "SUBMITTING" ? "Starting"
-    : operation?.state === "RUNNING" ? "Running"
-      : operation?.state === "COMPLETED" ? "Completed"
-        : "Failed";
   const reviewOrgs = assessmentScope === "self" ? orgs.slice(0, 1) : orgs;
   const selectedIndustry = INDUSTRY_CHOICES.find((choice) => choice.value === industry);
   const selectedStandardLabels = standardOptions
@@ -746,7 +785,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               <div><dt>Organizations</dt><dd>{reviewOrgs.length}: {reviewOrgs.map((org) => org.name.trim()).join(", ")}</dd></div>
               <div><dt>Report access</dt><dd>Secure account history</dd></div>
             </dl>
-            {!acceptedQuote ? <div className="irp-run-stage">
+            {!acceptedQuote && !operation ? <div className="irp-run-stage">
               <div><b>Ready to prepare the run</b><p className="muted">This confirms the organization count, invoice line items, and required payment before analysis starts.</p></div>
               <button className="btn" type="button" onClick={run} disabled={operationActive || quoting}>{quoting ? "Preparing confirmation..." : "Prepare run"}</button>
             </div> : null}
@@ -779,6 +818,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               </div>
               {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Completed reports are saved to secure account history.</p> : null}
             </section> : null}
+            {operation && !result ? <AssessmentStatusPanel operation={operation} progress={operationProgress} elapsedSeconds={elapsedSeconds} /> : null}
             {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
             <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. IRP billing is fixed at $250 per organization assessed.</p>
           </section> : null}
@@ -791,44 +831,9 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         </div>
       </section>
       )}
-      {operation || result ? <section ref={resultSectionRef} className="card irp-result-card">
+      {result ? <section ref={resultSectionRef} className="card irp-result-card">
         <div className="mono">Assessment result</div>
-        {operation && !result ? (
-          <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "12px 0 18px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <div>
-                <div className="mono">Assessment status</div>
-                <b>{operation.state === "COMPLETED" ? "Report ready" : operation.state === "FAILED" ? "Assessment stopped" : "Assessment processing"}</b>
-              </div>
-              <span className={operation.state === "FAILED" ? "badge locked" : operation.state === "RUNNING" || operation.state === "SUBMITTING" ? "badge warning" : "badge"}>{operationLabel}</span>
-            </div>
-            <p className="muted" style={{ margin: "10px 0 8px" }}>{operation.message}</p>
-            <div style={{ height: 8, background: "var(--surface-nested)", borderRadius: 4, overflow: "hidden", marginBottom: 8 }}>
-              <div style={{ height: "100%", width: `${operationProgress}%`, background: "var(--accent)", transition: "width 220ms ease" }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: operation.rows.length ? 12 : 0 }}>
-              <span className="muted" style={{ fontSize: 13 }}>{operationProgress}% complete</span>
-              <span className="muted" style={{ fontSize: 13 }}>Elapsed {formatElapsed(elapsedSeconds)}</span>
-            </div>
-            {operation.rows.length ? (
-              <table className="table">
-                <thead><tr><th>Organization</th><th>Stage</th><th>Progress</th></tr></thead>
-                <tbody>{operation.rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.orgName || "Organization"}</td>
-                    <td><span className={row.status === "FAILED" || row.status === "REFUNDED" ? "badge locked" : row.status === "RUNNING" ? "badge warning" : "badge"}>{row.progressStage || row.status}</span></td>
-                    <td>
-                      {row.progressMessage || "Waiting for the next status update."}
-                      {row.progressTotal ? <><br/><span className="muted">{Math.min(row.progressCurrent, row.progressTotal)} of {row.progressTotal} analysis passes complete</span></> : null}
-                    </td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            ) : null}
-            {operationActive ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>Keep this tab open while policy text remains in request memory. Progress updates after each completed model pass.</p> : null}
-          </div>
-        ) : null}
-        {result ? <IrpReportBundle assessments={assessments} networkReport={networkReport} quoteId={reportQuoteId} demo={demo} /> : null}
+        <IrpReportBundle assessments={assessments} networkReport={networkReport} quoteId={reportQuoteId} demo={demo} />
       </section> : null}
     </div>
   );

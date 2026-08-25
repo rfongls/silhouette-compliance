@@ -113,6 +113,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const [checkoutState, setCheckoutState] = useState<"IDLE" | "OPENING" | "WAITING" | "PAID" | "FAILED">("IDLE");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const assessmentStarting = useRef(false);
+  const resultSectionRef = useRef<HTMLElement | null>(null);
   const [phiAttested, setPhiAttested] = useState(demo);
   const [acceptedQuote, setAcceptedQuote] = useState<RunQuote | null>(demo ? {
     id: "demo",
@@ -143,6 +144,15 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const standardOptions = (INDUSTRY_STANDARDS[industry]?.standards || []).filter((standard) => !deployedStandards || deployedStandards.has(standard.key));
   const allStandardsSelected = standardOptions.length > 0 && standardOptions.every((standard) => standards.includes(standard.key));
   const operationActive = operation?.state === "SUBMITTING" || operation?.state === "RUNNING";
+  const acceptedQuoteReportReady = Boolean(result && acceptedQuote && reportQuoteId === acceptedQuote.id);
+
+  useEffect(() => {
+    if (!result) return;
+    const frame = window.requestAnimationFrame(() => {
+      resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [result]);
 
   useEffect(() => {
     if (!operationActive || !operation) return;
@@ -758,8 +768,13 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               {checkoutMessage ? <p className={checkoutState === "FAILED" ? "badge locked" : "badge warning"} role="status" aria-live="polite">{checkoutMessage}</p> : null}
               <div className="irp-confirmation-actions">
                 <button className="btn secondary" type="button" onClick={() => { clearQuote(); setWizardStep(4); }} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>Edit assessment</button>
-                <button className="btn" type="button" onClick={run} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>
-                  {operationActive ? "Assessment running" : checkoutState === "OPENING" ? "Opening checkout" : checkoutState === "WAITING" ? "Waiting for payment" : isAdmin || !(acceptedQuote.creditsToPurchase || 0) ? "Confirm and run" : `Purchase ${acceptedQuote.creditsToPurchase} org credit${acceptedQuote.creditsToPurchase === 1 ? "" : "s"} and run`}
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => acceptedQuoteReportReady ? resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) : void run()}
+                  disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}
+                >
+                  {operationActive ? "Assessment running" : checkoutState === "OPENING" ? "Opening checkout" : checkoutState === "WAITING" ? "Waiting for payment" : acceptedQuoteReportReady ? "View completed report" : isAdmin || !(acceptedQuote.creditsToPurchase || 0) ? "Confirm and run" : `Purchase ${acceptedQuote.creditsToPurchase} org credit${acceptedQuote.creditsToPurchase === 1 ? "" : "s"} and run`}
                 </button>
               </div>
               {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Completed reports are saved to secure account history.</p> : null}
@@ -776,7 +791,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         </div>
       </section>
       )}
-      {operation || result ? <section className="card irp-result-card">
+      {operation || result ? <section ref={resultSectionRef} className="card irp-result-card">
         <div className="mono">Assessment result</div>
         {operation && !result ? (
           <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "12px 0 18px" }}>

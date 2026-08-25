@@ -12,10 +12,11 @@ import {
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest } from "../lib/document-integrity";
 import { normalizeResult } from "../lib/analysis/engine";
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
-import { INDUSTRY_STANDARDS, normalizeStandards, standardsForIndustry } from "../lib/analysis/standards";
+import { INDUSTRY_STANDARDS, normalizeStandards, standardLabel, standardsForIndustry } from "../lib/analysis/standards";
 import { demoAssessment } from "../lib/analysis/engine";
 import { DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT } from "../lib/analysis/irp-demo";
 import { quoteFunding } from "../lib/run-quotes";
+import { buildGapDeck, buildGapReport, buildNetworkGapReport } from "../lib/exports/gap";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
   const result = demoAssessment("", "health-center");
@@ -88,6 +89,49 @@ test("duplicate content and document-set digests are deterministic", () => {
   const integrity = documentSetIntegrity(documents);
   assert.equal(integrity.duplicateHashes.length, 1);
   assert.equal(quoteSourceDigest(documents), quoteSourceDigest([...documents].reverse()));
+});
+
+test("customer reports resolve stored standard keys to complete publication names", () => {
+  assert.equal(standardLabel("NIST"), "NIST SP 800-53 Rev. 5");
+  assert.equal(standardLabel("nist"), "NIST SP 800-53 Rev. 5");
+  assert.equal(standardLabel("CSF"), "NIST CSF 2.0");
+  assert.equal(standardLabel("sp80066"), "NIST SP 800-66 Rev. 2");
+});
+
+test("customer report exports distinguish each selected NIST publication", () => {
+  const scoreBreakdown = {
+    nist: { score: 81, controls_reviewed: 97, controls_met: 70, controls_partial: 15, controls_failed: 12 },
+    csf: { score: 76, controls_reviewed: 185, controls_met: 120, controls_partial: 40, controls_failed: 25 },
+    sp80066: { score: 72, controls_reviewed: 51, controls_met: 31, controls_partial: 11, controls_failed: 9 }
+  };
+  const result = {
+    organization_name: "Example Health Center",
+    compliance_score: 76,
+    overall_posture: "Partially Compliant",
+    posture_summary: "Example summary",
+    score_breakdown: scoreBreakdown,
+    findings: [{ control_id: "IR-1", standards: ["NIST", "CSF", "SP80066"], status: "Partial", risk_level: "High", finding: "Example finding" }]
+  };
+  const report = buildGapReport(result);
+  const deck = buildGapDeck(result);
+  for (const output of [report, deck]) {
+    assert.match(output, /NIST SP 800-53 Rev\. 5/);
+    assert.match(output, /NIST CSF 2\.0/);
+    assert.match(output, /NIST SP 800-66 Rev\. 2/);
+  }
+
+  const networkReport = buildNetworkGapReport({
+    network_name: "Example Network",
+    compliance_score: 76,
+    overall_posture: "Partially Compliant",
+    posture_summary: "Example network summary",
+    score_breakdown: Object.fromEntries(Object.entries(scoreBreakdown).map(([key, value]) => [key, { ...value, organizations_reviewed: 1 }])),
+    organizations: [{ organization_name: "Example Health Center", overall_posture: "Partially Compliant", compliance_score: 76, score_breakdown: scoreBreakdown }],
+    common_gaps: []
+  });
+  assert.match(networkReport, /NIST SP 800-53 Rev\. 5/);
+  assert.match(networkReport, /NIST CSF 2\.0/);
+  assert.match(networkReport, /NIST SP 800-66 Rev\. 2/);
 });
 
 test("the entered organization name is authoritative in the report", () => {

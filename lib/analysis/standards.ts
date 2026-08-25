@@ -46,8 +46,22 @@ export function normalizeStandards(industry: string, standards: unknown, useAll 
   return selected.length ? selected : defaultStandards(industry);
 }
 
+export function standardLabel(standard: string, industry?: string) {
+  const key = String(standard || "").trim();
+  const industryMatch = industry
+    ? INDUSTRY_STANDARDS[industry]?.standards.find((definition) => definition.key.toLocaleLowerCase() === key.toLocaleLowerCase())
+    : undefined;
+  if (industryMatch) return industryMatch.label;
+
+  for (const definition of Object.values(INDUSTRY_STANDARDS)) {
+    const match = definition.standards.find((candidate) => candidate.key.toLocaleLowerCase() === key.toLocaleLowerCase());
+    if (match) return match.label;
+  }
+  return key;
+}
+
 export function standardLabels(industry: string, standards: string[]) {
   const defs = INDUSTRY_STANDARDS[industry]?.standards ?? [];
-  const labels = new Map(defs.map((s) => [s.key, s.label]));
-  return standards.map((s) => labels.get(s) ?? s);
+  const labels = new Map(defs.map((s) => [s.key.toLocaleLowerCase(), s.label]));
+  return standards.map((s) => labels.get(s.toLocaleLowerCase()) ?? standardLabel(s));
 }

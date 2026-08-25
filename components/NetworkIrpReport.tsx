@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { standardLabel } from "@/lib/analysis/standards";
 
 const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
 const PRIORITY_ORDER: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
@@ -56,7 +57,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       <div className="irp-standard-scores">
         <span className="mono">Network standard averages</span>
         {Object.entries(result.score_breakdown || {}).map(([standard, breakdown]: [string, any]) => <div className="irp-standard-score" key={standard}>
-          <div><b>{standard.toLocaleUpperCase()}</b><span>{breakdown.organizations_reviewed} organizations</span></div>
+          <div><b>{standardLabel(standard)}</b><span>{breakdown.organizations_reviewed} organizations</span></div>
           <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(breakdown.score || 0)))}%` }} /></div>
           <strong>{breakdown.score}</strong>
         </div>)}
@@ -70,7 +71,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       <div className="irp-section-heading"><div><span className="mono">Organization comparison</span><h3>Independent results</h3></div></div>
       <div className="irp-findings-table-wrap">
         <table className="table irp-network-org-table">
-          <thead><tr><th>Organization</th><th>Posture</th><th>Score</th>{Object.keys(result.score_breakdown || {}).map((standard) => <th key={standard}>{standard.toLocaleUpperCase()}</th>)}</tr></thead>
+          <thead><tr><th>Organization</th><th>Posture</th><th>Score</th>{Object.keys(result.score_breakdown || {}).map((standard) => <th key={standard}>{standardLabel(standard)}</th>)}</tr></thead>
           <tbody>{organizations.map((organization: any) => <tr key={organization.assessment_id}>
             <td><b>{organization.organization_name}</b></td>
             <td><span className={`irp-posture-badge ${postureClass(Number(organization.compliance_score || 0))}`}>{organization.overall_posture}</span></td>
@@ -90,7 +91,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         <table className="table irp-network-gap-table">
           <thead><tr><th>Control</th><th>Priority</th><th>Requirement</th><th>Organizations affected</th><th>Coverage</th></tr></thead>
           <tbody>{gaps.map((gap: any) => <tr key={gap.control_id}>
-            <td><b>{gap.control_id}</b><span>{(gap.standards || []).join(", ")}</span></td>
+            <td><b>{gap.control_id}</b><span>{(gap.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
             <td><span className={`irp-priority severity-${String(gap.risk_level || "medium").toLocaleLowerCase()}`}>{gap.risk_level}</span></td>
             <td>{gap.requirement || gap.control_name}</td>
             <td>{(gap.affected_organizations || []).join(", ")}</td>

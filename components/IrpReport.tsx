@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { standardLabel } from "@/lib/analysis/standards";
 
 type AssessmentExport = {
   assessmentId: string;
@@ -102,7 +103,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       <div className="irp-standard-scores">
         <span className="mono">Selected standard scores</span>
         {Object.entries(result.score_breakdown || {}).map(([standard, breakdown]: [string, any]) => <div className="irp-standard-score" key={standard}>
-          <div><b>{standard.toLocaleUpperCase()}</b><span>{breakdown.controls_reviewed} controls</span></div>
+          <div><b>{standardLabel(standard)}</b><span>{breakdown.controls_reviewed} controls</span></div>
           <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(breakdown.score || 0)))}%` }} /></div>
           <strong>{breakdown.score}</strong>
         </div>)}
@@ -123,13 +124,13 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       <div className="irp-filter-bar" aria-label="Filter findings">
         <button type="button" className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>All <span>{findings.length}</span></button>
         {SEVERITIES.map((severity) => <button type="button" key={severity} className={filter === severity.toLocaleLowerCase() ? "active" : ""} onClick={() => setFilter(severity.toLocaleLowerCase() as FindingFilter)}>{severity} <span>{severityCounts[severity]}</span></button>)}
-        {standards.map((standard) => <button type="button" key={standard} className={filter === `standard:${standard}` ? "active" : ""} onClick={() => setFilter(`standard:${standard}` as FindingFilter)}>{standard} <span>{findings.filter((finding: any) => (finding.standards || []).includes(standard)).length}</span></button>)}
+        {standards.map((standard) => <button type="button" key={standard} className={filter === `standard:${standard}` ? "active" : ""} onClick={() => setFilter(`standard:${standard}` as FindingFilter)}>{standardLabel(standard)} <span>{findings.filter((finding: any) => (finding.standards || []).includes(standard)).length}</span></button>)}
       </div>
       <div className="irp-findings-table-wrap">
         <table className="table irp-findings-table">
           <thead><tr><th>Control</th><th>Requirement</th><th>Status</th><th>Evidence in plan</th><th aria-sort={prioritySort === "none" ? "none" : prioritySort === "high-first" ? "descending" : "ascending"}><button type="button" className="irp-sort-button" onClick={() => setPrioritySort((current) => current === "high-first" ? "low-first" : "high-first")}>Priority <span>{prioritySort === "high-first" ? "H-L" : prioritySort === "low-first" ? "L-H" : "Sort"}</span></button></th><th>Finding</th></tr></thead>
           <tbody>{visibleFindings.map((finding: any) => <tr key={`${finding.control_id}-${finding.finding}`}>
-            <td><b>{finding.control_id}</b><span>{(finding.standards || []).join(", ")}</span></td>
+            <td><b>{finding.control_id}</b><span>{(finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
             <td>{finding.requirement || finding.control_name}</td>
             <td><span className={`irp-status status-${String(finding.status).toLocaleLowerCase()}`}>{finding.status}</span></td>
             <td>{finding.evidence || "Not addressed"}</td>

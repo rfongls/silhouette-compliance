@@ -168,6 +168,15 @@ model Assessment {
   progressCurrent   Int          @default(0)
   progressTotal     Int          @default(0)
   progressUpdatedAt DateTime?
+  failureProvider   String?
+  failureModel      String?
+  failureHttpStatus Int?
+  failureCode       String?
+  failureRequestId  String?
+  failureRetriable  Boolean?
+  failureAttempts   Int          @default(0)
+  failureStage      String?
+  failedAt          DateTime?
   reviewStatus      String       @default("AI_DRAFT")
   reviewedBy        String?
   reviewedAt        DateTime?
@@ -222,6 +231,8 @@ model RunQuote {
   customerAmountCents     Int       @default(0)
   marginCents             Int       @default(0)
   withinGuard             Boolean   @default(true)
+  preflight               Json?
+  preflightAt             DateTime?
   status                  String    @default("QUOTED")
   stripeRef               String?
   acceptedAt              DateTime?

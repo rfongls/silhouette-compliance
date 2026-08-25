@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { estimateRunQuote, quoteExpiresAt, quoteFunding, type QuoteModule } from "@/lib/run-quotes";
+import { estimateRunQuote, normalizeOrgNames, quoteExpiresAt, quoteFunding, type QuoteModule } from "@/lib/run-quotes";
 import { normalizeStandards } from "@/lib/analysis/standards";
 import { IRP_CONTROL_BATCH_SIZE, scoringPassCount } from "@/lib/analysis/scoring";
 import { loadPublishedControlSet } from "@/lib/control-boards";
@@ -10,6 +10,8 @@ import { isEffectiveAdmin } from "@/lib/view-role";
 import { getEntitlementBalance } from "@/lib/entitlements";
 import { EntKind } from "@prisma/client";
 import { centsForKind } from "@/lib/stripe";
+import { irpPreflightResult, validateIrpDocuments, verifyIrpProvider, type IrpPreflightResult } from "@/lib/irp-preflight";
+import type { IntegrityDocument } from "@/lib/document-integrity";
 
 const modules = new Set(["irp", "sra", "proposal"]);
 
@@ -28,6 +30,7 @@ export async function POST(req: Request) {
   let analysisRequestCount: number | undefined;
   let quoteIndustry = "";
   let quoteStandards: string[] = [];
+  let preflight: IrpPreflightResult | undefined;
   const assessmentScope = body.assessmentScope === "network" ? "network" : "self";
   const parentOrgName = assessmentScope === "network" ? String(body.parentOrgName || "").trim() : null;
   if (module === "irp") {
@@ -39,16 +42,16 @@ export async function POST(req: Request) {
     quoteIndustry = industry;
     quoteStandards = standards;
     try {
+      const orgNames = normalizeOrgNames(body.orgNames, body.orgCount);
+      const integrityDocuments: IntegrityDocument[] = (documents || []).map((document: any) => ({
+        name: String(document?.name || "document.txt"),
+        text: String(document?.text || ""),
+        orgName: String(document?.orgName || orgNames[0] || "Organization 1").trim()
+      }));
+      const documentValidation = validateIrpDocuments(integrityDocuments, orgNames);
       const controlSet = await loadPublishedControlSet(industry, standards);
-      const orgNames = Array.isArray(body.orgNames) ? body.orgNames.map(String) : [];
-      const counts = (documents || []).reduce((result: Record<string, number>, document: any) => {
-        const orgName = String(document?.orgName || orgNames[0] || "Organization 1");
-        result[orgName] = (result[orgName] || 0) + String(document?.text || "").length;
-        return result;
-      }, {});
-      const maxCharsPerOrg = Math.max(0, ...Object.values(counts));
       analysisPasses = Math.max(1, Math.ceil(controlSet.controls.length / IRP_CONTROL_BATCH_SIZE));
-      analysisRequestCount = scoringPassCount(controlSet.controls.length, maxCharsPerOrg) * Math.max(1, Object.keys(counts).length);
+      analysisRequestCount = scoringPassCount(controlSet.controls.length, documentValidation.maxCharsPerOrg) * Math.max(1, orgNames.length);
     } catch (error) {
       return NextResponse.json({ error: (error as Error).message }, { status: 409 });
     }
@@ -63,6 +66,29 @@ export async function POST(req: Request) {
     analysisPasses,
     analysisRequestCount
   });
+  if (module === "irp" && !estimate.withinGuard) {
+    return NextResponse.json({ error: estimate.warning || "This submission exceeds the current processing limits." }, { status: 413 });
+  }
+  if (module === "irp") {
+    try {
+      const orgNames = normalizeOrgNames(body.orgNames, body.orgCount);
+      const integrityDocuments: IntegrityDocument[] = (documents || []).map((document: any) => ({
+        name: String(document?.name || "document.txt"),
+        text: String(document?.text || ""),
+        orgName: String(document?.orgName || orgNames[0] || "Organization 1").trim()
+      }));
+      const documentValidation = validateIrpDocuments(integrityDocuments, orgNames);
+      const provider = await verifyIrpProvider();
+      preflight = irpPreflightResult({
+        provider: provider.provider,
+        model: provider.model,
+        verifiedAt: provider.verifiedAt,
+        maxCharsPerOrg: documentValidation.maxCharsPerOrg
+      });
+    } catch (error) {
+      return NextResponse.json({ error: `Run preflight failed: ${(error as Error).message}` }, { status: 503 });
+    }
+  }
   const sourceDigest = module === "irp"
     ? quoteSourceDigest((documents || []).map((document: any) => ({
         name: String(document?.name || "document.txt"),
@@ -96,6 +122,8 @@ export async function POST(req: Request) {
       customerAmountCents: estimate.customerAmountCents,
       marginCents: estimate.marginCents,
       withinGuard: estimate.withinGuard,
+      preflight: preflight || undefined,
+      preflightAt: preflight ? new Date(preflight.checkedAt) : undefined,
       status: funding.creditsToPurchase === 0 ? "PAID" : "QUOTED",
       acceptedAt: funding.creditsToPurchase === 0 ? new Date() : undefined,
       reportRecipient: null,
@@ -105,7 +133,7 @@ export async function POST(req: Request) {
   });
 
   const quoteResponse = isAdmin
-    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, ...funding, status: quote.status, expiresAt: quote.expiresAt }
+    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, ...funding, preflight, status: quote.status, expiresAt: quote.expiresAt }
     : {
         id: quote.id,
         orgNames: estimate.orgNames,
@@ -120,6 +148,7 @@ export async function POST(req: Request) {
         status: quote.status,
         withinGuard: estimate.withinGuard,
         warning: estimate.withinGuard ? undefined : "This submission exceeds the current processing limits. Reduce the upload size or split the run.",
+        preflight: preflight ? { passed: preflight.passed, checkedAt: preflight.checkedAt, checks: preflight.checks } : undefined,
         expiresAt: quote.expiresAt
       };
 

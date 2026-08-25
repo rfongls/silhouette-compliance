@@ -5,10 +5,22 @@ import { getAIConfig, markAIKeyUnverified } from "@/lib/settings";
 export type ModelUsage = { inputTokens?: number; outputTokens?: number };
 type JsonCallOptions = { schemaName?: string; schema?: Record<string, unknown> };
 
-class AIProviderRequestError extends Error {
-  status: number;
+export type AIProviderFailureEvidence = {
+  provider: string;
+  model: string;
+  httpStatus: number | null;
+  code: string | null;
+  requestId: string | null;
+  retriable: boolean;
+  attempts: number;
+  stage: "provider_request" | "provider_response";
+};
 
-  constructor(label: string, status: number) {
+export class AIProviderRequestError extends Error {
+  evidence: AIProviderFailureEvidence;
+
+  constructor(label: string, evidence: AIProviderFailureEvidence) {
+    const status = evidence.httpStatus || 0;
     const message = status === 401
       ? `${label} rejected the configured API key. An administrator must replace and verify it in Analysis Settings.`
       : status === 403
@@ -18,8 +30,78 @@ class AIProviderRequestError extends Error {
           : `${label} request failed (HTTP ${status}).`;
     super(message);
     this.name = "AIProviderRequestError";
-    this.status = status;
+    this.evidence = evidence;
   }
+}
+
+export function providerFailureEvidence(error: unknown): AIProviderFailureEvidence | null {
+  return error instanceof AIProviderRequestError ? error.evidence : null;
+}
+
+function isRetriableStatus(status: number) {
+  return status === 408 || status === 409 || status === 429 || status >= 500;
+}
+
+function safeProviderError(data: any) {
+  return {
+    code: typeof data?.error?.code === "string" ? data.error.code.slice(0, 120) : null,
+    type: typeof data?.error?.type === "string" ? data.error.type.slice(0, 120) : null
+  };
+}
+
+async function providerHttpError(response: Response, label: string, provider: string, model: string) {
+  const data = await response.json().catch(() => null);
+  const detail = safeProviderError(data);
+  return new AIProviderRequestError(label, {
+    provider,
+    model,
+    httpStatus: response.status,
+    code: detail.code || detail.type,
+    requestId: response.headers.get("x-request-id") || response.headers.get("request-id"),
+    retriable: isRetriableStatus(response.status),
+    attempts: 1,
+    stage: "provider_request"
+  });
+}
+
+function invalidProviderResponse(label: string, provider: string, model: string, requestId: string | null, code: string) {
+  return new AIProviderRequestError(label, {
+    provider,
+    model,
+    httpStatus: 200,
+    code,
+    requestId,
+    retriable: true,
+    attempts: 1,
+    stage: "provider_response"
+  });
+}
+
+async function retryProviderCall<T>(call: () => Promise<T>, provider: string, model: string): Promise<T> {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await call();
+    } catch (error) {
+      const existing = providerFailureEvidence(error);
+      const inferredStatus = typeof error === "object" && error && "status" in error ? Number(error.status) || null : null;
+      const evidence: AIProviderFailureEvidence = existing
+        ? { ...existing, attempts: attempt }
+        : {
+            provider,
+            model,
+            httpStatus: inferredStatus,
+            code: typeof error === "object" && error && "name" in error ? String(error.name).slice(0, 120) : "network_error",
+            requestId: typeof error === "object" && error && "request_id" in error ? String(error.request_id).slice(0, 200) : null,
+            retriable: inferredStatus ? isRetriableStatus(inferredStatus) : true,
+            attempts: attempt,
+            stage: "provider_request"
+          };
+      if (!evidence.retriable || attempt === maxAttempts) throw new AIProviderRequestError("AI provider", evidence);
+      await new Promise((resolve) => setTimeout(resolve, 400 * (2 ** (attempt - 1))));
+    }
+  }
+  throw new Error("AI provider retry loop ended unexpectedly");
 }
 
 function extractJson(raw: string) {
@@ -41,7 +123,11 @@ async function callAnthropic(system: string, prompt: string, apiKey: string, mod
     messages: [{ role: "user", content: prompt }]
   });
   const text = msg.content.map((part) => part.type === "text" ? part.text : "").join("\n");
-  return { json: sanitizeForExport(extractJson(text)), usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } };
+  try {
+    return { json: sanitizeForExport(extractJson(text)), usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } };
+  } catch {
+    throw invalidProviderResponse("Anthropic", "anthropic", model, null, "invalid_json_response");
+  }
 }
 
 async function callOpenAICompatible(system: string, prompt: string, apiKey: string, model: string, baseUrl: string) {
@@ -61,13 +147,17 @@ async function callOpenAICompatible(system: string, prompt: string, apiKey: stri
       ]
     })
   });
-  if (!res.ok) throw new AIProviderRequestError("AI provider", res.status);
+  if (!res.ok) throw await providerHttpError(res, "AI provider", "openai-compatible", model);
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content || "";
-  return {
-    json: sanitizeForExport(extractJson(text)),
-    usage: { inputTokens: data.usage?.prompt_tokens, outputTokens: data.usage?.completion_tokens }
-  };
+  try {
+    return {
+      json: sanitizeForExport(extractJson(text)),
+      usage: { inputTokens: data.usage?.prompt_tokens, outputTokens: data.usage?.completion_tokens }
+    };
+  } catch {
+    throw invalidProviderResponse("AI provider", "openai-compatible", model, res.headers.get("x-request-id"), "invalid_json_response");
+  }
 }
 
 function responseOutputText(data: any) {
@@ -104,26 +194,31 @@ async function callOpenAIResponses(system: string, prompt: string, apiKey: strin
       } : {})
     })
   });
-  if (!res.ok) throw new AIProviderRequestError("OpenAI", res.status);
+  if (!res.ok) throw await providerHttpError(res, "OpenAI", "openai", model);
   const data = await res.json();
   const text = responseOutputText(data);
-  if (!text) throw new Error("OpenAI response did not contain output text");
-  return {
-    json: sanitizeForExport(extractJson(text)),
-    usage: { inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens }
-  };
+  const requestId = res.headers.get("x-request-id");
+  if (!text) throw invalidProviderResponse("OpenAI", "openai", model, requestId, "missing_output_text");
+  try {
+    return {
+      json: sanitizeForExport(extractJson(text)),
+      usage: { inputTokens: data.usage?.input_tokens, outputTokens: data.usage?.output_tokens }
+    };
+  } catch {
+    throw invalidProviderResponse("OpenAI", "openai", model, requestId, "invalid_json_response");
+  }
 }
 
 export async function callAIJson(system: string, prompt: string, options?: JsonCallOptions): Promise<{ json: unknown; usage: ModelUsage }> {
   const config = await getAIConfig();
   if (!config.apiKey) throw new Error(`${config.provider} API key is not configured`);
   try {
-    if (config.provider === "anthropic") return await callAnthropic(system, prompt, config.apiKey, config.model);
-    if (config.provider === "openai") return await callOpenAIResponses(system, prompt, config.apiKey, config.model, config.baseUrl, options);
-    return await callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl);
+    if (config.provider === "anthropic") return await retryProviderCall(() => callAnthropic(system, prompt, config.apiKey, config.model), config.provider, config.model);
+    if (config.provider === "openai") return await retryProviderCall(() => callOpenAIResponses(system, prompt, config.apiKey, config.model, config.baseUrl, options), config.provider, config.model);
+    return await retryProviderCall(() => callOpenAICompatible(system, prompt, config.apiKey, config.model, config.baseUrl), config.provider, config.model);
   } catch (error) {
     const status = error instanceof AIProviderRequestError
-      ? error.status
+      ? error.evidence.httpStatus || 0
       : typeof error === "object" && error && "status" in error
         ? Number(error.status)
         : 0;

@@ -14,6 +14,7 @@ import { getAIConfig } from "@/lib/settings";
 import { centsForKind } from "@/lib/stripe";
 import { isEffectiveAdmin } from "@/lib/view-role";
 import { buildNetworkReport } from "@/lib/network-report";
+import { providerFailureEvidence } from "@/lib/analysis/anthropic";
 
 function organizationKey(name: string) {
   return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "organization";
@@ -81,6 +82,9 @@ export async function handleIrpAssessment(req: Request) {
   }) : null;
   if (!quote) return NextResponse.json({ error: "A current run authorization is required before assessment." }, { status: 428 });
   if (!quote.withinGuard) return NextResponse.json({ error: "Quote exceeds the configured processing guard." }, { status: 413 });
+  if (!quote.preflightAt || !quote.preflight) {
+    return NextResponse.json({ error: "This run authorization predates the required provider preflight. Prepare the run again before assessment." }, { status: 428 });
+  }
 
   const quotedOrgNames = Array.isArray(quote.orgNames) ? quote.orgNames.map((name) => String(name || "").trim()).filter(Boolean) : [];
   const orgNamesMatch = quotedOrgNames.length === orgNames.length && quotedOrgNames.every((name, index) => name === orgNames[index]);
@@ -248,18 +252,43 @@ export async function handleIrpAssessment(req: Request) {
       delivered.push({ assessmentId: saved.id, orgName: item.orgName, result, reused: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Assessment failed";
+      const failure = providerFailureEvidence(error);
+      const failureStage = failure?.stage || "result_validation";
+      console.error("IRP assessment failure", {
+        assessmentId: item.assessment.id,
+        quoteId: quote.id,
+        accountId,
+        orgId: item.orgId,
+        provider: failure?.provider || aiConfig.provider,
+        model: failure?.model || aiConfig.model,
+        httpStatus: failure?.httpStatus || null,
+        code: failure?.code || (error instanceof Error ? error.name : "unknown_error"),
+        requestId: failure?.requestId || null,
+        retriable: failure?.retriable || false,
+        attempts: failure?.attempts || 0,
+        stage: failureStage
+      });
       await prisma.assessment.update({
         where: { id: item.assessment.id },
         data: {
           status: isAdmin ? "FAILED" : "REFUNDED",
           progressStage: isAdmin ? "FAILED" : "REFUNDED",
           progressMessage: isAdmin ? "Assessment processing failed." : "Assessment processing failed and the purchased credit was restored.",
-          progressUpdatedAt: new Date()
+          progressUpdatedAt: new Date(),
+          failureProvider: failure?.provider || aiConfig.provider,
+          failureModel: failure?.model || aiConfig.model,
+          failureHttpStatus: failure?.httpStatus || null,
+          failureCode: failure?.code || (error instanceof Error ? error.name.slice(0, 120) : "unknown_error"),
+          failureRequestId: failure?.requestId || null,
+          failureRetriable: failure?.retriable || false,
+          failureAttempts: failure?.attempts || 0,
+          failureStage,
+          failedAt: new Date()
         }
       }).catch(() => undefined);
       await prisma.usageLedger.update({ where: { id: item.ledger.id }, data: { assessmentId: item.assessment.id, status: isAdmin ? "failed" : "refunded" } }).catch(() => undefined);
       if (!isAdmin) await restoreEntitlement(accountId, EntKind.ASSESSMENT_CREDIT, 1, item.assessment.id).catch(() => undefined);
-      failed.push({ assessmentId: item.assessment.id, orgName: item.orgName, error: message });
+      failed.push({ assessmentId: item.assessment.id, orgName: item.orgName, error: isAdmin ? message : "Assessment processing failed. The purchased credit was restored." });
     }
   }
 

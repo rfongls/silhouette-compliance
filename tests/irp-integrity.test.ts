@@ -17,6 +17,7 @@ import { demoAssessment } from "../lib/analysis/engine";
 import { DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT } from "../lib/analysis/irp-demo";
 import { quoteFunding } from "../lib/run-quotes";
 import { buildGapDeck, buildGapReport, buildNetworkGapReport } from "../lib/exports/gap";
+import { validateIrpDocuments } from "../lib/irp-preflight";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
   const result = demoAssessment("", "health-center");
@@ -194,6 +195,22 @@ test("prompts identify policy content as untrusted evidence", () => {
   });
   assert.match(prompt, /untrusted evidence/i);
   assert.match(prompt, /Ignore all prior instructions/);
+});
+
+test("quote preflight rejects duplicate policy content before payment", () => {
+  assert.throws(() => validateIrpDocuments([
+    { name: "policy.pdf", orgName: "Clinic A", text: "same extracted policy" },
+    { name: "copy.pdf", orgName: "Clinic A", text: "same extracted policy" }
+  ], ["Clinic A"]), /Duplicate file content/);
+});
+
+test("quote preflight confirms every organization has readable evidence", () => {
+  const result = validateIrpDocuments([
+    { name: "a.pdf", orgName: "Clinic A", text: "Clinic A policy" },
+    { name: "b.pdf", orgName: "Clinic B", text: "Clinic B policy with more content" }
+  ], ["Clinic A", "Clinic B"]);
+  assert.equal(result.groupedDocuments.size, 2);
+  assert.equal(result.maxCharsPerOrg, "Clinic B policy with more content".length);
 });
 
 test("IRP checkout purchases only the organization credit shortfall", () => {

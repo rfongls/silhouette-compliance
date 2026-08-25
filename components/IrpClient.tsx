@@ -740,6 +740,10 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                 <div><span className="mono">Report access</span><b>Saved to this account</b></div>
               </div>
               <p className="muted irp-invoice-lines">Invoice line items: {acceptedQuote.orgNames.join(", ")}</p>
+              {acceptedQuote.preflight?.passed ? <div className="irp-preflight" role="status">
+                <div><span className="badge ready">Preflight passed</span>{isAdmin && acceptedQuote.preflight.provider && acceptedQuote.preflight.model ? <b>{acceptedQuote.preflight.provider} / {acceptedQuote.preflight.model}</b> : null}</div>
+                <p className="muted">Validated before payment: {acceptedQuote.preflight.checks.join(", ")}.</p>
+              </div> : null}
               {checkoutMessage ? <p className={checkoutState === "FAILED" ? "badge locked" : "badge warning"} role="status" aria-live="polite">{checkoutMessage}</p> : null}
               <div className="irp-confirmation-actions">
                 <button className="btn secondary" type="button" onClick={() => { clearQuote(); setWizardStep(4); }} disabled={operationActive || checkoutState === "OPENING" || checkoutState === "WAITING"}>Edit assessment</button>
@@ -747,7 +751,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
                   {operationActive ? "Assessment running" : checkoutState === "OPENING" ? "Opening checkout" : checkoutState === "WAITING" ? "Waiting for payment" : isAdmin || !(acceptedQuote.creditsToPurchase || 0) ? "Confirm and run" : `Purchase ${acceptedQuote.creditsToPurchase} org credit${acceptedQuote.creditsToPurchase === 1 ? "" : "s"} and run`}
                 </button>
               </div>
-              {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Processing continues after acceptance and completed reports are sent by email.</p> : null}
+              {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Completed reports are saved to secure account history.</p> : null}
             </section> : null}
             {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
             <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. IRP billing is fixed at $250 per organization assessed.</p>

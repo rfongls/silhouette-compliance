@@ -24,6 +24,13 @@ export type RunQuote = {
   costLimitCents: number;
   withinGuard: boolean;
   warning?: string;
+  preflight?: {
+    passed: true;
+    checkedAt: string;
+    checks: string[];
+    provider?: string;
+    model?: string;
+  };
 };
 
 function money(cents: number) {

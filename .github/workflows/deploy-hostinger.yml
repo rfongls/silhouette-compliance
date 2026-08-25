@@ -78,7 +78,8 @@ jobs:
           tar -tzf "$ARCHIVE_NAME" | grep -Fx 'package-lock.deploy.json'
           tar -tzf "$ARCHIVE_NAME" | grep -Fx 'prisma/schema.prisma'
           tar -tzf "$ARCHIVE_NAME" | grep -Fx '.next/BUILD_ID'
-          tar -tzf "$ARCHIVE_NAME" | grep -Fx 'app/api/irp/analyze/route.ts'
+          tar -tzf "$ARCHIVE_NAME" | grep -Fx 'app/api/assess/route.ts'
+          tar -tzf "$ARCHIVE_NAME" | grep -Fx 'app/api/run-quotes/route.ts'
           rm -f package-lock.deploy.json
 
       - name: Configure SSH

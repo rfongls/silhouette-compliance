@@ -30,12 +30,26 @@ export function buildNetworkReport(networkName: string, assessments: NetworkAsse
       organization_name: assessment.orgName,
       compliance_score: Number(result.compliance_score || 0),
       overall_posture: result.overall_posture || posture(Number(result.compliance_score || 0)),
+      bucket_scores: result.bucket_scores || {},
       score_breakdown: result.score_breakdown || {},
       findings: Array.isArray(result.findings) ? result.findings : [],
       reused: Boolean(assessment.reused)
     };
   });
   const complianceScore = average(organizations.map((organization) => organization.compliance_score));
+  const bucketKeys = [...new Set(organizations.flatMap((organization) => Object.keys(organization.bucket_scores)))];
+  const bucketScores = Object.fromEntries(bucketKeys.map((bucketId) => {
+    const rows = organizations.map((organization) => organization.bucket_scores[bucketId]).filter(Boolean);
+    return [bucketId, {
+      label: rows[0]?.label || bucketId,
+      description: rows[0]?.description || "",
+      score: average(rows.map((row) => Number(row.score || 0))),
+      points_possible: rows[0]?.points_possible || 0,
+      points_earned: Number((rows.reduce((sum, row) => sum + Number(row.points_earned || 0), 0) / Math.max(1, rows.length)).toFixed(1)),
+      organizations_reviewed: rows.length,
+      controls_reviewed: rows.reduce((sum, row) => sum + Number(row.controls_reviewed || 0), 0)
+    }];
+  }));
   const standardKeys = [...new Set(organizations.flatMap((organization) => Object.keys(organization.score_breakdown)))];
   const scoreBreakdown = Object.fromEntries(standardKeys.map((standard) => {
     const rows = organizations
@@ -53,8 +67,12 @@ export function buildNetworkReport(networkName: string, assessments: NetworkAsse
     for (const finding of organization.findings) {
       if (finding.status === "Yes") continue;
       const controlId = String(finding.control_id || finding.control_name || "Unidentified control");
-      const current = controls.get(controlId) || {
+      const findingKey = `${finding.bucket_id || "control"}::${finding.capability || finding.control_name || controlId}`.toLocaleLowerCase();
+      const current = controls.get(findingKey) || {
         control_id: controlId,
+        bucket_id: finding.bucket_id,
+        bucket_label: finding.bucket_label,
+        capability: finding.capability,
         control_name: finding.control_name || controlId,
         requirement: finding.requirement || "",
         risk_level: severity(finding.risk_level),
@@ -71,7 +89,7 @@ export function buildNetworkReport(networkName: string, assessments: NetworkAsse
         evidence: finding.evidence || "",
         finding: finding.finding || finding.gap_description || ""
       });
-      controls.set(controlId, current);
+      controls.set(findingKey, current);
     }
   }
   const commonGaps = [...controls.values()]
@@ -91,6 +109,7 @@ export function buildNetworkReport(networkName: string, assessments: NetworkAsse
     compliance_score: complianceScore,
     overall_posture: posture(complianceScore),
     posture_summary: `${networkName} has an average IRP compliance score of ${complianceScore}/100 across ${organizations.length} assessed organization${organizations.length === 1 ? "" : "s"}.`,
+    bucket_scores: bucketScores,
     score_breakdown: scoreBreakdown,
     severity_counts: severityCounts,
     organizations,

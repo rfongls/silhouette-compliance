@@ -41,8 +41,10 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
   const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
   const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([result.remediation_roadmap?.phases?.[0]?.name].filter(Boolean)));
   const findings = Array.isArray(result.findings) ? result.findings : [];
+  const controlResults = Array.isArray(result.control_results) ? result.control_results : findings;
+  const bucketScores = Object.entries(result.bucket_scores || {}) as Array<[string, any]>;
   const actionable = findings.filter((finding: any) => finding.status !== "Yes");
-  const standards = useMemo<string[]>(() => [...new Set<string>(findings.flatMap((finding: any) => finding.standards || []).map(String))], [findings]);
+  const standards = useMemo<string[]>(() => Object.keys(result.score_breakdown || {}), [result.score_breakdown]);
   const visibleFindings = findings.filter((finding: any) => findingMatches(finding, filter));
   if (prioritySort !== "none") {
     visibleFindings.sort((left: any, right: any) => {
@@ -101,7 +103,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         <p className="muted">The score reflects the submitted policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.</p>
       </div>
       <div className="irp-standard-scores">
-        <span className="mono">Selected standard scores</span>
+        <span className="mono">Standards alignment</span>
         {Object.entries(result.score_breakdown || {}).map(([standard, breakdown]: [string, any]) => <div className="irp-standard-score" key={standard}>
           <div><b>{standardLabel(standard)}</b><span>{breakdown.controls_reviewed} controls</span></div>
           <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(breakdown.score || 0)))}%` }} /></div>
@@ -112,14 +114,28 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         <span>Overall score</span>
         <b>{score}</b>
         <small>/100</small>
-        <em>{result.counts?.total || findings.length} controls reviewed</em>
+        <em>{result.counts?.total || controlResults.length} applicable controls reviewed</em>
       </div>
     </section>
 
+    {bucketScores.length ? <section className="irp-bucket-section">
+      <div className="irp-section-heading">
+        <div><span className="mono">100-point scoring model</span><h3>Incident response capabilities</h3></div>
+        <span className="muted">Each capability has a fixed point budget. Standards provide traceability into these scores.</span>
+      </div>
+      <div className="irp-bucket-grid">
+        {bucketScores.map(([bucketId, bucket]) => <article className="irp-bucket-card" key={bucketId}>
+          <header><div><h4>{bucket.label}</h4><p>{bucket.description}</p></div><strong>{bucket.points_earned}<small> / {bucket.points_possible}</small></strong></header>
+          <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(bucket.score || 0)))}%` }} /></div>
+          <footer><span>{bucket.score}%</span><span>{bucket.controls_reviewed} controls</span>{bucket.essential_controls ? <span>{bucket.essential_controls} essential</span> : null}</footer>
+        </article>)}
+      </div>
+    </section> : null}
+
     <section className="irp-findings-section">
       <div className="irp-section-heading">
-        <div><span className="mono">Control review</span><h3>Detailed findings</h3></div>
-        <span className="muted">Evidence is traced to the submitted policy.</span>
+        <div><span className="mono">Remediation findings</span><h3>Consolidated findings</h3></div>
+        <span className="muted">Related control gaps are grouped into actionable capabilities. Full control traceability follows.</span>
       </div>
       <div className="irp-filter-bar" aria-label="Filter findings">
         <button type="button" className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>All <span>{findings.length}</span></button>
@@ -128,10 +144,10 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       </div>
       <div className="irp-findings-table-wrap">
         <table className="table irp-findings-table">
-          <thead><tr><th>Control</th><th>Requirement</th><th>Status</th><th>Evidence in plan</th><th aria-sort={prioritySort === "none" ? "none" : prioritySort === "high-first" ? "descending" : "ascending"}><button type="button" className="irp-sort-button" onClick={() => setPrioritySort((current) => current === "high-first" ? "low-first" : "high-first")}>Priority <span>{prioritySort === "high-first" ? "H-L" : prioritySort === "low-first" ? "L-H" : "Sort"}</span></button></th><th>Finding</th></tr></thead>
+          <thead><tr><th>Capability</th><th>Mapped controls</th><th>Status</th><th>Evidence in plan</th><th aria-sort={prioritySort === "none" ? "none" : prioritySort === "high-first" ? "descending" : "ascending"}><button type="button" className="irp-sort-button" onClick={() => setPrioritySort((current) => current === "high-first" ? "low-first" : "high-first")}>Priority <span>{prioritySort === "high-first" ? "H-L" : prioritySort === "low-first" ? "L-H" : "Sort"}</span></button></th><th>Finding</th></tr></thead>
           <tbody>{visibleFindings.map((finding: any) => <tr key={`${finding.control_id}-${finding.finding}`}>
-            <td><b>{finding.control_id}</b><span>{(finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
-            <td>{finding.requirement || finding.control_name}</td>
+            <td><b>{finding.capability || finding.control_name || finding.control_id}</b><span>{finding.bucket_label || (finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
+            <td><b>{finding.control_count || finding.control_ids?.length || 1}</b><span>{(finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
             <td><span className={`irp-status status-${String(finding.status).toLocaleLowerCase()}`}>{finding.status}</span></td>
             <td>{finding.evidence || "Not addressed"}</td>
             <td><span className={`irp-priority severity-${findingSeverity(finding).toLocaleLowerCase()}`}>{findingSeverity(finding)}</span></td>
@@ -141,6 +157,23 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         {!visibleFindings.length ? <div className="irp-empty-filter">No findings match this filter.</div> : null}
       </div>
     </section>
+
+    {controlResults.length ? <details className="irp-traceability">
+      <summary><span><b>Control traceability appendix</b><small>{controlResults.length} applicable controls with source evidence and evaluation status</small></span><strong>View controls</strong></summary>
+      <div className="irp-findings-table-wrap">
+        <table className="table irp-traceability-table">
+          <thead><tr><th>Bucket</th><th>Control</th><th>Standard</th><th>Status</th><th>Priority</th><th>Requirement and evidence</th></tr></thead>
+          <tbody>{controlResults.map((control: any, index: number) => <tr key={`${control.control_id}-${control.standards?.join("-")}-${index}`}>
+            <td>{control.bucket_label || "Control review"}</td>
+            <td><b>{control.control_id}</b></td>
+            <td>{(control.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</td>
+            <td><span className={`irp-status status-${String(control.status).toLocaleLowerCase()}`}>{control.status}</span></td>
+            <td><span className={`irp-priority severity-${findingSeverity(control).toLocaleLowerCase()}`}>{findingSeverity(control)}</span></td>
+            <td><b>{control.requirement || control.control_name}</b><p>{control.evidence || "Not addressed"}</p></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </details> : null}
 
     {result.remediation_roadmap?.phases?.length ? <section className="irp-roadmap">
       <div className="irp-section-heading"><div><span className="mono">Action plan</span><h3>30 / 60 / 90 day remediation roadmap</h3></div></div>

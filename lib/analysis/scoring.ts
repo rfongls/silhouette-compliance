@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { callAnthropicJson, type ModelUsage } from "@/lib/analysis/anthropic";
 import { buildControlEvaluationPrompt, buildSystemPrompt, type AnalysisScope } from "@/lib/analysis/prompts";
+import { IRP_CAPABILITY_BUCKETS, IRP_SCORING_PROFILE_VERSION, profileIrpControls, type ProfiledControl } from "@/lib/analysis/scoring-profile";
 import type { NormalizedControl } from "@/lib/control-boards";
 
 export const IRP_CONTROL_BATCH_SIZE = 20;
@@ -79,13 +80,20 @@ export function calculateComplianceScore(statuses: Status[]) {
   return Math.round((points / statuses.length) * 100);
 }
 
-export const SCORING_POLICY_VERSION = "hierarchical-risk-v1";
+export const SCORING_POLICY_VERSION = "bucketed-capability-v2";
 export const PRIORITY_WEIGHTS = { Critical: 4, High: 3, Medium: 2, Low: 1 } as const;
 
 type ScoredControl = {
   status: Status;
   risk_level: string;
   category?: string;
+};
+
+type BucketedScoredControl = ScoredControl & {
+  bucket_id: string;
+  bucket_label: string;
+  capability: string;
+  essential: boolean;
 };
 
 function statusPoints(status: Status) {
@@ -146,6 +154,96 @@ export function calculateOverallComplianceScore(standardScores: number[]) {
   return Math.round(standardScores.reduce((total, standardScore) => total + standardScore, 0) / standardScores.length);
 }
 
+export function calculateBucketedComplianceScore(rows: BucketedScoredControl[]) {
+  if (!rows.length) return { score: 0, points_earned: 0, points_possible: 100, buckets: {} };
+  const activeDefinitions = IRP_CAPABILITY_BUCKETS.filter((bucket) => rows.some((row) => row.bucket_id === bucket.id));
+  const activeConfiguredPoints = activeDefinitions.reduce((total, bucket) => total + bucket.points, 0);
+  const bucketScores = Object.fromEntries(activeDefinitions.map((bucket) => {
+    const bucketRows = rows.filter((row) => row.bucket_id === bucket.id);
+    const byCapability = new Map<string, BucketedScoredControl[]>();
+    for (const row of bucketRows) {
+      const capability = row.capability.trim() || bucket.label;
+      byCapability.set(capability, [...(byCapability.get(capability) || []), row]);
+    }
+    const capabilities = Object.fromEntries([...byCapability.entries()].map(([capability, controls]) => [capability, {
+      score: calculateWeightedComplianceScore(controls),
+      controls_reviewed: controls.length
+    }]));
+    const capabilityScores = Object.values(capabilities).map((capability) => capability.score);
+    let bucketScore = capabilityScores.length
+      ? Math.round(capabilityScores.reduce((total, capabilityScore) => total + capabilityScore, 0) / capabilityScores.length)
+      : 0;
+    const essentialControls = bucketRows.filter((row) => row.essential);
+    if (essentialControls.some((row) => row.status === "No")) bucketScore = Math.min(bucketScore, 50);
+    else if (essentialControls.some((row) => row.status === "Partial")) bucketScore = Math.min(bucketScore, 75);
+    const pointsPossible = activeConfiguredPoints ? (bucket.points / activeConfiguredPoints) * 100 : 0;
+    const pointsEarned = pointsPossible * (bucketScore / 100);
+    return [bucket.id, {
+      label: bucket.label,
+      description: bucket.description,
+      score: bucketScore,
+      points_possible: Number(pointsPossible.toFixed(1)),
+      points_earned: Number(pointsEarned.toFixed(1)),
+      controls_reviewed: bucketRows.length,
+      essential_controls: essentialControls.length,
+      capabilities
+    }];
+  }));
+  const pointsEarned = Object.values(bucketScores).reduce((total, bucket) => total + bucket.points_earned, 0);
+  return {
+    score: Math.round(pointsEarned),
+    points_earned: Number(pointsEarned.toFixed(1)),
+    points_possible: 100,
+    buckets: bucketScores
+  };
+}
+
+export function consolidateRemediationFindings(controlResults: any[]) {
+  const groups = new Map<string, any[]>();
+  for (const result of controlResults.filter((row) => row.status !== "Yes")) {
+    const key = `${result.bucket_id}::${String(result.capability || result.bucket_label).trim().toLocaleLowerCase()}`;
+    groups.set(key, [...(groups.get(key) || []), result]);
+  }
+  return [...groups.values()].map((rows, index) => {
+    const noCount = rows.filter((row) => row.status === "No").length;
+    const partialCount = rows.length - noCount;
+    const riskLevel = rows.reduce<keyof typeof PRIORITY_WEIGHTS>((highest, row) => (
+      controlPriorityWeight(row.risk_level) > controlPriorityWeight(highest) ? normalizePriority(row.risk_level) : highest
+    ), "Low");
+    const capability = rows[0].capability || rows[0].bucket_label;
+    const controlIds = rows.map((row) => row.control_id);
+    const standards = [...new Set(rows.flatMap((row) => row.standards || []).map(String))];
+    const summary = [
+      noCount ? `${noCount} control${noCount === 1 ? "" : "s"} not evidenced` : "",
+      partialCount ? `${partialCount} control${partialCount === 1 ? "" : "s"} partially evidenced` : ""
+    ].filter(Boolean).join(" and ");
+    return {
+      control_id: rows.length === 1 ? rows[0].control_id : `${String(rows[0].bucket_id).toLocaleUpperCase()}-${index + 1}`,
+      control_ids: controlIds,
+      control_count: rows.length,
+      control_name: capability,
+      capability,
+      bucket_id: rows[0].bucket_id,
+      bucket_label: rows[0].bucket_label,
+      standards,
+      requirement: rows.length === 1 ? rows[0].requirement : `${capability} requirements mapped from ${rows.length} applicable controls.`,
+      status: noCount ? "No" : "Partial",
+      risk_level: riskLevel,
+      priority_weight: PRIORITY_WEIGHTS[riskLevel],
+      evidence: rows.filter((row) => row.evidence_quote).slice(0, 3).map((row) => row.evidence).join(" | ") || "Not addressed",
+      finding: `${summary} for ${capability}. Review the mapped controls and add specific policy language or supporting evidence.`,
+      mapped_controls: rows.map((row) => ({
+        control_id: row.control_id,
+        standards: row.standards,
+        requirement: row.requirement,
+        status: row.status,
+        risk_level: row.risk_level,
+        evidence: row.evidence
+      }))
+    };
+  });
+}
+
 function roadmap(findings: any[]) {
   const phases = [
     { name: "Immediate", timeframe: "Within 30 days", color: "critical", risks: new Set(["Critical"]) },
@@ -180,12 +278,14 @@ export async function scoreControlSet(input: {
   boardCite: string;
   onProgress?: (progress: AnalysisProgress) => void | Promise<void>;
 }) {
+  const profile = profileIrpControls(input.controls);
+  const profiledControls = profile.controls;
   const chunks = chunkEvidenceDocuments(input.documents);
   if (!chunks.length) throw new Error("No readable policy text was supplied for this organization.");
   const system = buildSystemPrompt(input.scope);
   const best = new Map<string, { status: Status; quote: string; document: string; finding: string }>();
   const usage: Required<ModelUsage> = { inputTokens: 0, outputTokens: 0 };
-  const controlBatches = batches(input.controls, IRP_CONTROL_BATCH_SIZE);
+  const controlBatches = batches(profiledControls, IRP_CONTROL_BATCH_SIZE);
   const total = controlBatches.length * chunks.length;
   let completed = 0;
 
@@ -241,7 +341,7 @@ export async function scoreControlSet(input: {
     }
   }
 
-  const findings = input.controls.map((control) => {
+  const controlResults = profiledControls.map((control: ProfiledControl) => {
     const evaluation = best.get(controlKey(control.standard, control.id)) || {
       status: "No" as const,
       quote: "",
@@ -259,42 +359,50 @@ export async function scoreControlSet(input: {
       evidence: evaluation.status === "No" ? "Not addressed" : `${evaluation.document}: \"${evaluation.quote}\"`,
       evidence_document: evaluation.document,
       evidence_quote: evaluation.quote,
-      finding: evaluation.finding
+      finding: evaluation.finding,
+      bucket_id: control.bucket_id,
+      bucket_label: control.bucket_label,
+      capability: control.capability,
+      essential: control.essential
     };
   });
 
+  const findings = consolidateRemediationFindings(controlResults);
+
   const scoreBreakdown = Object.fromEntries(input.scope.standards.map((standard) => {
-    const rows = findings.filter((finding) => finding.standards.includes(standard));
+    const rows = controlResults.filter((finding) => finding.standards.includes(standard));
     const met = rows.filter((row) => row.status === "Yes").length;
     const partial = rows.filter((row) => row.status === "Partial").length;
     const failed = rows.filter((row) => row.status === "No").length;
     const weighted = calculateStandardComplianceScore(rows);
+    const bucketed = calculateBucketedComplianceScore(rows);
     const priorities = Object.fromEntries(Object.keys(PRIORITY_WEIGHTS).map((priority) => [
       priority.toLocaleLowerCase(),
       rows.filter((row) => normalizePriority(row.risk_level) === priority).length
     ]));
     return [standard.toLocaleLowerCase(), {
-      score: weighted.score,
+      score: bucketed.score,
       controls_reviewed: rows.length,
       controls_met: met,
       controls_partial: partial,
       controls_failed: failed,
       priority_counts: priorities,
       priority_tier_scores: weighted.priority_tiers,
-      category_scores: weighted.categories
+      category_scores: weighted.categories,
+      bucket_scores: bucketed.buckets
     }];
   }));
-  const met = findings.filter((row) => row.status === "Yes").length;
-  const partial = findings.filter((row) => row.status === "Partial").length;
-  const standardScores = Object.values(scoreBreakdown).map((standard) => standard.score);
-  const score = calculateOverallComplianceScore(standardScores);
-  const gaps = findings.filter((row) => row.status !== "Yes");
+  const met = controlResults.filter((row) => row.status === "Yes").length;
+  const partial = controlResults.filter((row) => row.status === "Partial").length;
+  const bucketedScore = calculateBucketedComplianceScore(controlResults);
+  const score = bucketedScore.score;
   const counts = {
-    total: findings.length,
-    critical: gaps.filter((row) => row.risk_level.toLocaleLowerCase() === "critical").length,
-    high: gaps.filter((row) => row.risk_level.toLocaleLowerCase() === "high").length,
-    medium: gaps.filter((row) => row.risk_level.toLocaleLowerCase() === "medium").length,
-    low: gaps.filter((row) => row.risk_level.toLocaleLowerCase() === "low").length
+    total: controlResults.length,
+    findings: findings.length,
+    critical: findings.filter((row) => row.risk_level.toLocaleLowerCase() === "critical").length,
+    high: findings.filter((row) => row.risk_level.toLocaleLowerCase() === "high").length,
+    medium: findings.filter((row) => row.risk_level.toLocaleLowerCase() === "medium").length,
+    low: findings.filter((row) => row.risk_level.toLocaleLowerCase() === "low").length
   };
 
   return {
@@ -307,18 +415,25 @@ export async function scoreControlSet(input: {
       compliance_score: score,
       score_breakdown: scoreBreakdown,
       scoring_policy_version: SCORING_POLICY_VERSION,
+      scoring_profile_version: IRP_SCORING_PROFILE_VERSION,
+      bucket_scores: bucketedScore.buckets,
       scoring_summary: {
         selected_standards: input.scope.standards.length,
-        points_possible: input.scope.standards.length * 100,
-        points_earned: standardScores.reduce((total, standardScore) => total + standardScore, 0),
+        points_possible: bucketedScore.points_possible,
+        points_earned: bucketedScore.points_earned,
         overall_score: score,
-        standard_weighting: "Each selected standard contributes equally to the overall 100-point score."
+        bucket_weighting: "Applicable controls are grouped into fixed IRP capability buckets whose available points normalize to 100.",
+        standard_weighting: "Selected-standard scores are secondary alignment views and are not added again to the overall score.",
+        source_controls: input.controls.length,
+        applicable_controls: controlResults.length,
+        excluded_controls: profile.excludedCount
       },
-      posture_summary: `${met} of ${findings.length} controls were fully evidenced; ${partial} were partially evidenced and ${findings.length - met - partial} were not evidenced.`,
+      posture_summary: `${met} of ${controlResults.length} applicable controls were fully evidenced; ${partial} were partially evidenced and ${controlResults.length - met - partial} were not evidenced across ${Object.keys(bucketedScore.buckets).length} scored capability buckets.`,
       counts,
       findings,
+      control_results: controlResults,
       remediation_roadmap: roadmap(findings),
-      scoring_method: "Server-calculated hierarchical risk score: Yes=1, Partial=0.5, No=0; controls are averaged inside approved Critical, High, Medium, and Low priority tiers; present tiers are combined at weights 4, 3, 2, and 1 so raw control counts cannot make a lower-priority tier dominate a higher-priority tier; each selected standard is normalized to 100 points and selected standard scores are averaged equally into the overall 100-point score."
+      scoring_method: "Server-calculated bucketed IRP readiness score: applicable controls are grouped into curated capability buckets; Yes=1, Partial=0.5, and No=0 with Critical, High, Medium, and Low weights of 4, 3, 2, and 1; capabilities contribute equally inside each bucket; bucket point budgets normalize to 100; missing essential controls cap their bucket at 50 and partial essential controls cap it at 75. Standards remain separate alignment views without duplicate contribution to the overall score."
     },
     usage
   };

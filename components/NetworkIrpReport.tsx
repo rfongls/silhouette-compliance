@@ -55,7 +55,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         <p className="muted">The network score is the equal average of the independent organization scores. Each organization remains available as its own report.</p>
       </div>
       <div className="irp-standard-scores">
-        <span className="mono">Network standard averages</span>
+        <span className="mono">Standards alignment averages</span>
         {Object.entries(result.score_breakdown || {}).map(([standard, breakdown]: [string, any]) => <div className="irp-standard-score" key={standard}>
           <div><b>{standardLabel(standard)}</b><span>{breakdown.organizations_reviewed} organizations</span></div>
           <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(breakdown.score || 0)))}%` }} /></div>
@@ -66,6 +66,20 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         <span>Network score</span><b>{score}</b><small>/100</small><em>{organizations.length} organizations assessed</em>
       </div>
     </section>
+
+    {Object.keys(result.bucket_scores || {}).length ? <section className="irp-bucket-section">
+      <div className="irp-section-heading">
+        <div><span className="mono">100-point scoring model</span><h3>Network capability averages</h3></div>
+        <span className="muted">Each value is the average capability score across independently assessed organizations.</span>
+      </div>
+      <div className="irp-bucket-grid">
+        {Object.entries(result.bucket_scores || {}).map(([bucketId, bucket]: [string, any]) => <article className="irp-bucket-card" key={bucketId}>
+          <header><div><h4>{bucket.label}</h4><p>{bucket.description}</p></div><strong>{bucket.points_earned}<small> / {bucket.points_possible}</small></strong></header>
+          <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(bucket.score || 0)))}%` }} /></div>
+          <footer><span>{bucket.score}%</span><span>{bucket.organizations_reviewed} organizations</span><span>{bucket.controls_reviewed} controls</span></footer>
+        </article>)}
+      </div>
+    </section> : null}
 
     <section>
       <div className="irp-section-heading"><div><span className="mono">Organization comparison</span><h3>Independent results</h3></div></div>

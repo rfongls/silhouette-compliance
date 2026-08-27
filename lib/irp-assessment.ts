@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { runGapAnalysis, demoAssessment } from "@/lib/analysis/engine";
 import { IRP_PROMPT_VERSION } from "@/lib/analysis/prompts";
 import { IRP_CONTROL_BATCH_SIZE, SCORING_POLICY_VERSION, scoringPassCount } from "@/lib/analysis/scoring";
+import { profileIrpControls } from "@/lib/analysis/scoring-profile";
 import { normalizeStandards } from "@/lib/analysis/standards";
 import { requireSession } from "@/lib/authz";
 import { loadPublishedControlSet } from "@/lib/control-boards";
@@ -179,8 +180,9 @@ export async function handleIrpAssessment(req: Request) {
   }
 
   const maxCharsPerOrg = Math.max(...[...groupedDocuments.values()].map((rows) => rows.reduce((sum, row) => sum + row.text.length, 0)));
-  const analysisPasses = Math.max(1, Math.ceil(controlSet.controls.length / IRP_CONTROL_BATCH_SIZE));
-  const analysisRequestCount = scoringPassCount(controlSet.controls.length, maxCharsPerOrg) * orgNames.length;
+  const applicableControlCount = profileIrpControls(controlSet.controls).controls.length;
+  const analysisPasses = Math.max(1, Math.ceil(applicableControlCount / IRP_CONTROL_BATCH_SIZE));
+  const analysisRequestCount = scoringPassCount(applicableControlCount, maxCharsPerOrg) * orgNames.length;
   const estimate = estimateRunQuote({ module: "irp", orgNames, documents, analysisPasses, analysisRequestCount });
   if (!estimate.withinGuard || estimate.charCount !== quote.charCount) {
     return NextResponse.json({ error: estimate.warning || "The current document set exceeds the processing-cost guard." }, { status: 413 });
@@ -259,7 +261,7 @@ export async function handleIrpAssessment(req: Request) {
             progressStage: "QUEUED",
             progressMessage: "Assessment accepted. Preparing the published controls and policy segments.",
             progressCurrent: 0,
-            progressTotal: scoringPassCount(controlSet.controls.length, item.integrity.charCount),
+            progressTotal: scoringPassCount(applicableControlCount, item.integrity.charCount),
             progressUpdatedAt: new Date()
           }
         });

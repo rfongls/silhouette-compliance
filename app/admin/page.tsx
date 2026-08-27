@@ -1,14 +1,17 @@
 import { AdminConsole } from "@/components/AdminConsole";
 import { Nav } from "@/components/Nav";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAIConfigForAdmin } from "@/lib/settings";
 import { isComplianceEmailAllowed } from "@/lib/access-gate";
+import { isEffectiveAdmin } from "@/lib/view-role";
 
 export default async function AdminPage() {
   const session = await auth();
   if (!isComplianceEmailAllowed(session?.user.email)) return <main><Nav/><section className="wrap"><div className="card"><h1>Access restricted</h1><p className="muted">Compliance suite access is temporarily limited to approved owner accounts.</p></div></section></main>;
   if (session?.user.role !== "admin") return <main><Nav/><section className="wrap"><div className="card"><h1>Forbidden</h1><p className="muted">Admin role required.</p></div></section></main>;
+  if (!isEffectiveAdmin(session)) redirect("/app");
   const [boards, ledgers, users, aiConfig] = await Promise.all([
     prisma.controlBoard.findMany({ orderBy:[{industry:"asc"},{standardKey:"asc"},{version:"desc"}], select:{ id:true, industry:true, standardKey:true, version:true, status:true, controlCount:true, sourceTitle:true, sourceVersion:true, reviewedBy:true, reviewedAt:true } }).catch(()=>[]),
     prisma.usageLedger.findMany({ orderBy:{createdAt:"desc"}, take:10, select:{ id:true, kind:true, status:true, amountCents:true, stripeRef:true } }).catch(()=>[]),

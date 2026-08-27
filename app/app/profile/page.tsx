@@ -57,13 +57,13 @@ export default async function ProfilePage() {
       <div className="card"><div className="mono">Credits</div><h2>Active Balances</h2><p>Assessments: <b>{assessmentCredits}</b></p><p>SRA: <b>{sraCredits}</b></p><p>Proposals: <b>{proposalCredits}</b></p></div>
       <div className="card"><div className="mono">Tracked Usage</div><h2>{money(trackedTotal)}</h2><p className="muted">Admin comped usage: {money(compedTotal)}</p></div>
     </div>
-    {reportQuotes.length ? <div className="card" style={{ marginBottom: 18 }}>
+    <div className="card" id="reports" style={{ marginBottom: 18, scrollMarginTop: 24 }}>
       <div className="mono">Report history</div><h2>Completed IRP reports</h2>
-      <table className="table"><thead><tr><th>Date</th><th>Assessment</th><th>Organizations</th><th>Status</th><th>Report</th></tr></thead><tbody>{reportQuotes.map((quote) => {
+      {reportQuotes.length ? <table className="table"><thead><tr><th>Date</th><th>Assessment</th><th>Organizations</th><th>Status</th><th>Report</th></tr></thead><tbody>{reportQuotes.map((quote) => {
         const names = Array.isArray(quote.orgNames) ? quote.orgNames.map(String) : [];
         return <tr key={quote.id}><td>{quote.createdAt.toLocaleDateString()}</td><td>{quote.parentOrgName || names[0] || "IRP assessment"}</td><td>{quote.orgCount}</td><td><span className="badge">Available</span></td><td><Link className="btn secondary" href={`/app/irp/reports/${quote.id}`}>Open</Link></td></tr>;
-      })}</tbody></table>
-    </div> : null}
+      })}</tbody></table> : <p className="muted" style={{ marginBottom: 0 }}>No completed IRP reports are available for this account yet.</p>}
+    </div>
     <div className="card"><h2>Usage Ledger</h2><table className="table"><thead><tr><th>Date</th><th>Kind</th><th>Status</th><th>Tracked Amount</th><th>Tokens</th><th>Reference</th></tr></thead><tbody>{ledgers.map((row) => <tr key={row.id}><td>{row.createdAt.toLocaleDateString()}</td><td>{row.kind}</td><td><span className={row.status === "succeeded" ? "badge" : "badge locked"}>{row.status}</span></td><td>{money(row.amountCents)}</td><td>{tokens(row.inputTokens, row.outputTokens)}</td><td>{row.stripeRef || row.assessmentId || "-"}</td></tr>)}{!ledgers.length ? <tr><td colSpan={6}>No usage yet.</td></tr> : null}</tbody></table></div>
   </section></main>;
 }

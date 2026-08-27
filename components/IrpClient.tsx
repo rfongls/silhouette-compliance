@@ -411,7 +411,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       return null;
     }
     if (!standards.length) {
-      alert("No published base control board is available for this domain. An administrator must publish one before an assessment can run.");
+      alert(isAdmin ? "No published base control board is available for this domain. Publish one before starting the assessment." : "No scoring standards are currently available for this industry.");
       return null;
     }
     const documents = orgDocuments(validOrgs);
@@ -700,7 +700,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
           {wizardStep === 2 ? <section className="irp-wizard-page">
             <div className="mono">Step 2 of 5</div>
             <h3>What industry is this assessment for?</h3>
-            <p className="muted">The selected industry determines which published control boards are available for scoring.</p>
+            <p className="muted">The selected industry determines which standards are available for the assessment.</p>
             <div className="irp-choice-grid irp-industry-grid">
               {INDUSTRY_CHOICES.map((choice) => (
                 <button key={choice.value} className={`irp-choice${industry === choice.value ? " selected" : ""}`} type="button" onClick={() => changeIndustry(choice.value)} aria-pressed={industry === choice.value}>
@@ -714,13 +714,13 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
           {wizardStep === 3 ? <section className="irp-wizard-page">
             <div className="mono">Step 3 of 5</div>
             <h3>Which standards should be used for scoring?</h3>
-            <p className="muted">Select all applicable published control boards. Each standard receives its own weighted score in the final report.</p>
+            <p className="muted">Select the standards that should be included in the assessment. Each selected standard appears as a separate alignment score in the final report.</p>
             <fieldset className="irp-standards-control">
               <legend className="sr-only">Standards used for scoring</legend>
               {standardOptions.length ? <label className="irp-standard-option irp-standard-all">
                 <input type="checkbox" checked={allStandardsSelected} onChange={toggleAllStandards} />
                 <span><b>All {INDUSTRY_STANDARDS[industry]?.label || "domain"} standards</b><small>Use every published standard available for this industry.</small></span>
-              </label> : <div className="badge locked">No published base controls are available for this domain.</div>}
+              </label> : <div className="badge locked">No scoring standards are currently available for this industry.</div>}
               <div className="irp-standard-grid">
                 {standardOptions.map((standard) => (
                   <label className="irp-standard-option" key={standard.key}>

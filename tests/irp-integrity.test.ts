@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateComplianceScore,
+  calculateBucketedComplianceScore,
   calculateOverallComplianceScore,
   calculateStandardComplianceScore,
   calculateWeightedComplianceScore,
   chunkEvidenceDocuments,
+  consolidateRemediationFindings,
   scoringPassCount,
   validateEvidenceStatus
 } from "../lib/analysis/scoring";
+import { IRP_CAPABILITY_BUCKETS, profileIrpControls } from "../lib/analysis/scoring-profile";
 import { assessmentFingerprint, documentSetIntegrity, groupDocumentsByOrg, quoteSourceDigest } from "../lib/document-integrity";
 import { normalizeResult } from "../lib/analysis/engine";
 import { buildControlEvaluationPrompt, buildSystemPrompt } from "../lib/analysis/prompts";
@@ -70,9 +73,59 @@ test("large low-priority control sets do not overwhelm a critical control in the
   assert.equal(Object.keys(score.categories).length, 1);
 });
 
-test("selected standards contribute equally to the overall 100-point score", () => {
+test("legacy standard averaging remains deterministic for stored v1 reports", () => {
   assert.equal(calculateOverallComplianceScore([100, 50, 0]), 50);
   assert.equal(calculateOverallComplianceScore([92, 48]), 70);
+});
+
+test("IRP capability buckets have a fixed 100-point budget", () => {
+  assert.equal(IRP_CAPABILITY_BUCKETS.reduce((total, bucket) => total + bucket.points, 0), 100);
+});
+
+test("bucket scoring awards points from evidenced controls without multiplying standards", () => {
+  const rows = Array.from({ length: 10 }, (_, index) => ({
+    status: index < 2 ? "Yes" as const : "No" as const,
+    risk_level: "Medium",
+    bucket_id: "governance-authority",
+    bucket_label: "Governance and authority",
+    capability: "Governance",
+    essential: false
+  }));
+  const score = calculateBucketedComplianceScore(rows);
+  assert.equal(score.score, 20);
+  assert.equal(score.buckets["governance-authority"].score, 20);
+});
+
+test("an unevidenced essential control caps its capability bucket", () => {
+  const rows = [
+    ...Array.from({ length: 9 }, () => ({ status: "Yes" as const, risk_level: "Low", bucket_id: "governance-authority", bucket_label: "Governance and authority", capability: "Governance", essential: false })),
+    { status: "No" as const, risk_level: "Critical", bucket_id: "governance-authority", bucket_label: "Governance and authority", capability: "Governance", essential: true }
+  ];
+  const score = calculateBucketedComplianceScore(rows);
+  assert.equal(score.buckets["governance-authority"].score, 50);
+});
+
+test("IRP profiling keeps relevant controls and excludes unrelated source-library detail", () => {
+  const profile = profileIrpControls([
+    { id: "IR-4", standard: "NIST", category: "Incident handling", requirement: "Contain and eradicate incidents.", risk_level: "Critical" },
+    { id: "AC-2", standard: "NIST", category: "Account management", requirement: "Review user accounts annually.", risk_level: "Medium" }
+  ]);
+  assert.equal(profile.controls.length, 1);
+  assert.equal(profile.controls[0].id, "IR-4");
+  assert.equal(profile.controls[0].bucket_id, "containment-eradication");
+  assert.equal(profile.controls[0].essential, true);
+  assert.equal(profile.excludedCount, 1);
+});
+
+test("related control failures consolidate into one remediation finding with traceability", () => {
+  const findings = consolidateRemediationFindings([
+    { control_id: "IR-1", standards: ["NIST"], requirement: "Assign incident roles", status: "No", risk_level: "High", bucket_id: "governance-authority", bucket_label: "Governance and authority", capability: "Incident governance", evidence: "Not addressed", evidence_quote: "" },
+    { control_id: "164.308", standards: ["HIPAA"], requirement: "Assign security responsibility", status: "Partial", risk_level: "Critical", bucket_id: "governance-authority", bucket_label: "Governance and authority", capability: "Incident governance", evidence: "policy.txt: assigned lead", evidence_quote: "assigned lead" }
+  ]);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].control_count, 2);
+  assert.deepEqual(findings[0].control_ids, ["IR-1", "164.308"]);
+  assert.equal(findings[0].risk_level, "Critical");
 });
 
 test("positive evidence requires an exact quote from the supplied chunk", () => {

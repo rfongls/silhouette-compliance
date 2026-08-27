@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { estimateRunQuote, normalizeOrgNames, quoteExpiresAt, quoteFunding, type QuoteModule } from "@/lib/run-quotes";
 import { normalizeStandards } from "@/lib/analysis/standards";
 import { IRP_CONTROL_BATCH_SIZE, scoringPassCount } from "@/lib/analysis/scoring";
+import { profileIrpControls } from "@/lib/analysis/scoring-profile";
 import { loadPublishedControlSet } from "@/lib/control-boards";
 import { quoteSourceDigest } from "@/lib/document-integrity";
 import { isEffectiveAdmin } from "@/lib/view-role";
@@ -50,8 +51,9 @@ export async function POST(req: Request) {
       }));
       const documentValidation = validateIrpDocuments(integrityDocuments, orgNames);
       const controlSet = await loadPublishedControlSet(industry, standards);
-      analysisPasses = Math.max(1, Math.ceil(controlSet.controls.length / IRP_CONTROL_BATCH_SIZE));
-      analysisRequestCount = scoringPassCount(controlSet.controls.length, documentValidation.maxCharsPerOrg) * Math.max(1, orgNames.length);
+      const applicableControlCount = profileIrpControls(controlSet.controls).controls.length;
+      analysisPasses = Math.max(1, Math.ceil(applicableControlCount / IRP_CONTROL_BATCH_SIZE));
+      analysisRequestCount = scoringPassCount(applicableControlCount, documentValidation.maxCharsPerOrg) * Math.max(1, orgNames.length);
     } catch (error) {
       return NextResponse.json({ error: (error as Error).message }, { status: 409 });
     }

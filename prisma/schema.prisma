@@ -96,6 +96,25 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model EarlyAccessInterest {
+  id                  String    @id @default(cuid())
+  email               String
+  name                String?
+  provider            String
+  providerAccountId   String
+  providerUsername    String?
+  status              String    @default("seen")
+  notifyRequested     Boolean   @default(false)
+  notifyRequestedAt   DateTime?
+  firstSeenAt         DateTime  @default(now())
+  lastSeenAt          DateTime  @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([email])
+  @@index([status, lastSeenAt])
+  @@map("early_access_interests")
+}
+
 model AppSetting {
   key       String   @id
   value     String

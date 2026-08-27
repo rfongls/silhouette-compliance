@@ -5,6 +5,7 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { getGitHubLogin, isComplianceUserAllowed } from "@/lib/access-gate";
 import { bootstrapComplianceEnv, env, envList, hasEnvPair } from "@/lib/env";
+import { recordEarlyAccessInterest } from "@/lib/early-access";
 import { prisma } from "@/lib/prisma";
 
 bootstrapComplianceEnv();
@@ -56,7 +57,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (!isComplianceUserAllowed(user, account, profile)) return false;
+      if (!isComplianceUserAllowed(user, account, profile)) {
+        const interest = await recordEarlyAccessInterest(user, account, profile).catch(() => null);
+        return interest ? `/early-access?interest=${encodeURIComponent(interest.id)}` : "/early-access?status=unavailable";
+      }
       if (user.id && isBootstrapAdmin(user, account, profile)) {
         await prisma.user.update({ where: { id: user.id }, data: { role: "admin" } }).catch(() => undefined);
       }

@@ -78,7 +78,7 @@ export default function SignInPage() {
         <div className="card">
           <div className="mono">Secure sign in</div>
           <h1 style={{ fontFamily: "EB Garamond", fontSize: 42, margin: "10px 0" }}>Access Silhouette</h1>
-          <p className="muted">Use Google, GitHub, or Microsoft Entra ID. Accounts are scoped to a billing account and server-side role.</p>
+          <p className="muted">Use Google, GitHub, or Microsoft Entra ID. Approved accounts enter the app; other verified accounts can join the Compliance waitlist.</p>
           <div style={{ display: "grid", gap: 12, marginTop: 22 }}>
             <ProviderButton provider="google" label="Google" primary enabled={hasGoogleAuth} />
             <ProviderButton provider="github" label="GitHub" enabled={hasGitHubAuth} />

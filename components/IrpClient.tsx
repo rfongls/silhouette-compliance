@@ -53,6 +53,9 @@ type AssessmentProgress = {
   progressTotal: number;
   progressUpdatedAt: string | null;
   quoteId: string | null;
+  failureReason?: string | null;
+  failureSupport?: string | null;
+  failureRetriable?: boolean | null;
   result?: any;
 };
 
@@ -128,8 +131,10 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds }: { operat
               <td>{row.orgName || "Organization"}</td>
               <td><span className={row.status === "FAILED" || row.status === "REFUNDED" ? "badge locked" : row.status === "RUNNING" ? "badge warning" : "badge"}>{row.progressStage || row.status}</span></td>
               <td>
-                {row.progressMessage || "Waiting for the next status update."}
+                {row.failureReason || row.progressMessage || "Waiting for the next status update."}
                 {row.progressTotal ? <><br/><span className="muted">{Math.min(row.progressCurrent, row.progressTotal)} of {row.progressTotal} analysis passes complete</span></> : null}
+                {row.failureSupport ? <><br/><span className="muted">{row.failureSupport}</span></> : null}
+                {row.status === "FAILED" || row.status === "REFUNDED" ? <><br/><span className="muted">{row.failureRetriable ? "Retry is available after the underlying issue is resolved." : "Administrator action is required before retrying."}</span></> : null}
               </td>
             </tr>
           ))}</tbody>
@@ -250,7 +255,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             ? "Assessment processing is active. Progress is updated after each completed model pass."
             : delivered.length
               ? failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed."
-              : "Assessment processing did not complete."
+              : failed[0]?.failureReason || failed[0]?.progressMessage || "Assessment processing did not complete."
         } : current);
         if (delivered.length) {
           setResult(delivered[0].result);

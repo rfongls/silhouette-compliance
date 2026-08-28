@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AIKeyVerificationError, verifyAIKey } from "../lib/ai-provider-validation";
-import { AIProviderRequestError, providerFailureEvidence } from "../lib/analysis/anthropic";
+import { AIProviderRequestError, isRetriableProviderFailure, providerFailureEvidence } from "../lib/analysis/anthropic";
+import { assessmentFailureReason, assessmentFailureSupport } from "../lib/assessment-failure";
 
 test("OpenAI verification uses the authenticated models endpoint", async (t) => {
   const originalFetch = globalThis.fetch;
@@ -56,4 +57,20 @@ test("provider failure evidence contains support identifiers without source cont
     stage: "provider_request"
   });
   assert.doesNotMatch(error.message, /policy|api key/i);
+});
+
+test("provider quota exhaustion is actionable and is not retried", () => {
+  assert.equal(isRetriableProviderFailure(429, "credit_balance_exhausted"), false);
+  assert.equal(isRetriableProviderFailure(429, "rate_limit_exceeded"), true);
+  const failure = {
+    failureProvider: "openai",
+    failureHttpStatus: 429,
+    failureCode: "credit_balance_exhausted",
+    failureRequestId: "req_support_456",
+    failureRetriable: false,
+    failureAttempts: 1,
+    failureStage: "provider_request"
+  };
+  assert.match(assessmentFailureReason(failure), /account balance is exhausted/i);
+  assert.equal(assessmentFailureSupport(failure), "1 attempt | Support reference req_support_456");
 });

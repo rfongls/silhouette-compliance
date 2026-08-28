@@ -38,7 +38,9 @@ export function providerFailureEvidence(error: unknown): AIProviderFailureEviden
   return error instanceof AIProviderRequestError ? error.evidence : null;
 }
 
-function isRetriableStatus(status: number) {
+export function isRetriableProviderFailure(status: number, code?: string | null) {
+  const normalizedCode = (code || "").toLowerCase();
+  if (normalizedCode === "credit_balance_exhausted" || normalizedCode === "insufficient_quota" || normalizedCode === "invalid_api_key") return false;
   return status === 408 || status === 409 || status === 429 || status >= 500;
 }
 
@@ -58,7 +60,7 @@ async function providerHttpError(response: Response, label: string, provider: st
     httpStatus: response.status,
     code: detail.code || detail.type,
     requestId: response.headers.get("x-request-id") || response.headers.get("request-id"),
-    retriable: isRetriableStatus(response.status),
+    retriable: isRetriableProviderFailure(response.status, detail.code || detail.type),
     attempts: 1,
     stage: "provider_request"
   });
@@ -93,7 +95,7 @@ async function retryProviderCall<T>(call: () => Promise<T>, provider: string, mo
             httpStatus: inferredStatus,
             code: typeof error === "object" && error && "name" in error ? String(error.name).slice(0, 120) : "network_error",
             requestId: typeof error === "object" && error && "request_id" in error ? String(error.request_id).slice(0, 200) : null,
-            retriable: inferredStatus ? isRetriableStatus(inferredStatus) : true,
+            retriable: inferredStatus ? isRetriableProviderFailure(inferredStatus) : true,
             attempts: attempt,
             stage: "provider_request"
           };

@@ -16,6 +16,7 @@ import { centsForKind } from "@/lib/stripe";
 import { isEffectiveAdmin } from "@/lib/view-role";
 import { buildNetworkReport } from "@/lib/network-report";
 import { providerFailureEvidence } from "@/lib/analysis/anthropic";
+import { assessmentFailureReason } from "@/lib/assessment-failure";
 
 function organizationKey(name: string) {
   return name.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "organization";
@@ -348,9 +349,17 @@ export async function handleIrpAssessment(req: Request) {
       });
       delivered.push({ assessmentId: saved.id, orgName: item.orgName, result, reused: false });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Assessment failed";
       const failure = providerFailureEvidence(error);
       const failureStage = failure?.stage || "result_validation";
+      const failureReason = assessmentFailureReason({
+        failureProvider: failure?.provider || aiConfig.provider,
+        failureHttpStatus: failure?.httpStatus || null,
+        failureCode: failure?.code || (error instanceof Error ? error.name : "unknown_error"),
+        failureRequestId: failure?.requestId || null,
+        failureRetriable: failure?.retriable || false,
+        failureAttempts: failure?.attempts || 0,
+        failureStage
+      });
       console.error("IRP assessment failure", {
         assessmentId: item.assessment.id,
         quoteId: quote.id,
@@ -370,7 +379,7 @@ export async function handleIrpAssessment(req: Request) {
         data: {
           status: isAdmin ? "FAILED" : "REFUNDED",
           progressStage: isAdmin ? "FAILED" : "REFUNDED",
-          progressMessage: isAdmin ? "Assessment processing failed." : "Assessment processing failed and the purchased credit was restored.",
+          progressMessage: isAdmin ? failureReason : `${failureReason} The purchased credit was restored.`,
           progressUpdatedAt: new Date(),
           failureProvider: failure?.provider || aiConfig.provider,
           failureModel: failure?.model || aiConfig.model,
@@ -385,12 +394,16 @@ export async function handleIrpAssessment(req: Request) {
       }).catch(() => undefined);
       await prisma.usageLedger.update({ where: { id: item.ledger.id }, data: { assessmentId: item.assessment.id, status: isAdmin ? "failed" : "refunded" } }).catch(() => undefined);
       if (!isAdmin) await restoreEntitlement(accountId, EntKind.ASSESSMENT_CREDIT, 1, item.assessment.id).catch(() => undefined);
-      failed.push({ assessmentId: item.assessment.id, orgName: item.orgName, error: isAdmin ? message : "Assessment processing failed. The purchased credit was restored." });
+      failed.push({
+        assessmentId: item.assessment.id,
+        orgName: item.orgName,
+        error: isAdmin ? failureReason : `${failureReason} The purchased credit was restored.`
+      });
     }
   }
 
   if (!delivered.length) {
-    return NextResponse.json({ error: "Assessment processing failed. Purchased credits were restored.", failed }, { status: 500 });
+    return NextResponse.json({ error: failed[0]?.error || "Assessment processing failed. Purchased credits were restored.", failed }, { status: 500 });
   }
   const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, delivered) : null;
   await prisma.runQuote.update({

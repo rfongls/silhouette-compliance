@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { assessmentFailureReason, assessmentFailureSupport } from "@/lib/assessment-failure";
 
 export async function GET(req: Request) {
   const guard = await requireSession("customer");
@@ -33,6 +34,14 @@ export async function GET(req: Request) {
       progressCurrent: true,
       progressTotal: true,
       progressUpdatedAt: true,
+      failureProvider: true,
+      failureHttpStatus: true,
+      failureCode: true,
+      failureRequestId: true,
+      failureRetriable: true,
+      failureAttempts: true,
+      failureStage: true,
+      failedAt: true,
       ...(quoteId ? { result: true } : {}),
       ledger: { select: { quoteId: true } }
     }
@@ -42,7 +51,12 @@ export async function GET(req: Request) {
     select: { id: true, assessmentScope: true, parentOrgName: true, networkResult: true, networkGeneratedAt: true }
   }) : null;
   return NextResponse.json({
-    assessments: assessments.map(({ ledger, ...assessment }) => ({ ...assessment, quoteId: ledger?.quoteId || null })),
+    assessments: assessments.map(({ ledger, ...assessment }) => ({
+      ...assessment,
+      quoteId: ledger?.quoteId || null,
+      failureReason: assessment.failureCode ? assessmentFailureReason(assessment) : null,
+      failureSupport: assessment.failureCode ? assessmentFailureSupport(assessment) : null
+    })),
     networkReport: quote?.networkResult || null,
     network: quote ? { quoteId: quote.id, assessmentScope: quote.assessmentScope, parentOrgName: quote.parentOrgName, generatedAt: quote.networkGeneratedAt } : null
   });

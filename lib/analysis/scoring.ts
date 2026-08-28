@@ -19,6 +19,23 @@ export type AnalysisProgress = {
 };
 type Status = "Yes" | "Partial" | "No";
 
+export type AnalysisCheckpointEvaluation = {
+  key: string;
+  status: Status;
+  quote: string;
+  document: string;
+  finding: string;
+};
+
+export type AnalysisPassCheckpoint = {
+  passKey: string;
+  controlBatch: number;
+  evidenceChunk: number;
+  evaluations: AnalysisCheckpointEvaluation[];
+  inputTokens: number;
+  outputTokens: number;
+};
+
 const responseSchema = z.object({
   evaluations: z.array(z.object({
     control_id: z.string(),
@@ -154,6 +171,16 @@ export function calculateOverallComplianceScore(standardScores: number[]) {
   return Math.round(standardScores.reduce((total, standardScore) => total + standardScore, 0) / standardScores.length);
 }
 
+function mergeCheckpointEvaluations(
+  best: Map<string, Omit<AnalysisCheckpointEvaluation, "key">>,
+  evaluations: AnalysisCheckpointEvaluation[]
+) {
+  for (const { key, ...candidate } of evaluations) {
+    const current = best.get(key);
+    if (!current || statusRank(candidate.status) > statusRank(current.status)) best.set(key, candidate);
+  }
+}
+
 export function calculateBucketedComplianceScore(rows: BucketedScoredControl[]) {
   if (!rows.length) return { score: 0, points_earned: 0, points_possible: 100, buckets: {} };
   const activeDefinitions = IRP_CAPABILITY_BUCKETS.filter((bucket) => rows.some((row) => row.bucket_id === bucket.id));
@@ -277,6 +304,8 @@ export async function scoreControlSet(input: {
   documents: EvidenceDocument[];
   boardCite: string;
   onProgress?: (progress: AnalysisProgress) => void | Promise<void>;
+  completedPasses?: AnalysisPassCheckpoint[];
+  onCheckpoint?: (checkpoint: AnalysisPassCheckpoint) => void | Promise<void>;
 }) {
   const profile = profileIrpControls(input.controls);
   const profiledControls = profile.controls;
@@ -287,21 +316,40 @@ export async function scoreControlSet(input: {
   const usage: Required<ModelUsage> = { inputTokens: 0, outputTokens: 0 };
   const controlBatches = batches(profiledControls, IRP_CONTROL_BATCH_SIZE);
   const total = controlBatches.length * chunks.length;
-  let completed = 0;
+  const completedPasses = new Map(
+    (input.completedPasses || [])
+      .filter((checkpoint) =>
+        checkpoint.controlBatch >= 1 &&
+        checkpoint.controlBatch <= controlBatches.length &&
+        checkpoint.evidenceChunk >= 1 &&
+        checkpoint.evidenceChunk <= chunks.length &&
+        checkpoint.passKey === `${checkpoint.controlBatch}:${checkpoint.evidenceChunk}`
+      )
+      .map((checkpoint) => [checkpoint.passKey, checkpoint])
+  );
+  for (const checkpoint of completedPasses.values()) {
+    mergeCheckpointEvaluations(best, checkpoint.evaluations);
+    usage.inputTokens += checkpoint.inputTokens || 0;
+    usage.outputTokens += checkpoint.outputTokens || 0;
+  }
+  let completed = completedPasses.size;
+
+  await input.onProgress?.({
+    completed,
+    total,
+    controlBatch: 0,
+    controlBatches: controlBatches.length,
+    evidenceChunk: 0,
+    evidenceChunks: chunks.length,
+    message: completed
+      ? `Resuming with ${completed} of ${total} analysis passes already checkpointed.`
+      : `Starting ${total} analysis passes.`
+  });
 
   for (const [controlBatchIndex, controlBatch] of controlBatches.entries()) {
     for (const [evidenceChunkIndex, evidenceChunk] of chunks.entries()) {
-      if (completed === 0) {
-        await input.onProgress?.({
-          completed,
-          total,
-          controlBatch: controlBatchIndex + 1,
-          controlBatches: controlBatches.length,
-          evidenceChunk: evidenceChunkIndex + 1,
-          evidenceChunks: chunks.length,
-          message: `Analyzing policy segment ${evidenceChunkIndex + 1} of ${chunks.length} against control batch ${controlBatchIndex + 1} of ${controlBatches.length}.`
-        });
-      }
+      const passKey = `${controlBatchIndex + 1}:${evidenceChunkIndex + 1}`;
+      if (completedPasses.has(passKey)) continue;
       const prompt = buildControlEvaluationPrompt({
         orgName: input.orgName,
         scope: input.scope,
@@ -313,6 +361,7 @@ export async function scoreControlSet(input: {
       usage.inputTokens += response.usage.inputTokens || 0;
       usage.outputTokens += response.usage.outputTokens || 0;
       const parsed = responseSchema.parse(response.json);
+      const checkpointEvaluations: AnalysisCheckpointEvaluation[] = [];
       for (const evaluation of parsed.evaluations) {
         const key = controlKey(evaluation.standard, evaluation.control_id);
         const expected = controlBatch.find((control) => controlKey(control.standard, control.id) === key);
@@ -325,9 +374,19 @@ export async function scoreControlSet(input: {
           document: status === "No" ? "" : evidenceChunk.name,
           finding: evaluation.finding.trim() || (status === "No" ? "Requirement was not evidenced in the submitted policies." : "Requirement is evidenced in the submitted policies.")
         };
-        const current = best.get(key);
-        if (!current || statusRank(candidate.status) > statusRank(current.status)) best.set(key, candidate);
+        checkpointEvaluations.push({ key, ...candidate });
       }
+      const checkpoint: AnalysisPassCheckpoint = {
+        passKey,
+        controlBatch: controlBatchIndex + 1,
+        evidenceChunk: evidenceChunkIndex + 1,
+        evaluations: checkpointEvaluations,
+        inputTokens: response.usage.inputTokens || 0,
+        outputTokens: response.usage.outputTokens || 0
+      };
+      await input.onCheckpoint?.(checkpoint);
+      completedPasses.set(passKey, checkpoint);
+      mergeCheckpointEvaluations(best, checkpointEvaluations);
       completed += 1;
       await input.onProgress?.({
         completed,

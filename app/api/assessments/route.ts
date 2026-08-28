@@ -9,10 +9,12 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
   const quoteId = params.get("quoteId")?.trim();
   const runningOnly = params.get("status") === "RUNNING";
+  const recoverableOnly = params.get("status") === "RECOVERABLE";
   const assessments = await prisma.assessment.findMany({
     where: {
       accountId: guard.session.user.accountId,
       ...(runningOnly ? { status: "RUNNING" as const, updatedAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } } : {}),
+      ...(recoverableOnly ? { status: { in: ["FAILED" as const, "REFUNDED" as const] }, updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } : {}),
       ...(quoteId ? { ledger: { is: { quoteId } } } : {})
     },
     orderBy: { createdAt: "desc" },
@@ -28,6 +30,7 @@ export async function GET(req: Request) {
       posture: true,
       status: true,
       boardCite: true,
+      boardSnapshot: true,
       refineUsed: true,
       progressStage: true,
       progressMessage: true,
@@ -43,7 +46,8 @@ export async function GET(req: Request) {
       failureStage: true,
       failedAt: true,
       ...(quoteId ? { result: true } : {}),
-      ledger: { select: { quoteId: true } }
+      ledger: { select: { quoteId: true } },
+      _count: { select: { checkpoints: true } }
     }
   });
   const quote = quoteId ? await prisma.runQuote.findFirst({
@@ -51,11 +55,17 @@ export async function GET(req: Request) {
     select: { id: true, assessmentScope: true, parentOrgName: true, networkResult: true, networkGeneratedAt: true }
   }) : null;
   return NextResponse.json({
-    assessments: assessments.map(({ ledger, ...assessment }) => ({
+    assessments: assessments.map(({ ledger, boardSnapshot, _count, ...assessment }) => ({
       ...assessment,
       quoteId: ledger?.quoteId || null,
       failureReason: assessment.failureCode ? assessmentFailureReason(assessment) : null,
-      failureSupport: assessment.failureCode ? assessmentFailureSupport(assessment) : null
+      failureSupport: assessment.failureCode ? assessmentFailureSupport(assessment) : null,
+      canResume: assessment.status === "FAILED" || assessment.status === "REFUNDED",
+      checkpointCount: _count.checkpoints,
+      resumeMode: _count.checkpoints ? "CONTINUE" : "RETRY",
+      resumeStandards: Array.isArray(boardSnapshot)
+        ? boardSnapshot.map((row) => row && typeof row === "object" && "standardKey" in row ? String(row.standardKey) : "").filter(Boolean)
+        : []
     })),
     networkReport: quote?.networkResult || null,
     network: quote ? { quoteId: quote.id, assessmentScope: quote.assessmentScope, parentOrgName: quote.parentOrgName, generatedAt: quote.networkGeneratedAt } : null

@@ -1,17 +1,17 @@
 import type { ModelUsage } from "@/lib/analysis/anthropic";
 import { defaultStandards } from "@/lib/analysis/standards";
-import { scoreControlSet, type AnalysisProgress } from "@/lib/analysis/scoring";
+import { scoreControlSet, type AnalysisPassCheckpoint, type AnalysisProgress } from "@/lib/analysis/scoring";
 import type { NormalizedControl } from "@/lib/control-boards";
 import { sanitizeForExport } from "@/lib/sanitize";
 
 export { demoAssessment } from "@/lib/analysis/irp-demo";
 
-export type AssessInput = { orgName?: string; industry: string; standards?: string[]; documents: { name: string; text: string }[]; controls: NormalizedControl[]; boardCite?: string; onProgress?: (progress: AnalysisProgress) => void | Promise<void> };
+export type AssessInput = { orgName?: string; industry: string; standards?: string[]; documents: { name: string; text: string }[]; controls: NormalizedControl[]; boardCite?: string; onProgress?: (progress: AnalysisProgress) => void | Promise<void>; completedPasses?: AnalysisPassCheckpoint[]; onCheckpoint?: (checkpoint: AnalysisPassCheckpoint) => void | Promise<void> };
 
 export async function runGapAnalysis(input: AssessInput): Promise<{ result: any; usage: ModelUsage }> {
   const standards = input.standards?.length ? input.standards : defaultStandards(input.industry);
   const scope = { industry: input.industry, standards };
-  const { result, usage } = await scoreControlSet({ orgName: input.orgName || "Unknown Organization", scope, controls: input.controls, documents: input.documents, boardCite: input.boardCite || "", onProgress: input.onProgress });
+  const { result, usage } = await scoreControlSet({ orgName: input.orgName || "Unknown Organization", scope, controls: input.controls, documents: input.documents, boardCite: input.boardCite || "", onProgress: input.onProgress, completedPasses: input.completedPasses, onCheckpoint: input.onCheckpoint });
   return { result: normalizeResult(result, input.orgName), usage };
 }
 

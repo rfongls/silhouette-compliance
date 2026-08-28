@@ -8,6 +8,7 @@ import {
   calculateWeightedComplianceScore,
   chunkEvidenceDocuments,
   consolidateRemediationFindings,
+  scoreControlSet,
   scoringPassCount,
   validateEvidenceStatus
 } from "../lib/analysis/scoring";
@@ -48,6 +49,44 @@ test("evidence chunking preserves every character without truncation", () => {
   const chunks = chunkEvidenceDocuments([{ name: "policy.txt", text }]);
   assert.ok(chunks.length > 1);
   assert.equal(chunks.map((chunk) => chunk.text).join(""), text);
+});
+
+test("a fully checkpointed assessment resumes without another model request", async () => {
+  const progress: number[] = [];
+  const scored = await scoreControlSet({
+    orgName: "Checkpoint Health Center",
+    scope: { industry: "health-center", standards: ["NIST"] },
+    controls: [{
+      id: "IR-1",
+      standard: "NIST",
+      category: "Incident response planning",
+      requirement: "The organization documents its incident response roles and responsibilities.",
+      risk_level: "High"
+    }],
+    documents: [{ name: "irp.txt", text: "Incident response roles are documented." }],
+    boardCite: "NIST SP 800-53 Rev. 5",
+    completedPasses: [{
+      passKey: "1:1",
+      controlBatch: 1,
+      evidenceChunk: 1,
+      evaluations: [{
+        key: "NIST::IR-1",
+        status: "Yes",
+        quote: "Incident response roles are documented.",
+        document: "irp.txt",
+        finding: "Incident response roles and responsibilities are evidenced."
+      }],
+      inputTokens: 123,
+      outputTokens: 45
+    }],
+    onProgress: ({ completed }) => {
+      progress.push(completed);
+    }
+  });
+
+  assert.equal(scored.result.control_results[0].status, "Yes");
+  assert.deepEqual(scored.usage, { inputTokens: 123, outputTokens: 45 });
+  assert.deepEqual(progress, [1]);
 });
 
 test("server scoring uses Yes=1, Partial=0.5, No=0", () => {

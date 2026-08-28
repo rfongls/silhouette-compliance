@@ -56,6 +56,11 @@ type AssessmentProgress = {
   failureReason?: string | null;
   failureSupport?: string | null;
   failureRetriable?: boolean | null;
+  industry?: string;
+  canResume?: boolean;
+  checkpointCount?: number;
+  resumeMode?: "CONTINUE" | "RETRY";
+  resumeStandards?: string[];
   result?: any;
 };
 
@@ -100,12 +105,13 @@ function availableDefaults(industry: string, available: Record<string, string[]>
   return defaults.length ? defaults : deployed.slice(0, 1);
 }
 
-function AssessmentStatusPanel({ operation, progress, elapsedSeconds }: { operation: AssessmentOperation; progress: number; elapsedSeconds: number }) {
+function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, onResume, onReattach }: { operation: AssessmentOperation; progress: number; elapsedSeconds: number; resuming: boolean; onResume: () => void; onReattach: () => void }) {
   const label = operation.state === "SUBMITTING" ? "Starting"
     : operation.state === "RUNNING" ? "Running"
       : operation.state === "COMPLETED" ? "Completed"
         : "Failed";
   const active = operation.state === "SUBMITTING" || operation.state === "RUNNING";
+  const resumeTarget = operation.rows.find((row) => row.canResume && (row.status === "FAILED" || row.status === "REFUNDED"));
   return (
     <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "16px 0 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -140,6 +146,12 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds }: { operat
           ))}</tbody>
         </table>
       ) : null}
+      {operation.state === "FAILED" && resumeTarget ? <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+        <button className="btn" type="button" onClick={onResume} disabled={resuming}>
+          {resuming ? "Continuing run..." : resumeTarget.resumeMode === "CONTINUE" ? "Continue run" : "Retry from start"}
+        </button>
+        <button className="btn secondary" type="button" onClick={onReattach} disabled={resuming}>Reattach original policies</button>
+      </div> : null}
       {active ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>This status is stored server-side and reconnects after a page refresh. Progress updates after each completed model pass.</p> : null}
     </div>
   );
@@ -188,6 +200,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const [reportQuoteId, setReportQuoteId] = useState<string | null>(null);
   const [operation, setOperation] = useState<AssessmentOperation | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [resuming, setResuming] = useState(false);
   const deployedStandards = demo ? null : new Set(availableStandardsByIndustry[industry] || []);
   const standardOptions = (INDUSTRY_STANDARDS[industry]?.standards || []).filter((standard) => !deployedStandards || deployedStandards.has(standard.key));
   const allStandardsSelected = standardOptions.length > 0 && standardOptions.every((standard) => standards.includes(standard.key));
@@ -213,25 +226,127 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   useEffect(() => {
     if (demo) return;
     let cancelled = false;
-    void fetch("/api/assessments?status=RUNNING", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => {
-        const rows = Array.isArray(data?.assessments) ? data.assessments as AssessmentProgress[] : [];
-        if (cancelled || !rows.length) return;
-        const latestQuoteId = rows.find((row) => row.quoteId)?.quoteId || null;
+    void (async () => {
+      const runningResponse = await fetch("/api/assessments?status=RUNNING", { cache: "no-store" });
+      const runningData = runningResponse.ok ? await runningResponse.json() : null;
+      const runningRows = Array.isArray(runningData?.assessments) ? runningData.assessments as AssessmentProgress[] : [];
+      if (cancelled) return;
+      if (runningRows.length) {
+        const latestQuoteId = runningRows.find((row) => row.quoteId)?.quoteId || null;
         setOperation({
           state: "RUNNING",
           quoteId: latestQuoteId,
-          startedAt: Date.parse(rows[0].createdAt) || Date.now(),
+          startedAt: Date.parse(runningRows[0].createdAt) || Date.now(),
           message: "Restored an assessment currently running for this account.",
-          rows
+          rows: runningRows
         });
         setWizardStep(5);
         setFurthestWizardStep(5);
-      })
+        return;
+      }
+
+      const failedResponse = await fetch("/api/assessments?status=RECOVERABLE", { cache: "no-store" });
+      const failedData = failedResponse.ok ? await failedResponse.json() : null;
+      const failedRows = Array.isArray(failedData?.assessments) ? failedData.assessments as AssessmentProgress[] : [];
+      if (cancelled || !failedRows.length) return;
+      const latest = failedRows[0];
+      let quoteRows = latest.quoteId ? failedRows.filter((row) => row.quoteId === latest.quoteId) : [latest];
+      if (latest.quoteId) {
+        const quoteResponse = await fetch(`/api/assessments?quoteId=${encodeURIComponent(latest.quoteId)}`, { cache: "no-store" });
+        const quoteData = quoteResponse.ok ? await quoteResponse.json() : null;
+        const restoredRows = Array.isArray(quoteData?.assessments) ? quoteData.assessments as AssessmentProgress[] : [];
+        const restoredFailures = restoredRows.filter((row) => row.status === "FAILED" || row.status === "REFUNDED");
+        if (restoredFailures.length) quoteRows = restoredFailures;
+        if (quoteData?.network?.assessmentScope === "network") {
+          setAssessmentScope("network");
+          setParentOrgName(String(quoteData.network.parentOrgName || ""));
+        }
+      }
+      setIndustry(latest.industry || "health-center");
+      setStandards(latest.resumeStandards?.length ? latest.resumeStandards : availableDefaults(latest.industry || "health-center", availableStandardsByIndustry, false));
+      setOrgs(quoteRows.map((row) => newOrg(row.orgName || "")));
+      setOperation({
+        state: "FAILED",
+        quoteId: latest.quoteId,
+        startedAt: Date.parse(latest.createdAt) || Date.now(),
+        message: latest.checkpointCount
+          ? `This run can continue after ${latest.checkpointCount} saved analysis passes. Reattach the original policies if they are no longer loaded in this browser.`
+          : "This older failed run has no pass checkpoints and must retry from the first analysis pass.",
+        rows: quoteRows
+      });
+      setWizardStep(5);
+      setFurthestWizardStep(5);
+    })()
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, [demo]);
+
+  async function refreshFailedOperation(quoteId: string | null, fallbackMessage: string) {
+    const response = await fetch(quoteId ? `/api/assessments?quoteId=${encodeURIComponent(quoteId)}` : "/api/assessments?status=RECOVERABLE", { cache: "no-store" });
+    const data = response.ok ? await response.json() : null;
+    const rows = Array.isArray(data?.assessments) ? data.assessments as AssessmentProgress[] : [];
+    const failedRows = rows.filter((row) => row.status === "FAILED" || row.status === "REFUNDED");
+    setOperation((current) => current ? {
+      ...current,
+      state: "FAILED",
+      rows: failedRows.length ? failedRows : current.rows,
+      message: failedRows[0]?.failureReason || fallbackMessage
+    } : current);
+  }
+
+  async function continueFailedAssessment() {
+    if (!operation || operation.state !== "FAILED") return;
+    const failed = operation.rows.find((row) => row.canResume && (row.status === "FAILED" || row.status === "REFUNDED"));
+    if (!failed) return;
+    const validOrgs = orgs.map((org) => ({ ...org, name: org.name.trim() })).filter((org) => org.name);
+    const documents = orgDocuments(validOrgs).filter((document) => document.orgName === (failed.orgName || "Organization"));
+    if (!documents.length) {
+      setWizardError(`Reattach the original policy files for ${failed.orgName || "this organization"} before continuing.`);
+      setWizardStep(4);
+      return;
+    }
+    if (!phiAttested) {
+      setWizardError("Confirm that the uploaded files were reviewed and PHI was removed before continuing.");
+      setWizardStep(4);
+      return;
+    }
+
+    setResuming(true);
+    setElapsedSeconds(0);
+    setOperation((current) => current ? { ...current, state: "RUNNING", startedAt: Date.now(), message: failed.resumeMode === "CONTINUE" ? `Continuing after ${failed.checkpointCount || 0} checkpointed passes.` : "Retrying this failed assessment from the first pass." } : current);
+    try {
+      const response = await fetch(`/api/assessments/${encodeURIComponent(failed.id)}/resume`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ documents, phiAttested })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        await refreshFailedOperation(operation.quoteId, data.error || "The assessment could not continue.");
+        return;
+      }
+      const remainingFailures = operation.rows.filter((row) => row.id !== failed.id && row.canResume && (row.status === "FAILED" || row.status === "REFUNDED"));
+      setOperation((current) => current ? {
+        ...current,
+        state: remainingFailures.length ? "FAILED" : "COMPLETED",
+        message: remainingFailures.length
+          ? `${failed.orgName || "Organization"} completed. Reattach and continue the next failed organization.`
+          : "Assessment processing completed from the saved checkpoints.",
+        rows: current.rows.map((row) => row.id === failed.id ? { ...row, canResume: false, status: "DELIVERED", progressStage: "DELIVERED", progressMessage: "Assessment and report completed.", progressCurrent: row.progressTotal, result: data.result } : row)
+      } : current);
+      if (!remainingFailures.length) {
+        setResult(data.result);
+        setAssessmentId(data.assessmentId || failed.id);
+        setAssessments(Array.isArray(data.assessments) ? data.assessments : [{ assessmentId: data.assessmentId || failed.id, orgName: failed.orgName || "Organization", result: data.result }]);
+        setNetworkReport(data.networkReport || null);
+        setReportQuoteId(data.quoteId || operation.quoteId);
+      }
+    } catch {
+      await refreshFailedOperation(operation.quoteId, "The browser connection closed while the continuation request was active. Refresh to restore persisted status.");
+    } finally {
+      setResuming(false);
+    }
+  }
 
   useEffect(() => {
     if (!operationActive || !operation?.quoteId || demo) return;
@@ -491,6 +606,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       if (!res.ok) {
         const message = data.error || "Assessment failed";
         setOperation((current) => current ? { ...current, state: "FAILED", message } : current);
+        await refreshFailedOperation(runQuote.id, message);
         alert(message);
         return;
       }
@@ -823,7 +939,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               </div>
               {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Completed reports are saved to secure account history.</p> : null}
             </section> : null}
-            {operation && !result ? <AssessmentStatusPanel operation={operation} progress={operationProgress} elapsedSeconds={elapsedSeconds} /> : null}
+            {operation && !result ? <AssessmentStatusPanel operation={operation} progress={operationProgress} elapsedSeconds={elapsedSeconds} resuming={resuming} onResume={() => void continueFailedAssessment()} onReattach={() => { setWizardError(""); setWizardStep(4); }} /> : null}
             {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
             <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. IRP billing is fixed at $250 per organization assessed.</p>
           </section> : null}

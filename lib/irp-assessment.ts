@@ -309,6 +309,30 @@ export async function handleIrpAssessment(req: Request) {
               progressUpdatedAt: new Date()
             }
           });
+        },
+        onCheckpoint: async (checkpoint) => {
+          await prisma.assessmentPassCheckpoint.upsert({
+            where: {
+              assessmentId_passKey: {
+                assessmentId: item.assessment.id,
+                passKey: checkpoint.passKey
+              }
+            },
+            create: {
+              assessmentId: item.assessment.id,
+              passKey: checkpoint.passKey,
+              controlBatch: checkpoint.controlBatch,
+              evidenceChunk: checkpoint.evidenceChunk,
+              evaluations: checkpoint.evaluations,
+              inputTokens: checkpoint.inputTokens,
+              outputTokens: checkpoint.outputTokens
+            },
+            update: {
+              evaluations: checkpoint.evaluations,
+              inputTokens: checkpoint.inputTokens,
+              outputTokens: checkpoint.outputTokens
+            }
+          });
         }
       });
       await prisma.assessment.update({
@@ -347,6 +371,7 @@ export async function handleIrpAssessment(req: Request) {
         where: { id: item.ledger.id },
         data: { assessmentId: saved.id, status: isAdmin ? "admin_comped" : "succeeded", inputTokens: usage.inputTokens, outputTokens: usage.outputTokens }
       });
+      await prisma.assessmentPassCheckpoint.deleteMany({ where: { assessmentId: saved.id } }).catch(() => undefined);
       delivered.push({ assessmentId: saved.id, orgName: item.orgName, result, reused: false });
     } catch (error) {
       const failure = providerFailureEvidence(error);

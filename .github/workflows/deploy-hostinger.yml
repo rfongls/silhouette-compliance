@@ -155,7 +155,7 @@ jobs:
                */domains/complianceapp.silhouettellc.com/public_html) ;;
                *) echo \"Refusing to deploy into unexpected path: \$PWD\" >&2; exit 1 ;;
              esac
-             STAGING_DIR='.deploy-staging'
+             STAGING_DIR='.deploy-staging-${GITHUB_SHA}'
              rm -rf \"\$STAGING_DIR\"
              mkdir -p \"\$STAGING_DIR\"
              tar -xzf '$ARCHIVE_NAME' -C \"\$STAGING_DIR\"
@@ -164,24 +164,13 @@ jobs:
              test -s \"\$STAGING_DIR/prisma/schema.prisma\"
              test -s \"\$STAGING_DIR/.next/BUILD_ID\"
              echo 'Validated staged deployment artifact.'
-             rm -rf .next app components lib prisma scripts
-             cp -a \"\$STAGING_DIR/.\" .
-             rm -rf \"\$STAGING_DIR\"
-             rm -f '$ARCHIVE_NAME'
-             test -s prisma/schema.prisma
-             test -s .next/BUILD_ID
-             test -s package-lock.deploy.json
+             export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/opt/alt/alt-nodejs20/root/usr/bin:/usr/local/bin:/usr/bin:/bin
+             echo 'Installing staged deployment dependencies'
+             cd \"\$STAGING_DIR\"
              install -m 644 package-lock.deploy.json package-lock.json
              rm -f package-lock.deploy.json
-             test -s package-lock.json
-             RUNTIME_CONFIG_DIR=\"\$(dirname '$DEPLOY_PATH')/hbuilds/config\"
-             mkdir -p \"\$RUNTIME_CONFIG_DIR\"
-             install -m 600 .env \"\$RUNTIME_CONFIG_DIR/.env\"
-             echo \"Synchronized GitHub-managed environment: \$RUNTIME_CONFIG_DIR/.env\"
-             export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/opt/alt/alt-nodejs20/root/usr/bin:/usr/local/bin:/usr/bin:/bin
-             echo 'Installing deployment dependencies'
              npm ci --no-audit --no-fund
-             echo 'Generating Prisma client'
+             echo 'Generating staged Prisma client'
              npx prisma generate
              if [ '${{ vars.COMPLIANCE_HOSTINGER_RUN_MIGRATIONS || 'false' }}' = 'true' ]; then
                echo 'Applying Prisma migrations'
@@ -189,16 +178,33 @@ jobs:
              else
                echo 'Skipping Prisma migrations because COMPLIANCE_HOSTINGER_RUN_MIGRATIONS is not true.'
              fi
+             test -s package.json
+             test -s package-lock.json
+             test -s prisma/schema.prisma
+             test -s .next/BUILD_ID
+             test -d node_modules/next
+             mv .htaccess .htaccess.release
+             cd '$DEPLOY_PATH'
+             echo 'Promoting validated staged deployment'
+             rm -rf .next app components lib prisma scripts node_modules
+             cp -a \"\$STAGING_DIR/.\" .
+             rm -rf \"\$STAGING_DIR\"
+             rm -f '$ARCHIVE_NAME'
+             test -s package.json
+             test -s package-lock.json
+             test -s prisma/schema.prisma
+             test -s .next/BUILD_ID
+             test -d node_modules/next
+             RUNTIME_CONFIG_DIR=\"\$(dirname '$DEPLOY_PATH')/hbuilds/config\"
+             mkdir -p \"\$RUNTIME_CONFIG_DIR\"
+             install -m 600 .env \"\$RUNTIME_CONFIG_DIR/.env\"
+             echo \"Synchronized GitHub-managed environment: \$RUNTIME_CONFIG_DIR/.env\"
+             install -m 644 .htaccess.release .htaccess
+             rm -f .htaccess.release
+             grep -Fq \"PassengerAppRoot $DEPLOY_PATH\" .htaccess
              mkdir -p tmp
              printf 'restart=%s\ncommit=${GITHUB_SHA}\n' \"\$(date -u +%FT%TZ)\" > tmp/restart.txt
-             ACTIVE_NODE_PATH=\"\$(dirname '$DEPLOY_PATH')/hbuilds/current/nodejs\"
-             if [ ! -d \"\$ACTIVE_NODE_PATH\" ]; then
-               echo \"Active Passenger target was not found: \$ACTIVE_NODE_PATH\" >&2
-               exit 1
-             fi
-             mkdir -p \"\$ACTIVE_NODE_PATH/tmp\"
-             printf 'restart=%s\ncommit=${GITHUB_SHA}\nreason=github-action\n' \"\$(date -u +%FT%TZ)\" > \"\$ACTIVE_NODE_PATH/tmp/restart.txt\"
-             echo \"Restarted active Passenger target: \$ACTIVE_NODE_PATH\""
+             echo \"Promoted and restarted GitHub-managed Passenger target: $DEPLOY_PATH\""
 
       - name: Smoke test
         run: |

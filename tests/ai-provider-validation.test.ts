@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AIKeyVerificationError, verifyAIKey } from "../lib/ai-provider-validation";
+import { AIKeyVerificationError, verifyAIKey, verifyAIProviderReadiness } from "../lib/ai-provider-validation";
 import { AIProviderRequestError, isRetriableProviderFailure, providerFailureEvidence } from "../lib/analysis/anthropic";
 import { assessmentFailureReason, assessmentFailureSupport } from "../lib/assessment-failure";
 
@@ -30,6 +30,39 @@ test("provider failures do not expose response bodies or credential fragments", 
       assert.ok(error instanceof AIKeyVerificationError);
       assert.match(error.message, /rejected the API key/);
       assert.doesNotMatch(error.message, /sensitive-key-fragment/);
+      return true;
+    }
+  );
+});
+
+test("OpenAI operational readiness makes a minimal stateless model request", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (input, init) => {
+    assert.equal(String(input), "https://api.openai.com/v1/responses");
+    assert.equal(init?.method, "POST");
+    const body = JSON.parse(String(init?.body));
+    assert.deepEqual(body, { model: "gpt-test", store: false, input: "Reply with OK.", max_output_tokens: 16 });
+    return new Response(JSON.stringify({ output_text: "OK" }), { status: 200 });
+  };
+
+  const result = await verifyAIProviderReadiness({ provider: "openai", apiKey: "test-key", model: "gpt-test" });
+  assert.ok(result.verifiedAt);
+});
+
+test("OpenAI operational readiness reports exhausted billing without exposing provider text", async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    error: { code: "credit_balance_exhausted", message: "private provider detail" }
+  }), { status: 429 });
+
+  await assert.rejects(
+    verifyAIProviderReadiness({ provider: "openai", apiKey: "test-key", model: "gpt-test" }),
+    (error: unknown) => {
+      assert.ok(error instanceof AIKeyVerificationError);
+      assert.match(error.message, /account balance is exhausted/i);
+      assert.doesNotMatch(error.message, /private provider detail/);
       return true;
     }
   );

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
-import { AIKeyVerificationError, verifyAIKey } from "@/lib/ai-provider-validation";
-import { getAIConfig, getAIConfigForAdmin, markAIKeyVerified, setAIConfig, type AIProvider } from "@/lib/settings";
+import { AIKeyVerificationError, verifyAIProviderReadiness } from "@/lib/ai-provider-validation";
+import { getAIConfig, getAIConfigForAdmin, markAIKeyUnverified, markAIKeyVerified, setAIConfig, type AIProvider } from "@/lib/settings";
 
 const providers = new Set(["anthropic", "openai", "deepseek", "openai-compatible"]);
 
@@ -35,7 +35,7 @@ export async function PATCH(req: Request) {
   const typedProvider = nextProvider as AIProvider;
   if (apiKey) {
     try {
-      const verification = await verifyAIKey({ provider: typedProvider, apiKey, baseUrl });
+      const verification = await verifyAIProviderReadiness({ provider: typedProvider, apiKey, baseUrl, model });
       await setAIConfig({ provider: typedProvider, model, baseUrl, apiKey });
       await markAIKeyVerified(typedProvider, apiKey, verification.verifiedAt);
     } catch (error) {
@@ -56,10 +56,11 @@ export async function POST() {
   const config = await getAIConfig();
   if (!config.apiKey) return NextResponse.json({ error: "No API key is stored for this provider." }, { status: 400 });
   try {
-    const verification = await verifyAIKey(config);
+    const verification = await verifyAIProviderReadiness(config);
     await markAIKeyVerified(config.provider, config.apiKey, verification.verifiedAt);
     return NextResponse.json({ aiConfig: await getAIConfigForAdmin() });
   } catch (error) {
+    await markAIKeyUnverified(config.provider).catch(() => undefined);
     const message = error instanceof AIKeyVerificationError ? error.message : "The API key could not be verified.";
     const status = error instanceof AIKeyVerificationError && error.status >= 400 && error.status < 500 ? 400 : 502;
     return NextResponse.json({ error: message }, { status });

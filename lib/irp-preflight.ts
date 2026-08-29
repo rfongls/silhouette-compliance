@@ -1,6 +1,6 @@
-import { verifyAIKey } from "@/lib/ai-provider-validation";
+import { verifyAIProviderReadiness } from "@/lib/ai-provider-validation";
 import { documentSetIntegrity, groupDocumentsByOrg, type IntegrityDocument } from "@/lib/document-integrity";
-import { getAIConfig, markAIKeyVerified } from "@/lib/settings";
+import { getAIConfig, markAIKeyUnverified, markAIKeyVerified } from "@/lib/settings";
 
 export type IrpPreflightResult = {
   passed: true;
@@ -31,9 +31,19 @@ export async function verifyIrpProvider() {
   const config = await getAIConfig();
   if (!config.apiKey?.trim()) throw new Error("The configured AI provider does not have an API key.");
   if (!config.model?.trim()) throw new Error("The configured AI provider does not have a model selected.");
-  const verification = await verifyAIKey({ provider: config.provider, apiKey: config.apiKey, baseUrl: config.baseUrl });
-  await markAIKeyVerified(config.provider, config.apiKey, verification.verifiedAt);
-  return { ...config, verifiedAt: verification.verifiedAt };
+  try {
+    const verification = await verifyAIProviderReadiness({
+      provider: config.provider,
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model
+    });
+    await markAIKeyVerified(config.provider, config.apiKey, verification.verifiedAt);
+    return { ...config, verifiedAt: verification.verifiedAt };
+  } catch (error) {
+    await markAIKeyUnverified(config.provider).catch(() => undefined);
+    throw error;
+  }
 }
 
 export function irpPreflightResult(input: {
@@ -53,7 +63,7 @@ export function irpPreflightResult(input: {
       "Duplicate content detection",
       "Published control-board integrity",
       "Processing-size and cost guard",
-      "Live AI provider credential"
+      "Live AI provider credential, model access, and billing readiness"
     ]
   };
 }

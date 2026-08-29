@@ -11,7 +11,7 @@ import { assessmentFingerprint, documentSetIntegrity, type IntegrityDocument } f
 import { consumeEntitlementTx, PaymentRequiredError, restoreEntitlement } from "@/lib/entitlements";
 import { buildNetworkReport } from "@/lib/network-report";
 import { prisma } from "@/lib/prisma";
-import { getAIConfig } from "@/lib/settings";
+import { verifyIrpProvider } from "@/lib/irp-preflight";
 import { isEffectiveAdmin } from "@/lib/view-role";
 
 function sameHashes(stored: unknown, current: string[]) {
@@ -81,11 +81,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "The scoring profile or published control boards changed after this run failed. Prepare a new assessment so the report uses one consistent scoring basis." }, { status: 409 });
   }
 
-  let aiConfig: Awaited<ReturnType<typeof getAIConfig>>;
+  let aiConfig: Awaited<ReturnType<typeof verifyIrpProvider>>;
   try {
-    aiConfig = await getAIConfig();
+    aiConfig = await verifyIrpProvider();
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "The AI provider is not configured." }, { status: 503 });
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "The AI provider is not ready. An administrator must verify provider access and billing before this run can continue."
+    }, { status: 503 });
   }
 
   try {

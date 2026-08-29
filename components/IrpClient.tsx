@@ -56,6 +56,7 @@ type AssessmentProgress = {
   failureReason?: string | null;
   failureSupport?: string | null;
   failureRetriable?: boolean | null;
+  failureCode?: string | null;
   industry?: string;
   canResume?: boolean;
   checkpointCount?: number;
@@ -112,6 +113,7 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, 
         : "Failed";
   const active = operation.state === "SUBMITTING" || operation.state === "RUNNING";
   const resumeTarget = operation.rows.find((row) => row.canResume && (row.status === "FAILED" || row.status === "REFUNDED"));
+  const providerBlocked = resumeTarget && ["credit_balance_exhausted", "insufficient_quota", "billing_hard_limit_reached", "invalid_api_key"].includes((resumeTarget.failureCode || "").toLowerCase());
   return (
     <div className="card subcard" role="status" aria-live="polite" style={{ padding: 14, margin: "16px 0 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -140,7 +142,7 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, 
                 {row.failureReason || row.progressMessage || "Waiting for the next status update."}
                 {row.progressTotal ? <><br/><span className="muted">{Math.min(row.progressCurrent, row.progressTotal)} of {row.progressTotal} analysis passes complete</span></> : null}
                 {row.failureSupport ? <><br/><span className="muted">{row.failureSupport}</span></> : null}
-                {row.status === "FAILED" || row.status === "REFUNDED" ? <><br/><span className="muted">{row.failureRetriable ? "Retry is available after the underlying issue is resolved." : "Administrator action is required before retrying."}</span></> : null}
+                {row.status === "FAILED" || row.status === "REFUNDED" ? <><br/><span className="muted">{row.failureRetriable ? "Retry is available after the underlying issue is resolved." : "The saved checkpoints are preserved. Administrator action is required before the provider can be checked again."}</span></> : null}
               </td>
             </tr>
           ))}</tbody>
@@ -148,7 +150,7 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, 
       ) : null}
       {operation.state === "FAILED" && resumeTarget ? <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
         <button className="btn" type="button" onClick={onResume} disabled={resuming}>
-          {resuming ? "Continuing run..." : resumeTarget.resumeMode === "CONTINUE" ? "Continue run" : "Retry from start"}
+          {resuming ? "Checking provider..." : providerBlocked ? "Check provider and continue" : resumeTarget.resumeMode === "CONTINUE" ? "Continue run" : "Retry from start"}
         </button>
         <button className="btn secondary" type="button" onClick={onReattach} disabled={resuming}>Reattach original policies</button>
       </div> : null}
@@ -290,7 +292,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       ...current,
       state: "FAILED",
       rows: failedRows.length ? failedRows : current.rows,
-      message: failedRows[0]?.failureReason || fallbackMessage
+      message: fallbackMessage || failedRows[0]?.failureReason || "The assessment could not continue."
     } : current);
   }
 

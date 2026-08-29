@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     where: {
       accountId: guard.session.user.accountId,
       ...(runningOnly ? { status: "RUNNING" as const, updatedAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } } : {}),
-      ...(recoverableOnly ? { status: { in: ["FAILED" as const, "REFUNDED" as const] }, updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } : {}),
+      ...(recoverableOnly ? { status: { in: ["FAILED" as const, "REFUNDED" as const] }, recoveryDismissedAt: null, updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } : {}),
       ...(quoteId ? { ledger: { is: { quoteId } } } : {})
     },
     orderBy: { createdAt: "desc" },
@@ -45,6 +45,7 @@ export async function GET(req: Request) {
       failureAttempts: true,
       failureStage: true,
       failedAt: true,
+      recoveryDismissedAt: true,
       ...(quoteId ? { result: true } : {}),
       ledger: { select: { quoteId: true } },
       _count: { select: { checkpoints: true } }
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
       quoteId: ledger?.quoteId || null,
       failureReason: assessment.failureCode ? assessmentFailureReason(assessment) : null,
       failureSupport: assessment.failureCode ? assessmentFailureSupport(assessment) : null,
-      canResume: assessment.status === "FAILED" || assessment.status === "REFUNDED",
+      canResume: !assessment.recoveryDismissedAt && (assessment.status === "FAILED" || assessment.status === "REFUNDED"),
       checkpointCount: _count.checkpoints,
       resumeMode: _count.checkpoints ? "CONTINUE" : "RETRY",
       resumeStandards: Array.isArray(boardSnapshot)

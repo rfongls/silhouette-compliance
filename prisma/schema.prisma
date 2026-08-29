@@ -196,6 +196,7 @@ model Assessment {
   failureAttempts   Int          @default(0)
   failureStage      String?
   failedAt          DateTime?
+  recoveryDismissedAt DateTime?
   reviewStatus      String       @default("AI_DRAFT")
   reviewedBy        String?
   reviewedAt        DateTime?
@@ -208,6 +209,7 @@ model Assessment {
 
   @@index([accountId, createdAt])
   @@index([accountId, status])
+  @@index([accountId, status, recoveryDismissedAt])
   @@index([accountId, orgId, sourceSetHash, status])
 }
 

@@ -106,7 +106,7 @@ function availableDefaults(industry: string, available: Record<string, string[]>
   return defaults.length ? defaults : deployed.slice(0, 1);
 }
 
-function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, onResume, onReattach }: { operation: AssessmentOperation; progress: number; elapsedSeconds: number; resuming: boolean; onResume: () => void; onReattach: () => void }) {
+function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, dismissing, onResume, onReattach, onDismiss }: { operation: AssessmentOperation; progress: number; elapsedSeconds: number; resuming: boolean; dismissing: boolean; onResume: () => void; onReattach: () => void; onDismiss: () => void }) {
   const label = operation.state === "SUBMITTING" ? "Starting"
     : operation.state === "RUNNING" ? "Running"
       : operation.state === "COMPLETED" ? "Completed"
@@ -140,7 +140,7 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, 
               <td><span className={row.status === "FAILED" || row.status === "REFUNDED" ? "badge locked" : row.status === "RUNNING" ? "badge warning" : "badge"}>{row.progressStage || row.status}</span></td>
               <td>
                 {row.failureReason || row.progressMessage || "Waiting for the next status update."}
-                {row.progressTotal ? <><br/><span className="muted">{Math.min(row.progressCurrent, row.progressTotal)} of {row.progressTotal} analysis passes complete</span></> : null}
+                {row.progressTotal ? <><br/><span className="muted">{row.checkpointCount ? `${row.checkpointCount} of ${row.progressTotal} saved analysis passes are available for continuation` : `${Math.min(row.progressCurrent, row.progressTotal)} of ${row.progressTotal} analysis passes completed before failure; this legacy run has no reusable checkpoints`}</span></> : null}
                 {row.failureSupport ? <><br/><span className="muted">{row.failureSupport}</span></> : null}
                 {row.status === "FAILED" || row.status === "REFUNDED" ? <><br/><span className="muted">{row.failureRetriable ? "Retry is available after the underlying issue is resolved." : "The saved checkpoints are preserved. Administrator action is required before the provider can be checked again."}</span></> : null}
               </td>
@@ -149,10 +149,11 @@ function AssessmentStatusPanel({ operation, progress, elapsedSeconds, resuming, 
         </table>
       ) : null}
       {operation.state === "FAILED" && resumeTarget ? <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-        <button className="btn" type="button" onClick={onResume} disabled={resuming}>
-          {resuming ? "Checking provider..." : providerBlocked ? "Check provider and continue" : resumeTarget.resumeMode === "CONTINUE" ? "Continue run" : "Retry from start"}
+        <button className="btn" type="button" onClick={onResume} disabled={resuming || dismissing}>
+          {resuming ? "Checking provider..." : providerBlocked ? resumeTarget.resumeMode === "CONTINUE" ? "Check provider and continue" : "Check provider and retry from start" : resumeTarget.resumeMode === "CONTINUE" ? "Continue run" : "Retry from start"}
         </button>
-        <button className="btn secondary" type="button" onClick={onReattach} disabled={resuming}>Reattach original policies</button>
+        <button className="btn secondary" type="button" onClick={onReattach} disabled={resuming || dismissing}>Reattach original policies</button>
+        <button className="btn secondary" type="button" onClick={onDismiss} disabled={resuming || dismissing}>{dismissing ? "Canceling failed run..." : "Cancel failed run and start new"}</button>
       </div> : null}
       {active ? <p className="muted" style={{ fontSize: 12, margin: "10px 0 0" }}>This status is stored server-side and reconnects after a page refresh. Progress updates after each completed model pass.</p> : null}
     </div>
@@ -203,6 +204,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const [operation, setOperation] = useState<AssessmentOperation | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [resuming, setResuming] = useState(false);
+  const [dismissingFailure, setDismissingFailure] = useState(false);
   const deployedStandards = demo ? null : new Set(availableStandardsByIndustry[industry] || []);
   const standardOptions = (INDUSTRY_STANDARDS[industry]?.standards || []).filter((standard) => !deployedStandards || deployedStandards.has(standard.key));
   const allStandardsSelected = standardOptions.length > 0 && standardOptions.every((standard) => standards.includes(standard.key));
@@ -398,6 +400,55 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       setAcceptedQuote(null);
       setCheckoutState("IDLE");
       setCheckoutMessage("");
+    }
+  }
+
+  function resetForNewAssessment() {
+    setWizardStep(1);
+    setFurthestWizardStep(1);
+    setWizardError("");
+    setAssessmentScope("self");
+    setParentOrgName("");
+    setIndustry("health-center");
+    setStandards(availableDefaults("health-center", availableStandardsByIndustry, demo));
+    setOrgs(demo ? [{ ...newOrg(demoOrgName("health-center")), documents: [{ name: DEMO_POLICY_NAME, text: DEMO_POLICY_TEXT }] }] : [newOrg("")]);
+    setPhiAttested(demo);
+    setAcceptedQuote(demo ? acceptedQuote : null);
+    setCheckoutState("IDLE");
+    setCheckoutMessage("");
+    setResult(null);
+    setAssessmentId(null);
+    setAssessments([]);
+    setNetworkReport(null);
+    setReportQuoteId(null);
+    setOperation(null);
+    setElapsedSeconds(0);
+    setResuming(false);
+  }
+
+  async function dismissFailedAssessment() {
+    if (!operation || operation.state !== "FAILED") return;
+    const failedRows = operation.rows.filter((row) => row.canResume && (row.status === "FAILED" || row.status === "REFUNDED"));
+    if (!failedRows.length) {
+      resetForNewAssessment();
+      return;
+    }
+
+    setDismissingFailure(true);
+    setWizardError("");
+    try {
+      for (const row of failedRows) {
+        const response = await fetch(`/api/assessments/${encodeURIComponent(row.id)}`, { method: "DELETE" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok && response.status !== 404) {
+          throw new Error(data.error || "The failed assessment could not be canceled.");
+        }
+      }
+      resetForNewAssessment();
+    } catch (error) {
+      setWizardError(error instanceof Error ? error.message : "The failed assessment could not be canceled.");
+    } finally {
+      setDismissingFailure(false);
     }
   }
 
@@ -941,7 +992,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               </div>
               {!isAdmin && (acceptedQuote.creditsToPurchase || 0) > 0 ? <p className="muted irp-checkout-help">Checkout opens in a separate window. Keep this tab open until the assessment is accepted. Completed reports are saved to secure account history.</p> : null}
             </section> : null}
-            {operation && !result ? <AssessmentStatusPanel operation={operation} progress={operationProgress} elapsedSeconds={elapsedSeconds} resuming={resuming} onResume={() => void continueFailedAssessment()} onReattach={() => { setWizardError(""); setWizardStep(4); }} /> : null}
+            {operation && !result ? <AssessmentStatusPanel operation={operation} progress={operationProgress} elapsedSeconds={elapsedSeconds} resuming={resuming} dismissing={dismissingFailure} onResume={() => void continueFailedAssessment()} onReattach={() => { setWizardError(""); setWizardStep(4); }} onDismiss={() => void dismissFailedAssessment()} /> : null}
             {isAdmin && acceptedQuote ? <RunQuoteSummary quote={acceptedQuote} /> : null}
             <p className="muted irp-processing-note">{isAdmin ? "Admin runs are comped while model usage and cost are recorded." : "Purchased credits are verified server-side before any model call."} Uploaded source text is used in memory for this request only. IRP billing is fixed at $250 per organization assessed.</p>
           </section> : null}

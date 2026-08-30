@@ -122,6 +122,56 @@ jobs:
           done
           exit 1
 
+      - name: Apply Prisma migrations through Hostinger
+        if: ${{ vars.COMPLIANCE_HOSTINGER_RUN_MIGRATIONS == 'true' }}
+        env:
+          COMPLIANCE_HOSTINGER_ENV_FILE: ${{ secrets.COMPLIANCE_HOSTINGER_ENV_FILE }}
+          DATABASE_TUNNEL_PORT: "55432"
+        run: |
+          set -euo pipefail
+          test -n "$COMPLIANCE_HOSTINGER_ENV_FILE"
+
+          DATABASE_TARGET="$(node -e 'process.loadEnvFile(".env"); process.stdout.write(process.env.COMPLIANCE_DATABASE_URL || process.env.DATABASE_URL || "")')"
+          test -n "$DATABASE_TARGET"
+
+          DATABASE_HOST="$(DATABASE_TARGET="$DATABASE_TARGET" node -e 'const u = new URL(process.env.DATABASE_TARGET); process.stdout.write(u.hostname)')"
+          DATABASE_PORT="$(DATABASE_TARGET="$DATABASE_TARGET" node -e 'const u = new URL(process.env.DATABASE_TARGET); process.stdout.write(u.port || "5432")')"
+          DATABASE_URL="$(DATABASE_TARGET="$DATABASE_TARGET" DATABASE_TUNNEL_PORT="$DATABASE_TUNNEL_PORT" node -e 'const u = new URL(process.env.DATABASE_TARGET); u.hostname = "127.0.0.1"; u.port = process.env.DATABASE_TUNNEL_PORT; process.stdout.write(u.toString())')"
+
+          ssh -fN \
+            -oBatchMode=yes \
+            -oExitOnForwardFailure=yes \
+            -oConnectTimeout=30 \
+            -oServerAliveInterval=15 \
+            -oServerAliveCountMax=4 \
+            -i ~/.ssh/hostinger_deploy_key \
+            -p "$SSH_PORT" \
+            -L "127.0.0.1:${DATABASE_TUNNEL_PORT}:${DATABASE_HOST}:${DATABASE_PORT}" \
+            "$SSH_USER@$SSH_HOST"
+
+          TUNNEL_PID="$(pgrep -f "ssh.*127.0.0.1:${DATABASE_TUNNEL_PORT}:${DATABASE_HOST}:${DATABASE_PORT}" | head -n 1)"
+          cleanup() {
+            if [ -n "${TUNNEL_PID:-}" ]; then
+              kill "$TUNNEL_PID" 2>/dev/null || true
+              wait "$TUNNEL_PID" 2>/dev/null || true
+            fi
+          }
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 20); do
+            if (echo > "/dev/tcp/127.0.0.1/${DATABASE_TUNNEL_PORT}") 2>/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              echo "Database tunnel did not become ready." >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          echo 'Applying Prisma migrations through the Hostinger database tunnel'
+          timeout 180 env DATABASE_URL="$DATABASE_URL" npx prisma migrate deploy
+
       - name: Upload deploy artifact
         run: |
           for attempt in 1 2 3; do
@@ -172,12 +222,7 @@ jobs:
              npm ci --no-audit --no-fund
              echo 'Generating staged Prisma client'
              npx prisma generate
-             if [ '${{ vars.COMPLIANCE_HOSTINGER_RUN_MIGRATIONS || 'false' }}' = 'true' ]; then
-               echo 'Applying Prisma migrations'
-               npx prisma migrate deploy
-             else
-               echo 'Skipping Prisma migrations because COMPLIANCE_HOSTINGER_RUN_MIGRATIONS is not true.'
-             fi
+             echo 'Prisma migrations were handled by the GitHub runner before promotion.'
              test -s package.json
              test -s package-lock.json
              test -s prisma/schema.prisma

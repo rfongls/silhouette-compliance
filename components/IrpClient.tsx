@@ -298,6 +298,58 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
     } : current);
   }
 
+  function applyPersistedAssessmentState(quoteId: string, data: any, fallbackMessage: string, runningMessage = "Assessment processing is active. Progress is updated after each completed model pass.") {
+    const rows = Array.isArray(data?.assessments) ? data.assessments as AssessmentProgress[] : [];
+    if (!rows.length) return "MISSING" as const;
+    const running = rows.some((row) => row.status === "RUNNING" || row.status === "PENDING");
+    const delivered = rows.filter((row) => row.status === "DELIVERED" && row.result);
+    const failed = rows.filter((row) => row.status === "FAILED" || row.status === "REFUNDED");
+    const nextState: AssessmentOperation["state"] = running ? "RUNNING" : delivered.length ? "COMPLETED" : failed.length ? "FAILED" : "RUNNING";
+    setOperation((current) => current ? {
+      ...current,
+      state: nextState,
+      rows,
+      message: running
+        ? runningMessage
+        : delivered.length
+          ? failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed."
+          : failed[0]?.failureReason || failed[0]?.progressMessage || fallbackMessage
+    } : current);
+    if (delivered.length) {
+      setResult(delivered[0].result);
+      setAssessmentId(delivered[0].id);
+      setAssessments(delivered.map((row) => ({ assessmentId: row.id, orgName: row.orgName || "Organization", result: row.result })));
+      setNetworkReport(data.networkReport || null);
+      setReportQuoteId(quoteId);
+    }
+    return nextState;
+  }
+
+  async function reconcileAssessmentOperation(quoteId: string, fallbackMessage: string) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        const response = await fetch(`/api/assessments?quoteId=${encodeURIComponent(quoteId)}`, { cache: "no-store" });
+        const data = response.ok ? await response.json() : null;
+        const state = applyPersistedAssessmentState(
+          quoteId,
+          data,
+          fallbackMessage,
+          "The browser connection ended, but server-side assessment processing is active. Persisted progress will continue updating here."
+        );
+        if (state !== "MISSING") return state;
+      } catch {
+        // A later attempt may reconnect after a brief proxy or database interruption.
+      }
+      if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 750));
+    }
+    setOperation((current) => current ? {
+      ...current,
+      state: "FAILED",
+      message: fallbackMessage
+    } : current);
+    return "FAILED" as const;
+  }
+
   async function continueFailedAssessment() {
     if (!operation || operation.state !== "FAILED") return;
     const failed = operation.rows.find((row) => row.canResume && (row.status === "FAILED" || row.status === "REFUNDED"));
@@ -360,29 +412,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         const response = await fetch(`/api/assessments?quoteId=${encodeURIComponent(operation.quoteId!)}`, { cache: "no-store" });
         if (!response.ok) return;
         const data = await response.json();
-        const rows = Array.isArray(data.assessments) ? data.assessments as AssessmentProgress[] : [];
-        if (cancelled || !rows.length) return;
-        const running = rows.some((row) => row.status === "RUNNING" || row.status === "PENDING");
-        const delivered = rows.filter((row) => row.status === "DELIVERED" && row.result);
-        const failed = rows.filter((row) => row.status === "FAILED" || row.status === "REFUNDED");
-        const nextState: AssessmentOperation["state"] = running ? "RUNNING" : delivered.length ? "COMPLETED" : failed.length ? "FAILED" : "RUNNING";
-        setOperation((current) => current ? {
-          ...current,
-          state: nextState,
-          rows,
-          message: running
-            ? "Assessment processing is active. Progress is updated after each completed model pass."
-            : delivered.length
-              ? failed.length ? "Completed reports are ready; one or more organizations did not complete." : "Assessment processing completed."
-              : failed[0]?.failureReason || failed[0]?.progressMessage || "Assessment processing did not complete."
-        } : current);
-        if (delivered.length) {
-          setResult(delivered[0].result);
-          setAssessmentId(delivered[0].id);
-          setAssessments(delivered.map((row) => ({ assessmentId: row.id, orgName: row.orgName || "Organization", result: row.result })));
-          setNetworkReport(data.networkReport || null);
-          setReportQuoteId(operation.quoteId);
-        }
+        if (cancelled) return;
+        applyPersistedAssessmentState(operation.quoteId!, data, "Assessment processing did not complete.");
       } catch {
         // Keep the last persisted status visible while a poll temporarily fails.
       }
@@ -657,10 +688,8 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const message = data.error || "Assessment failed";
-        setOperation((current) => current ? { ...current, state: "FAILED", message } : current);
-        await refreshFailedOperation(runQuote.id, message);
-        alert(message);
+        const message = data.error || "The assessment request ended before a final response was received. No persisted assessment record was found.";
+        await reconcileAssessmentOperation(runQuote.id, message);
         return;
       }
       if (data.processing) {
@@ -686,13 +715,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         rows: current.rows.map((row) => row.status === "RUNNING" ? { ...row, status: "DELIVERED", progressStage: "DELIVERED", progressMessage: "Assessment and report completed.", progressCurrent: row.progressTotal } : row)
       } : current);
     } catch {
-      setOperation((current) => current ? {
-        ...current,
-        state: current.rows.some((row) => row.status === "RUNNING") ? "RUNNING" : "FAILED",
-        message: current.rows.some((row) => row.status === "RUNNING")
-          ? "The browser connection closed, but the server-side assessment is still running. Persisted progress will continue updating here."
-          : "The assessment request could not be completed. No active server-side assessment was found."
-      } : current);
+      await reconcileAssessmentOperation(runQuote.id, "The assessment request could not be completed and no persisted server-side assessment was found.");
     } finally {
       assessmentStarting.current = false;
     }

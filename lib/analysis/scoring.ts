@@ -271,7 +271,17 @@ export function consolidateRemediationFindings(controlResults: any[]) {
   });
 }
 
-function roadmap(findings: any[]) {
+function remediationPriority(a: any, b: any) {
+  const statusDifference = (b.status === "No" ? 1 : 0) - (a.status === "No" ? 1 : 0);
+  if (statusDifference) return statusDifference;
+  const controlDifference = Number(b.control_count || b.control_ids?.length || 1) - Number(a.control_count || a.control_ids?.length || 1);
+  if (controlDifference) return controlDifference;
+  const standardDifference = Number(b.standards?.length || 0) - Number(a.standards?.length || 0);
+  if (standardDifference) return standardDifference;
+  return String(a.control_id || "").localeCompare(String(b.control_id || ""));
+}
+
+export function buildRemediationRoadmap(findings: any[]) {
   const phases = [
     { name: "Immediate", timeframe: "Within 30 days", color: "critical", risks: new Set(["Critical"]) },
     { name: "Stabilize", timeframe: "31-60 days", color: "high", risks: new Set(["High"]) },
@@ -283,12 +293,16 @@ function roadmap(findings: any[]) {
       name: phase.name,
       timeframe: phase.timeframe,
       color: phase.color,
-      items: findings.filter((finding) => finding.status !== "Yes" && phase.risks.has(finding.risk_level)).map((finding, index) => ({
-        number: index + 1,
-        title: `${finding.control_id} remediation`,
-        description: finding.finding,
-        references: [finding.control_id]
-      }))
+      items: findings
+        .filter((finding) => finding.status !== "Yes" && phase.risks.has(finding.risk_level))
+        .sort(remediationPriority)
+        .slice(0, 5)
+        .map((finding, index) => ({
+          number: index + 1,
+          title: `${finding.control_id} remediation`,
+          description: finding.finding,
+          references: [finding.control_id]
+        }))
     }))
   };
 }
@@ -491,7 +505,7 @@ export async function scoreControlSet(input: {
       counts,
       findings,
       control_results: controlResults,
-      remediation_roadmap: roadmap(findings),
+      remediation_roadmap: buildRemediationRoadmap(findings),
       scoring_method: "Server-calculated bucketed IRP readiness score: applicable controls are grouped into curated capability buckets; Yes=1, Partial=0.5, and No=0 with Critical, High, Medium, and Low weights of 4, 3, 2, and 1; capabilities contribute equally inside each bucket; bucket point budgets normalize to 100; missing essential controls cap their bucket at 50 and partial essential controls cap it at 75. Standards remain separate alignment views without duplicate contribution to the overall score."
     },
     usage

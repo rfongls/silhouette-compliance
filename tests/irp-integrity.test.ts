@@ -6,6 +6,7 @@ import {
   calculateOverallComplianceScore,
   calculateStandardComplianceScore,
   calculateWeightedComplianceScore,
+  buildRemediationRoadmap,
   chunkEvidenceDocuments,
   consolidateRemediationFindings,
   scoreControlSet,
@@ -165,6 +166,24 @@ test("related control failures consolidate into one remediation finding with tra
   assert.equal(findings[0].control_count, 2);
   assert.deepEqual(findings[0].control_ids, ["IR-1", "164.308"]);
   assert.equal(findings[0].risk_level, "Critical");
+});
+
+test("roadmap keeps the top five actions per priority without removing detailed findings", () => {
+  const findings = Array.from({ length: 7 }, (_, index) => ({
+    control_id: `CR-${index + 1}`,
+    control_ids: Array.from({ length: index + 1 }, (__, controlIndex) => `CR-${index + 1}-${controlIndex + 1}`),
+    control_count: index + 1,
+    standards: index % 2 ? ["NIST"] : ["NIST", "HIPAA"],
+    status: index === 6 ? "Partial" : "No",
+    risk_level: "Critical",
+    finding: `Critical remediation ${index + 1}`
+  }));
+  const roadmap = buildRemediationRoadmap(findings);
+  const immediate = roadmap.phases.find((phase) => phase.name === "Immediate");
+  assert.equal(findings.length, 7);
+  assert.equal(immediate?.items.length, 5);
+  assert.equal(immediate?.items[0].title, "CR-6 remediation");
+  assert.equal(immediate?.items.some((item) => item.title === "CR-7 remediation"), false);
 });
 
 test("positive evidence requires an exact quote from the supplied chunk", () => {

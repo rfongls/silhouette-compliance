@@ -263,7 +263,12 @@ test("download exports produce separate executive and detailed PDFs in one packa
   assert.match(executive.text, /Executive Summary/);
   assert.match(executive.text, /READINESS PROFILE/i);
   assert.match(executive.text, /Standards\s+Documentation\s+Coverage/);
-  assert.match(executive.text, /Internal readiness\s+index/);
+  assert.match(executive.text, /Readiness index\s*71\/100/i);
+  assert.match(executive.text, /Control Board Inventory/i);
+  assert.match(executive.text, /Official source/i);
+  assert.match(executive.text, /Scoring Framework/i);
+  assert.match(executive.text, /Evidence rating/i);
+  assert.match(executive.text, /Essential controls/i);
   assert.match(executive.text, /Priority Remediation Roadmap/);
   assert.doesNotMatch(executive.text, /Complete Remediation Findings/);
   assert.doesNotMatch(executive.text, /Control Traceability Appendix/);

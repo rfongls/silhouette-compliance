@@ -215,6 +215,48 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
   });
 }
 
+function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[string, any]>, score: number) {
+  const snapshots = Array.isArray(report.control_board?.snapshot) ? report.control_board.snapshot : [];
+  const snapshotsByStandard = new Map(
+    snapshots.map((snapshot: any) => [clean(snapshot.standardKey).toLocaleLowerCase(), snapshot])
+  );
+  const boardRows = standards.map(([standard, coverage]) => {
+    const snapshot = snapshotsByStandard.get(clean(standard).toLocaleLowerCase()) as any;
+    return {
+      standard,
+      version: snapshot?.version ? `v${clean(snapshot.version)}` : "Not recorded",
+      source: snapshot?.sourceTitle || "Not recorded",
+      sourceVersion: snapshot?.sourceVersion || "Not recorded",
+      controlsReviewed: number(coverage?.controls_reviewed)
+    };
+  });
+
+  heading(doc, "Assessment Basis");
+  doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(7).text("CONTROL BOARD INVENTORY", { width: 500 });
+  doc.moveDown(0.35);
+  renderTable(doc, [
+    { label: "Publication", width: 150, value: (row) => standardLabel(row.standard) },
+    { label: "Board", width: 55, value: (row) => row.version },
+    { label: "Official source", width: 205, value: (row) => `${row.source}\n${row.sourceVersion}` },
+    { label: "Controls reviewed", width: 90, value: (row) => row.controlsReviewed }
+  ], boardRows);
+
+  ensureSpace(doc, 52);
+  doc.moveDown(0.65).fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(7).text("SCORING FRAMEWORK", { width: 500 });
+  doc.moveDown(0.35);
+  renderTable(doc, [
+    { label: "Assessment rule", width: 135, value: (row) => row.rule },
+    { label: "How it is applied", width: 365, value: (row) => row.application }
+  ], [
+    { rule: "Evidence rating", application: "Yes = 1 point; Partial = 0.5 points; No = 0 points." },
+    { rule: "Priority weighting", application: "Critical = 4; High = 3; Medium = 2; Low = 1." },
+    { rule: "Capability scoring", application: "Applicable controls are grouped into curated IRP capability buckets. Bucket point budgets normalize the readiness index to 100." },
+    { rule: "Essential controls", application: "A missing essential control caps its capability bucket at 50. A partially evidenced essential control caps it at 75." },
+    { rule: "Standards alignment", application: "Each publication remains a separate alignment view and is not counted again in the overall readiness calculation." },
+    { rule: "Readiness index", application: `${score}/100 for internal trend analysis. This is not a legal compliance determination.` }
+  ], 7.2);
+}
+
 function renderRoadmap(doc: PdfDoc, phases: any[]) {
   phases.forEach((phase, phaseIndex) => {
     const color = priorityColor(phase.color);
@@ -370,10 +412,7 @@ export async function buildGapExecutivePdf(result: any) {
       { label: "Failed", width: 60, value: (row) => row[1].controls_failed }
     ], standards);
 
-    heading(doc, "Assessment Basis");
-    body(doc, `Control boards: ${r.control_board?.citation || "Not recorded"}`);
-    body(doc, `Scoring: ${r.scoring_method || "Control-level scoring method not recorded"}`);
-    body(doc, `Internal readiness index: ${score}/100. This index is retained for trend analysis and is not a legal compliance determination.`);
+    renderAssessmentBasis(doc, r, standards, score);
     heading(doc, "Data Handling");
     body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");

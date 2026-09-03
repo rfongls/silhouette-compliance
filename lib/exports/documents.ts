@@ -49,7 +49,7 @@ function createPdf(title: string, draw: (doc: PdfDoc) => void) {
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({
       size: "LETTER",
-      margins: { top: 46, right: 46, bottom: 54, left: 46 },
+      margins: { top: 46, right: 46, bottom: 76, left: 46 },
       bufferPages: true,
       info: { Title: clean(title), Author: "Silhouette LLC", Subject: "Incident Response Plan Gap Analysis" }
     });
@@ -68,12 +68,19 @@ function addPdfFooters(doc: PdfDoc) {
   for (let index = range.start; index < range.start + range.count; index += 1) {
     doc.switchToPage(index);
     if (index === 0) continue;
+    const previousBottomMargin = doc.page.margins.bottom;
+    const previousX = doc.x;
+    const previousY = doc.y;
+    doc.page.margins.bottom = 0;
     const y = doc.page.height - 31;
     doc.save().strokeColor(COLORS.line).lineWidth(0.5).moveTo(46, y - 7).lineTo(doc.page.width - 46, y - 7).stroke();
     doc.font("Helvetica").fontSize(7).fillColor(COLORS.muted)
-      .text("Silhouette LLC | Confidential Compliance Gap Analysis", 46, y, { lineBreak: false })
-      .text(`${index + 1} of ${range.count}`, doc.page.width - 110, y, { width: 64, align: "right", lineBreak: false });
+      .text("Silhouette LLC | Confidential Compliance Gap Analysis", 46, y, { width: 360, height: 10, lineBreak: false })
+      .text(`${index + 1} of ${range.count}`, doc.page.width - 110, y, { width: 64, height: 10, align: "right", lineBreak: false });
     doc.restore();
+    doc.page.margins.bottom = previousBottomMargin;
+    doc.x = previousX;
+    doc.y = previousY;
   }
 }
 
@@ -83,7 +90,7 @@ function cover(doc: PdfDoc, title: string, subtitle: string) {
   doc.fillColor(COLORS.white).font("Times-Bold").fontSize(34).text(clean(title), 54, 256, { width: doc.page.width - 108, lineGap: 5 });
   doc.rect(54, doc.y + 18, 330, 3).fill(COLORS.purple);
   doc.fillColor("#d7c4ff").font("Helvetica").fontSize(13).text(clean(subtitle), 54, doc.y + 28, { width: 430, lineGap: 4 });
-  doc.fontSize(9).text(`Confidential | ${new Date().toLocaleDateString("en-US")}`, 54, doc.page.height - 86);
+  doc.fontSize(9).text(`Confidential | ${new Date().toLocaleDateString("en-US")}`, 54, doc.page.height - 104, { lineBreak: false });
 }
 
 function newSection(doc: PdfDoc, title: string, subtitle?: string) {
@@ -104,7 +111,7 @@ function body(doc: PdfDoc, text: unknown, options: PDFKit.Mixins.TextOptions = {
 }
 
 function ensureSpace(doc: PdfDoc, height: number) {
-  if (doc.y + height > doc.page.height - 62) doc.addPage();
+  if (doc.y + height > doc.page.height - doc.page.margins.bottom - 8) doc.addPage();
 }
 
 function metricCards(doc: PdfDoc, cards: Array<{ label: string; value: string; color?: string }>) {
@@ -119,6 +126,7 @@ function metricCards(doc: PdfDoc, cards: Array<{ label: string; value: string; c
     doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(7).text(clean(card.label).toUpperCase(), x + 11, top + 12, { width: width - 22 });
     doc.fillColor(card.color || COLORS.ink).font("Helvetica-Bold").fontSize(valueSize).text(value, x + 11, top + 32, { width: width - 22, height: 27, ellipsis: true });
   });
+  doc.x = 46;
   doc.y = top + 80;
 }
 
@@ -135,6 +143,7 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
       doc.fillColor("#5b4b75").font("Helvetica-Bold").fontSize(6.5).text(clean(column.label).toUpperCase(), x + padding, y + 8, { width: column.width - padding * 2, lineBreak: false });
       x += column.width;
     });
+    doc.x = left;
     doc.y = y + headerHeight;
   };
 
@@ -143,7 +152,7 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
     const values = columns.map((column) => clean(column.value(row)) || "-");
     doc.font("Helvetica").fontSize(fontSize);
     const rowHeight = Math.max(22, ...values.map((value, index) => doc.heightOfString(value, { width: columns[index].width - padding * 2, lineGap: 1 }) + padding * 2));
-    if (doc.y + rowHeight > doc.page.height - 62) {
+    if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom - 8) {
       doc.addPage();
       drawHeader();
     }
@@ -154,6 +163,7 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
       x += column.width;
     });
     doc.strokeColor(COLORS.line).lineWidth(0.4).moveTo(left, y + rowHeight).lineTo(x, y + rowHeight).stroke();
+    doc.x = left;
     doc.y = y + rowHeight;
   });
 }
@@ -161,7 +171,7 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
 function renderRoadmap(doc: PdfDoc, phases: any[]) {
   phases.forEach((phase, phaseIndex) => {
     const color = priorityColor(phase.color);
-    const items = Array.isArray(phase.items) ? phase.items : [];
+    const items = Array.isArray(phase.items) ? phase.items.slice(0, 5) : [];
     ensureSpace(doc, 54);
     const top = doc.y;
     doc.roundedRect(46, top, doc.page.width - 92, 39, 5).fillAndStroke("#faf9fc", COLORS.line);
@@ -170,24 +180,95 @@ function renderRoadmap(doc: PdfDoc, phases: any[]) {
     doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(13).text(clean(phase.name), 84, top + 8, { width: 300 });
     doc.fillColor(COLORS.muted).font("Helvetica").fontSize(7.5).text(clean(phase.timeframe), 84, top + 24, { width: 300 });
     doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(`${clean(phase.color || "Medium").toUpperCase()} PRIORITY`, doc.page.width - 172, top + 16, { width: 120, align: "right" });
+    doc.x = 46;
     doc.y = top + 47;
 
     items.forEach((item: any, itemIndex: number) => {
-      doc.font("Helvetica").fontSize(8.5);
+      doc.font("Helvetica-Bold").fontSize(9);
+      const title = clean(item.title);
       const description = clean(item.description);
       const references = Array.isArray(item.references) ? item.references.map(clean).join(" | ") : "";
-      const height = Math.max(42, 24 + doc.heightOfString(description, { width: 452, lineGap: 2 }) + (references ? 12 : 0));
+      const titleHeight = doc.heightOfString(title, { width: 455, lineGap: 1 });
+      doc.font("Helvetica").fontSize(8);
+      const descriptionHeight = doc.heightOfString(description, { width: 455, lineGap: 2 });
+      const referencesHeight = references ? 13 : 0;
+      const height = Math.max(48, 18 + titleHeight + descriptionHeight + referencesHeight);
       ensureSpace(doc, height + 5);
       const y = doc.y;
       doc.roundedRect(46, y, doc.page.width - 92, height, 4).strokeColor(COLORS.line).stroke();
       doc.circle(64, y + 16, 9).strokeColor(color).stroke();
       doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(clean(item.number || itemIndex + 1), 59, y + 13, { width: 10, align: "center" });
-      doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(clean(item.title), 82, y + 9, { width: 455 });
-      doc.fillColor("#374151").font("Helvetica").fontSize(8).text(description, 82, y + 23, { width: 455, lineGap: 2 });
+      doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(title, 82, y + 9, { width: 455, lineGap: 1 });
+      const descriptionY = y + 12 + titleHeight;
+      doc.fillColor("#374151").font("Helvetica").fontSize(8).text(description, 82, descriptionY, { width: 455, lineGap: 2 });
       if (references) doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.5).text(`CONTROLS  ${references}`, 82, y + height - 11, { width: 455 });
+      doc.x = 46;
       doc.y = y + height + 6;
     });
     doc.moveDown(0.35);
+  });
+}
+
+function standardNames(row: any) {
+  const values = Array.isArray(row.standards) && row.standards.length
+    ? row.standards
+    : row.standard
+      ? [row.standard]
+      : [];
+  return values.map((value: string) => standardLabel(value)).join(", ") || "Not recorded";
+}
+
+function renderFindings(doc: PdfDoc, findings: any[]) {
+  findings.forEach((finding, index) => {
+    ensureSpace(doc, 76);
+    const top = doc.y;
+    const priority = clean(finding.risk_level || "Medium");
+    const status = clean(finding.status || "Not evidenced");
+    const capability = clean(finding.capability || finding.control_name || finding.control_id || "Capability finding");
+    const controlIds = Array.isArray(finding.control_ids) && finding.control_ids.length
+      ? finding.control_ids.map(clean).join(", ")
+      : clean(finding.control_id || "Not recorded");
+
+    doc.strokeColor(COLORS.line).lineWidth(0.6).moveTo(46, top).lineTo(doc.page.width - 46, top).stroke();
+    doc.fillColor(priorityColor(priority)).font("Helvetica-Bold").fontSize(7.5)
+      .text(priority.toUpperCase(), 46, top + 10, { width: 70, lineBreak: false });
+    doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(7.5)
+      .text(status.toUpperCase(), 118, top + 10, { width: 90, lineBreak: false });
+    doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(12)
+      .text(`${index + 1}. ${capability}`, 46, top + 26, { width: 500, lineGap: 1 });
+    doc.x = 46;
+    doc.moveDown(0.25);
+    doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.8)
+      .text(`CONTROLS  ${controlIds}   |   STANDARDS  ${standardNames(finding)}`, { width: 500, lineGap: 1 });
+    doc.moveDown(0.35);
+    body(doc, finding.finding || finding.requirement || "No finding narrative was recorded.", { width: 500, lineGap: 2 });
+    doc.moveDown(0.7);
+  });
+}
+
+function renderControlAppendix(doc: PdfDoc, controls: any[]) {
+  controls.forEach((control, index) => {
+    ensureSpace(doc, 94);
+    const top = doc.y;
+    const controlId = clean(control.control_id || control.id || `Control ${index + 1}`);
+    const capability = clean(control.bucket_label || control.capability || control.category || "Uncategorized capability");
+    const status = clean(control.status || "Not recorded");
+    const priority = clean(control.risk_level || "Medium");
+
+    doc.strokeColor(COLORS.line).lineWidth(0.6).moveTo(46, top).lineTo(doc.page.width - 46, top).stroke();
+    doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(11.5)
+      .text(`${controlId}  |  ${capability}`, 46, top + 10, { width: 500, lineGap: 1 });
+    doc.x = 46;
+    doc.moveDown(0.2);
+    doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.8)
+      .text(`STANDARD  ${standardNames(control)}   |   STATUS  ${status.toUpperCase()}   |   PRIORITY  ${priority.toUpperCase()}`, { width: 500, lineGap: 1 });
+    doc.moveDown(0.4);
+    doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(7).text("REQUIREMENT", { width: 500 });
+    body(doc, control.requirement || "No requirement text was recorded.", { width: 500, lineGap: 2 });
+    doc.moveDown(0.35);
+    doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(7).text("DOCUMENTED EVIDENCE", { width: 500 });
+    body(doc, control.evidence || control.evidence_quote || "No supporting evidence was identified in the submitted documentation.", { width: 500, lineGap: 2 });
+    doc.moveDown(0.8);
   });
 }
 
@@ -250,14 +331,7 @@ export async function buildGapPdf(result: any) {
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
 
     newSection(doc, "Consolidated Remediation Findings", `${findings.length} documented findings across the selected control boards`);
-    renderTable(doc, [
-      { label: "Priority", width: 49, value: (row) => row.risk_level },
-      { label: "Capability", width: 92, value: (row) => row.capability || row.control_name || row.control_id },
-      { label: "Controls", width: 43, value: (row) => row.control_count || row.control_ids?.length || 1 },
-      { label: "Standards", width: 78, value: (row) => (row.standards || []).map((value: string) => standardLabel(value)).join(", ") },
-      { label: "Status", width: 47, value: (row) => row.status },
-      { label: "Finding", width: 191, value: (row) => row.finding }
-    ], findings, 6.6);
+    renderFindings(doc, findings);
 
     newSection(doc, "Priority Remediation Roadmap", "Highest-priority actions by implementation horizon");
     renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : []);
@@ -266,15 +340,7 @@ export async function buildGapPdf(result: any) {
 
     if (controls.length) {
       newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`);
-      renderTable(doc, [
-        { label: "Capability", width: 88, value: (row) => row.bucket_label },
-        { label: "Control", width: 56, value: (row) => row.control_id },
-        { label: "Standard", width: 72, value: (row) => (row.standards || []).map((value: string) => standardLabel(value)).join(", ") },
-        { label: "Status", width: 43, value: (row) => row.status },
-        { label: "Priority", width: 43, value: (row) => row.risk_level },
-        { label: "Requirement", width: 110, value: (row) => row.requirement },
-        { label: "Evidence", width: 88, value: (row) => row.evidence }
-      ], controls, 5.8);
+      renderControlAppendix(doc, controls);
     }
   });
 }

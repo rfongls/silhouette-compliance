@@ -212,6 +212,10 @@ test("printable report keeps every finding while exporting only the curated road
   assert.equal((report.match(/CR-\d remediation/g) || []).length, 5);
   assert.equal((deck.match(/CR-\d remediation/g) || []).length, 5);
   assert.match(report, /Priority Remediation Roadmap/);
+  assert.match(report, /roadmap-phase priority-critical/);
+  assert.match(report, /roadmap-phase-header/);
+  assert.match(report, /roadmap-item-content/);
+  assert.match(report, /roadmap-references/);
   assert.match(deck, /Remediation Roadmap/);
   assert.match(report, /Consolidated Remediation Findings/);
 });

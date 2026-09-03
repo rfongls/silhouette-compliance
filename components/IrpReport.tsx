@@ -116,7 +116,6 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       <div className="irp-overall-score findings">
         <span>Total findings</span>
         <b>{actionable.length}</b>
-        <small>prioritized for remediation</small>
       </div>
     </section>
 

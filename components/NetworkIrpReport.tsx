@@ -69,7 +69,6 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       <div className="irp-overall-score findings">
         <span>Total findings</span>
         <b>{totalFindings || gaps.length}</b>
-        <small>across the assessed network</small>
       </div>
     </section>
 

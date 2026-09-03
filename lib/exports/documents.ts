@@ -20,6 +20,8 @@ const COLORS = {
 
 type PdfDoc = PDFKit.PDFDocument;
 type TableColumn = { label: string; width: number; value: (row: any) => unknown };
+type PdfNavigationEntry = { title: string; destination: string; pageNumber: number };
+type PdfNavigation = { tocPageIndex: number; entries: PdfNavigationEntry[] };
 
 function clean(value: unknown) {
   return noEmDash(String(value ?? ""));
@@ -93,8 +95,53 @@ function cover(doc: PdfDoc, title: string, subtitle: string) {
   doc.fontSize(9).text(`Confidential | ${new Date().toLocaleDateString("en-US")}`, 54, doc.page.height - 104, { lineBreak: false });
 }
 
-function newSection(doc: PdfDoc, title: string, subtitle?: string) {
+function currentPageIndex(doc: PdfDoc) {
+  const range = doc.bufferedPageRange();
+  return range.start + range.count - 1;
+}
+
+function startPdfNavigation(doc: PdfDoc): PdfNavigation {
   doc.addPage();
+  doc.outline.addItem("Table of Contents");
+  return { tocPageIndex: currentPageIndex(doc), entries: [] };
+}
+
+function renderPdfNavigation(doc: PdfDoc, navigation: PdfNavigation) {
+  const finalPageIndex = currentPageIndex(doc);
+  doc.switchToPage(navigation.tocPageIndex);
+  doc.x = 46;
+  doc.y = 46;
+  doc.fillColor(COLORS.purple).font("Times-Bold").fontSize(25).text("Table of Contents");
+  doc.moveDown(0.3).fillColor(COLORS.muted).font("Helvetica").fontSize(9)
+    .text("Select a section to move directly to that part of the report.");
+  doc.moveDown(1.25);
+
+  navigation.entries.forEach((entry, index) => {
+    const top = doc.y;
+    doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(8)
+      .text(String(index + 1).padStart(2, "0"), 46, top + 2, { width: 28, goTo: entry.destination });
+    doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(14)
+      .text(clean(entry.title), 82, top, { width: 390, goTo: entry.destination });
+    doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(9)
+      .text(String(entry.pageNumber), doc.page.width - 86, top + 3, { width: 40, align: "right", goTo: entry.destination });
+    doc.strokeColor(COLORS.line).lineWidth(0.5)
+      .moveTo(82, top + 28).lineTo(doc.page.width - 46, top + 28).stroke();
+    doc.x = 46;
+    doc.y = top + 43;
+  });
+
+  doc.switchToPage(finalPageIndex);
+  doc.x = 46;
+}
+
+function newSection(doc: PdfDoc, title: string, subtitle?: string, navigation?: PdfNavigation) {
+  doc.addPage();
+  const destination = `report-section-${(navigation?.entries.length || 0) + 1}`;
+  if (navigation) {
+    navigation.entries.push({ title: clean(title), destination, pageNumber: currentPageIndex(doc) + 1 });
+    doc.outline.addItem(clean(title));
+    doc.addNamedDestination(destination, "Fit");
+  }
   doc.fillColor(COLORS.purple).font("Times-Bold").fontSize(23).text(clean(title));
   if (subtitle) doc.moveDown(0.25).fillColor(COLORS.muted).font("Helvetica").fontSize(9).text(clean(subtitle), { lineGap: 2 });
   doc.moveDown(0.75);
@@ -296,7 +343,8 @@ export async function buildGapPdf(result: any) {
 
   return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
     cover(doc, org, "Incident Response Plan Gap Analysis");
-    newSection(doc, "Executive Summary", `${readiness} readiness | ${clean(r.document_name || "Incident Response Plan")}`);
+    const navigation = startPdfNavigation(doc);
+    newSection(doc, "Executive Summary", `${readiness} readiness | ${clean(r.document_name || "Incident Response Plan")}`, navigation);
     metricCards(doc, summaryCards);
     body(doc, capabilityReadinessText(capabilitySummary));
     body(doc, "This readiness profile reflects documented policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.");
@@ -330,18 +378,19 @@ export async function buildGapPdf(result: any) {
     body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
 
-    newSection(doc, "Consolidated Remediation Findings", `${findings.length} documented findings across the selected control boards`);
+    newSection(doc, "Consolidated Remediation Findings", `${findings.length} documented findings across the selected control boards`, navigation);
     renderFindings(doc, findings);
 
-    newSection(doc, "Priority Remediation Roadmap", "Highest-priority actions by implementation horizon");
+    newSection(doc, "Priority Remediation Roadmap", "Highest-priority actions by implementation horizon", navigation);
     renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : []);
     heading(doc, "Conclusion and Limitations");
     body(doc, "This assessment covers submitted documentation only. Operational controls and configurations not captured in reviewed artifacts are outside scope. Findings should be reviewed with compliance counsel before regulatory submission.");
 
     if (controls.length) {
-      newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`);
+      newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`, navigation);
       renderControlAppendix(doc, controls);
     }
+    renderPdfNavigation(doc, navigation);
   });
 }
 
@@ -365,7 +414,8 @@ export async function buildNetworkGapPdf(result: any) {
   ];
   return createPdf(`${clean(r.network_name)} - Network IRP Gap Analysis`, (doc) => {
     cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`);
-    newSection(doc, "Network Executive Summary", readiness);
+    const navigation = startPdfNavigation(doc);
+    newSection(doc, "Network Executive Summary", readiness, navigation);
     metricCards(doc, summaryCards);
     body(doc, capabilityReadinessText(capabilitySummary));
     body(doc, `This network profile summarizes documented capability readiness across ${organizations.length} independently assessed organizations.`);
@@ -384,7 +434,7 @@ export async function buildNetworkGapPdf(result: any) {
     ], organizations);
     heading(doc, "Assessment Basis");
     body(doc, `Internal network readiness index: ${score}/100. This index is retained for trend analysis and is not a legal compliance determination.`);
-    newSection(doc, "Common Capability Gaps", "Ranked by organizations affected and priority");
+    newSection(doc, "Common Capability Gaps", "Ranked by organizations affected and priority", navigation);
     renderTable(doc, [
       { label: "Priority", width: 55, value: (row) => row.risk_level },
       { label: "Capability", width: 95, value: (row) => row.control_name || row.control_id },
@@ -392,6 +442,7 @@ export async function buildNetworkGapPdf(result: any) {
       { label: "Organizations", width: 115, value: (row) => (row.affected_organizations || []).join(", ") },
       { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${organizations.length}` }
     ], gaps, 6.6);
+    renderPdfNavigation(doc, navigation);
   });
 }
 

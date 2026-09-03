@@ -234,12 +234,14 @@ test("download exports produce native PDF and PowerPoint files", async () => {
   assert.ok(pdfFile.length > 10_000);
   assert.ok(deck.length > 10_000);
   assert.ok(parsed.numpages >= 5);
-  assert.ok(parsed.numpages <= 8, `Demo PDF unexpectedly expanded to ${parsed.numpages} pages`);
+  assert.ok(parsed.numpages <= 9, `Demo PDF unexpectedly expanded to ${parsed.numpages} pages`);
   assert.equal(
     (parsed.text.match(/Silhouette LLC \| Confidential Compliance Gap Analysis/g) || []).length,
     parsed.numpages - 1,
     "Every non-cover page should have one footer without creating footer-only pages"
   );
+  assert.match(parsed.text, /Table of Contents/);
+  assert.ok(pdfFile.includes(Buffer.from("/Outlines")), "PDF should expose a bookmark outline");
   assert.match(parsed.text, /Executive Summary/);
   assert.match(parsed.text, /READINESS PROFILE/i);
   assert.match(parsed.text, /Standards\s+Documentation\s+Coverage/);

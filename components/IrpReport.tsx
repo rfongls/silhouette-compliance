@@ -77,7 +77,6 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{result.overall_posture}</span>
         {!demo && assessments.length === 1 ? <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=presentation`} target="_blank" rel="noreferrer">Presentation</a>
           <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=report`}>Export PDF</a>
           <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=deck`}>Export deck</a>
         </div> : null}

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
-import { buildNetworkGapDeck, buildNetworkGapReport } from "@/lib/exports/gap";
+import { buildNetworkGapDeck } from "@/lib/exports/gap";
+import { buildNetworkGapPdf, buildNetworkGapPptx } from "@/lib/exports/documents";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/sanitize";
+
+export const runtime = "nodejs";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const guard = await requireSession("customer");
@@ -12,8 +16,24 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     select: { assessmentScope: true, parentOrgName: true, reportAssessmentIds: true, networkResult: true }
   });
   if (!quote) return NextResponse.json({ error: "Report not found" }, { status: 404 });
-  if (!new Set(["report", "deck"]).has(format)) return NextResponse.json({ error: "Unsupported export format" }, { status: 400 });
+  if (!new Set(["report", "deck", "presentation"]).has(format)) return NextResponse.json({ error: "Unsupported export format" }, { status: 400 });
   if (!quote.networkResult || quote.assessmentScope !== "network") return NextResponse.json({ error: "Network report not found" }, { status: 404 });
-  if (format === "deck") return new NextResponse(buildNetworkGapDeck(quote.networkResult), { headers: { "content-type": "text/html; charset=utf-8" } });
-  return new NextResponse(buildNetworkGapReport(quote.networkResult), { headers: { "content-type": "text/html; charset=utf-8" } });
+  const name = slugify(String(quote.parentOrgName || "network"));
+  if (format === "presentation") {
+    return new NextResponse(buildNetworkGapDeck(quote.networkResult), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store" } });
+  }
+  if (format === "deck") {
+    const deck = await buildNetworkGapPptx(quote.networkResult);
+    return new Response(new Uint8Array(deck), { headers: {
+      "content-type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "content-disposition": `attachment; filename="${name}-network-irp-gap-analysis.pptx"`,
+      "cache-control": "private, no-store"
+    } });
+  }
+  const report = await buildNetworkGapPdf(quote.networkResult);
+  return new Response(new Uint8Array(report), { headers: {
+    "content-type": "application/pdf",
+    "content-disposition": `attachment; filename="${name}-network-irp-gap-analysis.pdf"`,
+    "cache-control": "private, no-store"
+  } });
 }

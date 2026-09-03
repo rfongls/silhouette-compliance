@@ -1,0 +1,446 @@
+import PDFDocument from "pdfkit";
+import PptxGenJS from "pptxgenjs";
+import { standardLabel } from "@/lib/analysis/standards";
+import { noEmDash, sanitizeForExport } from "@/lib/sanitize";
+
+const COLORS = {
+  ink: "#17131f",
+  muted: "#6b7280",
+  line: "#ddd8e8",
+  purple: "#8b5cf6",
+  purpleSoft: "#f4efff",
+  dark: "#110f1d",
+  white: "#ffffff",
+  critical: "#b91c1c",
+  high: "#b45309",
+  medium: "#1d4ed8",
+  low: "#047857"
+} as const;
+
+type PdfDoc = PDFKit.PDFDocument;
+type TableColumn = { label: string; width: number; value: (row: any) => unknown };
+
+function clean(value: unknown) {
+  return noEmDash(String(value ?? ""));
+}
+
+function number(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function priorityColor(value: unknown) {
+  const priority = clean(value).toLocaleLowerCase();
+  if (priority === "critical") return COLORS.critical;
+  if (priority === "high") return COLORS.high;
+  if (priority === "low") return COLORS.low;
+  return COLORS.medium;
+}
+
+function scoreColor(score: number) {
+  if (score >= 85) return COLORS.low;
+  if (score >= 50) return COLORS.high;
+  return COLORS.critical;
+}
+
+function createPdf(title: string, draw: (doc: PdfDoc) => void) {
+  return new Promise<Buffer>((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: "LETTER",
+      margins: { top: 46, right: 46, bottom: 54, left: 46 },
+      bufferPages: true,
+      info: { Title: clean(title), Author: "Silhouette LLC", Subject: "Incident Response Plan Gap Analysis" }
+    });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    doc.on("error", reject);
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    draw(doc);
+    addPdfFooters(doc);
+    doc.end();
+  });
+}
+
+function addPdfFooters(doc: PdfDoc) {
+  const range = doc.bufferedPageRange();
+  for (let index = range.start; index < range.start + range.count; index += 1) {
+    doc.switchToPage(index);
+    if (index === 0) continue;
+    const y = doc.page.height - 31;
+    doc.save().strokeColor(COLORS.line).lineWidth(0.5).moveTo(46, y - 7).lineTo(doc.page.width - 46, y - 7).stroke();
+    doc.font("Helvetica").fontSize(7).fillColor(COLORS.muted)
+      .text("Silhouette LLC | Confidential Compliance Gap Analysis", 46, y, { lineBreak: false })
+      .text(`${index + 1} of ${range.count}`, doc.page.width - 110, y, { width: 64, align: "right", lineBreak: false });
+    doc.restore();
+  }
+}
+
+function cover(doc: PdfDoc, title: string, subtitle: string) {
+  doc.rect(0, 0, doc.page.width, doc.page.height).fill(COLORS.dark);
+  doc.fillColor("#d7c4ff").font("Helvetica-Bold").fontSize(10).text("SILHOUETTE LLC", 54, 218, { characterSpacing: 2.8 });
+  doc.fillColor(COLORS.white).font("Times-Bold").fontSize(34).text(clean(title), 54, 256, { width: doc.page.width - 108, lineGap: 5 });
+  doc.rect(54, doc.y + 18, 330, 3).fill(COLORS.purple);
+  doc.fillColor("#d7c4ff").font("Helvetica").fontSize(13).text(clean(subtitle), 54, doc.y + 28, { width: 430, lineGap: 4 });
+  doc.fontSize(9).text(`Confidential | ${new Date().toLocaleDateString("en-US")}`, 54, doc.page.height - 86);
+}
+
+function newSection(doc: PdfDoc, title: string, subtitle?: string) {
+  doc.addPage();
+  doc.fillColor(COLORS.purple).font("Times-Bold").fontSize(23).text(clean(title));
+  if (subtitle) doc.moveDown(0.25).fillColor(COLORS.muted).font("Helvetica").fontSize(9).text(clean(subtitle), { lineGap: 2 });
+  doc.moveDown(0.75);
+}
+
+function heading(doc: PdfDoc, text: string) {
+  ensureSpace(doc, 34);
+  doc.moveDown(0.45).fillColor(COLORS.ink).font("Times-Bold").fontSize(15).text(clean(text));
+  doc.moveDown(0.25);
+}
+
+function body(doc: PdfDoc, text: unknown, options: PDFKit.Mixins.TextOptions = {}) {
+  doc.fillColor(COLORS.ink).font("Helvetica").fontSize(9).text(clean(text), { lineGap: 3, ...options });
+}
+
+function ensureSpace(doc: PdfDoc, height: number) {
+  if (doc.y + height > doc.page.height - 62) doc.addPage();
+}
+
+function metricCards(doc: PdfDoc, cards: Array<{ label: string; value: string; color?: string }>) {
+  const gap = 10;
+  const width = (doc.page.width - 92 - gap * (cards.length - 1)) / cards.length;
+  const top = doc.y;
+  cards.forEach((card, index) => {
+    const x = 46 + index * (width + gap);
+    const value = clean(card.value);
+    const valueSize = value.length > 18 ? 11 : value.length > 13 ? 13 : value.length > 9 ? 16 : 22;
+    doc.roundedRect(x, top, width, 72, 5).fillAndStroke("#faf9fc", COLORS.line);
+    doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(7).text(clean(card.label).toUpperCase(), x + 11, top + 12, { width: width - 22 });
+    doc.fillColor(card.color || COLORS.ink).font("Helvetica-Bold").fontSize(valueSize).text(value, x + 11, top + 32, { width: width - 22, height: 27, ellipsis: true });
+  });
+  doc.y = top + 80;
+}
+
+function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize = 7.5) {
+  const left = 46;
+  const headerHeight = 27;
+  const padding = 5;
+
+  const drawHeader = () => {
+    const y = doc.y;
+    doc.rect(left, y, columns.reduce((sum, column) => sum + column.width, 0), headerHeight).fill(COLORS.purpleSoft);
+    let x = left;
+    columns.forEach((column) => {
+      doc.fillColor("#5b4b75").font("Helvetica-Bold").fontSize(6.5).text(clean(column.label).toUpperCase(), x + padding, y + 8, { width: column.width - padding * 2, lineBreak: false });
+      x += column.width;
+    });
+    doc.y = y + headerHeight;
+  };
+
+  drawHeader();
+  rows.forEach((row) => {
+    const values = columns.map((column) => clean(column.value(row)) || "-");
+    doc.font("Helvetica").fontSize(fontSize);
+    const rowHeight = Math.max(22, ...values.map((value, index) => doc.heightOfString(value, { width: columns[index].width - padding * 2, lineGap: 1 }) + padding * 2));
+    if (doc.y + rowHeight > doc.page.height - 62) {
+      doc.addPage();
+      drawHeader();
+    }
+    const y = doc.y;
+    let x = left;
+    columns.forEach((column, index) => {
+      doc.fillColor(COLORS.ink).font("Helvetica").fontSize(fontSize).text(values[index], x + padding, y + padding, { width: column.width - padding * 2, lineGap: 1 });
+      x += column.width;
+    });
+    doc.strokeColor(COLORS.line).lineWidth(0.4).moveTo(left, y + rowHeight).lineTo(x, y + rowHeight).stroke();
+    doc.y = y + rowHeight;
+  });
+}
+
+function renderRoadmap(doc: PdfDoc, phases: any[]) {
+  phases.forEach((phase, phaseIndex) => {
+    const color = priorityColor(phase.color);
+    const items = Array.isArray(phase.items) ? phase.items : [];
+    ensureSpace(doc, 54);
+    const top = doc.y;
+    doc.roundedRect(46, top, doc.page.width - 92, 39, 5).fillAndStroke("#faf9fc", COLORS.line);
+    doc.circle(64, top + 19.5, 11).fill(color);
+    doc.fillColor(COLORS.white).font("Helvetica-Bold").fontSize(8).text(String(phaseIndex + 1), 58, top + 16, { width: 12, align: "center" });
+    doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(13).text(clean(phase.name), 84, top + 8, { width: 300 });
+    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(7.5).text(clean(phase.timeframe), 84, top + 24, { width: 300 });
+    doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(`${clean(phase.color || "Medium").toUpperCase()} PRIORITY`, doc.page.width - 172, top + 16, { width: 120, align: "right" });
+    doc.y = top + 47;
+
+    items.forEach((item: any, itemIndex: number) => {
+      doc.font("Helvetica").fontSize(8.5);
+      const description = clean(item.description);
+      const references = Array.isArray(item.references) ? item.references.map(clean).join(" | ") : "";
+      const height = Math.max(42, 24 + doc.heightOfString(description, { width: 452, lineGap: 2 }) + (references ? 12 : 0));
+      ensureSpace(doc, height + 5);
+      const y = doc.y;
+      doc.roundedRect(46, y, doc.page.width - 92, height, 4).strokeColor(COLORS.line).stroke();
+      doc.circle(64, y + 16, 9).strokeColor(color).stroke();
+      doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(clean(item.number || itemIndex + 1), 59, y + 13, { width: 10, align: "center" });
+      doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(clean(item.title), 82, y + 9, { width: 455 });
+      doc.fillColor("#374151").font("Helvetica").fontSize(8).text(description, 82, y + 23, { width: 455, lineGap: 2 });
+      if (references) doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.5).text(`CONTROLS  ${references}`, 82, y + height - 11, { width: 455 });
+      doc.y = y + height + 6;
+    });
+    doc.moveDown(0.35);
+  });
+}
+
+export async function buildGapPdf(result: any) {
+  const r = sanitizeForExport(result) as any;
+  const org = clean(r.organization_name || "Organization");
+  const findings = Array.isArray(r.findings) ? r.findings : [];
+  const controls = Array.isArray(r.control_results) ? r.control_results : findings;
+  const buckets = Object.values(r.bucket_scores || {}) as any[];
+  const standards = Object.entries(r.score_breakdown || {}) as Array<[string, any]>;
+  const score = number(r.compliance_score);
+
+  return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
+    cover(doc, org, "Incident Response Plan Gap Analysis");
+    newSection(doc, "Executive Summary", clean(r.document_name || "Incident Response Plan"));
+    metricCards(doc, [
+      { label: "Overall score", value: `${score}/100`, color: scoreColor(score) },
+      { label: "Posture", value: clean(r.overall_posture || "Not rated"), color: scoreColor(score) },
+      { label: "Controls reviewed", value: String(number(r.counts?.total) || controls.length) },
+      { label: "Findings", value: String(findings.length) }
+    ]);
+    body(doc, r.posture_summary || "No posture summary was recorded.");
+
+    heading(doc, "Incident Response Capability Scores");
+    renderTable(doc, [
+      { label: "Capability", width: 236, value: (row) => row.label },
+      { label: "Points", width: 94, value: (row) => `${row.points_earned} / ${row.points_possible}` },
+      { label: "Score", width: 72, value: (row) => `${row.score}%` },
+      { label: "Controls", width: 98, value: (row) => row.controls_reviewed }
+    ], buckets);
+    body(doc, "Fixed capability point budgets total 100. Control results within each capability determine the points earned.");
+
+    heading(doc, "Standards Alignment");
+    renderTable(doc, [
+      { label: "Standard", width: 200, value: (row) => standardLabel(row[0]) },
+      { label: "Score", width: 65, value: (row) => `${row[1].score}/100` },
+      { label: "Reviewed", width: 65, value: (row) => row[1].controls_reviewed },
+      { label: "Met", width: 55, value: (row) => row[1].controls_met },
+      { label: "Partial", width: 55, value: (row) => row[1].controls_partial },
+      { label: "Failed", width: 60, value: (row) => row[1].controls_failed }
+    ], standards);
+
+    heading(doc, "Assessment Basis");
+    body(doc, `Control boards: ${r.control_board?.citation || "Not recorded"}`);
+    body(doc, `Scoring: ${r.scoring_method || "Control-level scoring method not recorded"}`);
+    heading(doc, "Data Handling");
+    body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
+    body(doc, "This advisory disclosure does not affect the control-based compliance score.");
+
+    newSection(doc, "Consolidated Remediation Findings", `${findings.length} documented findings across the selected control boards`);
+    renderTable(doc, [
+      { label: "Priority", width: 49, value: (row) => row.risk_level },
+      { label: "Capability", width: 92, value: (row) => row.capability || row.control_name || row.control_id },
+      { label: "Controls", width: 43, value: (row) => row.control_count || row.control_ids?.length || 1 },
+      { label: "Standards", width: 78, value: (row) => (row.standards || []).map((value: string) => standardLabel(value)).join(", ") },
+      { label: "Status", width: 47, value: (row) => row.status },
+      { label: "Finding", width: 191, value: (row) => row.finding }
+    ], findings, 6.6);
+
+    newSection(doc, "Priority Remediation Roadmap", "Highest-priority actions by implementation horizon");
+    renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : []);
+    heading(doc, "Conclusion and Limitations");
+    body(doc, "This assessment covers submitted documentation only. Operational controls and configurations not captured in reviewed artifacts are outside scope. Findings should be reviewed with compliance counsel before regulatory submission.");
+
+    if (controls.length) {
+      newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`);
+      renderTable(doc, [
+        { label: "Capability", width: 88, value: (row) => row.bucket_label },
+        { label: "Control", width: 56, value: (row) => row.control_id },
+        { label: "Standard", width: 72, value: (row) => (row.standards || []).map((value: string) => standardLabel(value)).join(", ") },
+        { label: "Status", width: 43, value: (row) => row.status },
+        { label: "Priority", width: 43, value: (row) => row.risk_level },
+        { label: "Requirement", width: 110, value: (row) => row.requirement },
+        { label: "Evidence", width: 88, value: (row) => row.evidence }
+      ], controls, 5.8);
+    }
+  });
+}
+
+export async function buildNetworkGapPdf(result: any) {
+  const r = sanitizeForExport(result) as any;
+  const organizations = Array.isArray(r.organizations) ? r.organizations : [];
+  const gaps = Array.isArray(r.common_gaps) ? r.common_gaps : [];
+  const score = number(r.compliance_score);
+  return createPdf(`${clean(r.network_name)} - Network IRP Gap Analysis`, (doc) => {
+    cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`);
+    newSection(doc, "Network Executive Summary", clean(r.overall_posture));
+    metricCards(doc, [
+      { label: "Network score", value: `${score}/100`, color: scoreColor(score) },
+      { label: "Organizations", value: String(organizations.length) },
+      { label: "Common gaps", value: String(gaps.length) }
+    ]);
+    body(doc, r.posture_summary || "No network posture summary was recorded.");
+    heading(doc, "Capability Averages");
+    renderTable(doc, [
+      { label: "Capability", width: 250, value: (row) => row.label },
+      { label: "Points", width: 95, value: (row) => `${row.points_earned} / ${row.points_possible}` },
+      { label: "Score", width: 75, value: (row) => `${row.score}%` },
+      { label: "Organizations", width: 80, value: (row) => row.organizations_reviewed }
+    ], Object.values(r.bucket_scores || {}));
+    heading(doc, "Organization Comparison");
+    renderTable(doc, [
+      { label: "Organization", width: 260, value: (row) => row.organization_name },
+      { label: "Posture", width: 150, value: (row) => row.overall_posture },
+      { label: "Score", width: 90, value: (row) => `${row.compliance_score}/100` }
+    ], organizations);
+    newSection(doc, "Common Capability Gaps", "Ranked by organizations affected and priority");
+    renderTable(doc, [
+      { label: "Priority", width: 55, value: (row) => row.risk_level },
+      { label: "Capability", width: 95, value: (row) => row.control_name || row.control_id },
+      { label: "Requirement", width: 185, value: (row) => row.requirement },
+      { label: "Organizations", width: 115, value: (row) => (row.affected_organizations || []).join(", ") },
+      { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${organizations.length}` }
+    ], gaps, 6.6);
+  });
+}
+
+function addDeckFooter(pptx: PptxGenJS, slide: PptxGenJS.Slide, label: string) {
+  slide.addShape(pptx.ShapeType.line, { x: 0.55, y: 7.08, w: 12.23, h: 0, line: { color: "D8D2E4", pt: 0.6 } });
+  slide.addText(clean(label), { x: 0.55, y: 7.13, w: 8.5, h: 0.18, fontFace: "Aptos", fontSize: 6.5, color: "71697E", margin: 0 });
+  slide.addText("Silhouette LLC", { x: 9.5, y: 7.13, w: 3.28, h: 0.18, fontFace: "Aptos", fontSize: 6.5, color: "71697E", align: "right", margin: 0 });
+}
+
+function addDeckTitle(slide: PptxGenJS.Slide, eyebrow: string, title: string, subtitle?: string) {
+  slide.addText(clean(eyebrow).toUpperCase(), { x: 0.65, y: 0.38, w: 6, h: 0.22, fontFace: "Aptos", fontSize: 7.5, bold: true, color: "8B5CF6", charSpacing: 2.5, margin: 0 });
+  slide.addText(clean(title), { x: 0.65, y: 0.72, w: 11.9, h: 0.52, fontFace: "Georgia", fontSize: 27, bold: true, color: "17131F", margin: 0 });
+  if (subtitle) slide.addText(clean(subtitle), { x: 0.65, y: 1.28, w: 11.8, h: 0.35, fontFace: "Aptos", fontSize: 11, color: "71697E", margin: 0 });
+}
+
+function addBulletList(slide: PptxGenJS.Slide, items: string[], options?: { x?: number; y?: number; w?: number; h?: number; fontSize?: number }) {
+  const text = items.map((item) => ({ text: clean(item), options: { bullet: { indent: 14 }, breakLine: true, hanging: 4 } }));
+  slide.addText(text as any, { x: options?.x ?? 0.78, y: options?.y ?? 1.8, w: options?.w ?? 11.6, h: options?.h ?? 4.85, fontFace: "Aptos", fontSize: options?.fontSize ?? 15, color: "302A39", breakLine: false, margin: 4, valign: "top", paraSpaceAfter: 11 });
+}
+
+async function outputDeck(pptx: PptxGenJS) {
+  const output = await pptx.write({ outputType: "nodebuffer" });
+  if (typeof output === "string") return Buffer.from(output);
+  if (output instanceof ArrayBuffer) return Buffer.from(output);
+  if (output instanceof Uint8Array) return Buffer.from(output);
+  throw new Error("PowerPoint generation returned an unsupported output type.");
+}
+
+export async function buildGapPptx(result: any) {
+  const r = sanitizeForExport(result) as any;
+  const org = clean(r.organization_name || "Organization");
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_WIDE";
+  pptx.author = "Silhouette LLC";
+  pptx.subject = "Incident Response Plan Gap Analysis";
+  pptx.title = `${org} - Incident Response Plan Gap Analysis`;
+  pptx.company = "Silhouette LLC";
+  pptx.theme = { headFontFace: "Georgia", bodyFontFace: "Aptos" };
+
+  const coverSlide = pptx.addSlide();
+  coverSlide.background = { color: "110F1D" };
+  coverSlide.addText("SILHOUETTE LLC", { x: 0.78, y: 1.15, w: 4.8, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "D7C4FF", charSpacing: 3, margin: 0 });
+  coverSlide.addText(org, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
+  coverSlide.addShape(pptx.ShapeType.rect, { x: 0.78, y: 3.08, w: 4.25, h: 0.05, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
+  coverSlide.addText("Incident Response Plan Gap Analysis", { x: 0.78, y: 3.38, w: 9, h: 0.45, fontFace: "Aptos", fontSize: 17, color: "D7C4FF", margin: 0 });
+  coverSlide.addText(`Confidential | ${new Date().toLocaleDateString("en-US")}`, { x: 0.78, y: 6.7, w: 5, h: 0.2, fontFace: "Aptos", fontSize: 7.5, color: "A99BBC", margin: 0 });
+
+  const summary = pptx.addSlide();
+  addDeckTitle(summary, "Executive summary", r.overall_posture || "Assessment result", r.posture_summary);
+  const score = number(r.compliance_score);
+  summary.addText(String(score), { x: 0.72, y: 2.05, w: 2.3, h: 1.35, fontFace: "Aptos Display", fontSize: 56, bold: true, color: scoreColor(score).slice(1), align: "center", margin: 0, fit: "shrink" });
+  summary.addText("OVERALL SCORE / 100", { x: 0.72, y: 3.45, w: 2.3, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
+  const counts = ["critical", "high", "medium", "low"].map((key) => ({ key, value: number(r.counts?.[key]) }));
+  counts.forEach((entry, index) => {
+    const x = 3.45 + (index % 2) * 4.45;
+    const y = 2.0 + Math.floor(index / 2) * 1.42;
+    summary.addShape(pptx.ShapeType.roundRect, { x, y, w: 4.05, h: 1.05, rectRadius: 0.04, fill: { color: "FAF9FC" }, line: { color: "DDD8E8", pt: 0.8 } });
+    summary.addText(entry.key.toUpperCase(), { x: x + 0.22, y: y + 0.18, w: 2.2, h: 0.2, fontFace: "Aptos", fontSize: 7.5, bold: true, color: priorityColor(entry.key).slice(1), margin: 0 });
+    summary.addText(String(entry.value), { x: x + 0.22, y: y + 0.46, w: 2.2, h: 0.36, fontFace: "Aptos Display", fontSize: 23, bold: true, color: "17131F", margin: 0 });
+  });
+  addDeckFooter(pptx, summary, `${org} | IRP Gap Analysis`);
+
+  const capabilities = Object.values(r.bucket_scores || {}) as any[];
+  const capabilitySlide = pptx.addSlide();
+  addDeckTitle(capabilitySlide, "100-point scoring model", "Incident Response Capabilities", "Fixed capability budgets total 100 points.");
+  capabilities.slice(0, 12).forEach((bucket, index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    const x = 0.75 + column * 6.15;
+    const y = 1.83 + row * 0.78;
+    const earned = number(bucket.points_earned);
+    const possible = Math.max(1, number(bucket.points_possible));
+    capabilitySlide.addText(clean(bucket.label), { x, y, w: 3.35, h: 0.23, fontFace: "Aptos", fontSize: 10, bold: true, color: "302A39", margin: 0, fit: "shrink" });
+    capabilitySlide.addShape(pptx.ShapeType.rect, { x: x + 3.45, y: y + 0.02, w: 1.65, h: 0.13, fill: { color: "E8E4EE" }, line: { color: "E8E4EE" } });
+    capabilitySlide.addShape(pptx.ShapeType.rect, { x: x + 3.45, y: y + 0.02, w: 1.65 * Math.min(1, earned / possible), h: 0.13, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
+    capabilitySlide.addText(`${earned}/${possible}`, { x: x + 5.18, y: y - 0.02, w: 0.65, h: 0.22, fontFace: "Aptos", fontSize: 9, bold: true, color: "17131F", align: "right", margin: 0 });
+  });
+  addDeckFooter(pptx, capabilitySlide, `${org} | IRP Gap Analysis`);
+
+  const standardsSlide = pptx.addSlide();
+  addDeckTitle(standardsSlide, "Traceability", "Standards Alignment", "Each selected publication remains separately scored and identifiable.");
+  const standards = Object.entries(r.score_breakdown || {}) as Array<[string, any]>;
+  standards.forEach(([standard, value], index) => {
+    const y = 1.92 + index * 0.68;
+    standardsSlide.addText(standardLabel(standard), { x: 0.82, y, w: 4.2, h: 0.27, fontFace: "Aptos", fontSize: 11, bold: true, color: "302A39", margin: 0, fit: "shrink" });
+    standardsSlide.addShape(pptx.ShapeType.rect, { x: 5.15, y: y + 0.03, w: 5.7, h: 0.16, fill: { color: "E8E4EE" }, line: { color: "E8E4EE" } });
+    standardsSlide.addShape(pptx.ShapeType.rect, { x: 5.15, y: y + 0.03, w: 5.7 * Math.min(1, number(value.score) / 100), h: 0.16, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
+    standardsSlide.addText(`${number(value.score)}/100`, { x: 11.05, y: y - 0.03, w: 1.05, h: 0.25, fontFace: "Aptos", fontSize: 10, bold: true, color: "17131F", align: "right", margin: 0 });
+  });
+  addDeckFooter(pptx, standardsSlide, `${org} | IRP Gap Analysis`);
+
+  const findings = Array.isArray(r.findings) ? r.findings : [];
+  for (let offset = 0; offset < Math.min(findings.length, 16); offset += 8) {
+    const slide = pptx.addSlide();
+    addDeckTitle(slide, "Findings", offset === 0 ? "Priority Findings" : "Priority Findings, Continued", "Highest-priority documented gaps for leadership action.");
+    addBulletList(slide, findings.slice(offset, offset + 8).map((finding: any) => `${finding.risk_level} | ${finding.capability || finding.control_name || finding.control_id}: ${finding.finding}`), { y: 1.78, h: 4.95, fontSize: 12.5 });
+    addDeckFooter(pptx, slide, `${org} | IRP Gap Analysis`);
+  }
+
+  const phases = Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : [];
+  phases.forEach((phase: any, index: number) => {
+    const slide = pptx.addSlide();
+    addDeckTitle(slide, `Roadmap phase ${index + 1}`, clean(phase.name), clean(phase.timeframe));
+    addBulletList(slide, (phase.items || []).map((item: any) => `${item.title}: ${item.description}`), { y: 1.85, h: 4.85, fontSize: 13.5 });
+    addDeckFooter(pptx, slide, `${org} | Priority Remediation Roadmap`);
+  });
+
+  const close = pptx.addSlide();
+  close.background = { color: "110F1D" };
+  close.addText("NEXT STEPS", { x: 0.78, y: 1.2, w: 4, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "D7C4FF", charSpacing: 3, margin: 0 });
+  close.addText("Remediate. Test. Reassess.", { x: 0.78, y: 2.0, w: 11.7, h: 0.9, fontFace: "Georgia", fontSize: 35, bold: true, color: "FFFFFF", margin: 0 });
+  close.addText("Prioritize critical capability gaps, validate implementation evidence, and measure progress against the same published control baseline.", { x: 0.78, y: 3.25, w: 9.8, h: 0.72, fontFace: "Aptos", fontSize: 16, color: "D7C4FF", margin: 0 });
+  return outputDeck(pptx);
+}
+
+export async function buildNetworkGapPptx(result: any) {
+  const r = sanitizeForExport(result) as any;
+  const network = clean(r.network_name || "Healthcare Network");
+  const organizations = Array.isArray(r.organizations) ? r.organizations : [];
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_WIDE";
+  pptx.author = "Silhouette LLC";
+  pptx.title = `${network} - Network IRP Gap Analysis`;
+
+  const coverSlide = pptx.addSlide();
+  coverSlide.background = { color: "110F1D" };
+  coverSlide.addText("SILHOUETTE LLC", { x: 0.78, y: 1.15, w: 4.8, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "D7C4FF", charSpacing: 3, margin: 0 });
+  coverSlide.addText(network, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
+  coverSlide.addText(`Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`, { x: 0.78, y: 3.2, w: 10.8, h: 0.45, fontFace: "Aptos", fontSize: 16, color: "D7C4FF", margin: 0 });
+
+  const summary = pptx.addSlide();
+  addDeckTitle(summary, "Network posture", clean(r.overall_posture), clean(r.posture_summary));
+  summary.addText(String(number(r.compliance_score)), { x: 0.8, y: 2.05, w: 2.5, h: 1.4, fontFace: "Aptos Display", fontSize: 58, bold: true, color: scoreColor(number(r.compliance_score)).slice(1), align: "center", margin: 0 });
+  summary.addText("NETWORK SCORE / 100", { x: 0.8, y: 3.5, w: 2.5, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
+  addBulletList(summary, organizations.map((organization: any) => `${organization.organization_name}: ${organization.compliance_score}/100, ${organization.overall_posture}`), { x: 3.8, y: 1.9, w: 8.2, h: 4.8, fontSize: 13 });
+  addDeckFooter(pptx, summary, `${network} | Network IRP Gap Analysis`);
+
+  const priorities = Array.isArray(r.network_priorities) ? r.network_priorities : [];
+  const prioritySlide = pptx.addSlide();
+  addDeckTitle(prioritySlide, "Network priorities", "Coordinated Remediation", "Common gaps ranked by affected organizations and risk.");
+  addBulletList(prioritySlide, priorities.slice(0, 10).map((priority: any) => `${priority.risk_level} | ${priority.control_name || priority.control_id}: ${priority.affected_count}/${organizations.length} organizations affected`), { y: 1.8, h: 5, fontSize: 13 });
+  addDeckFooter(pptx, prioritySlide, `${network} | Network IRP Gap Analysis`);
+  return outputDeck(pptx);
+}

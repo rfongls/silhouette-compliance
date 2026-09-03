@@ -34,8 +34,9 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{result.overall_posture}</span>
         <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report`} target="_blank">Export report</a>
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck`} target="_blank">Export deck</a>
+          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=presentation`} target="_blank" rel="noreferrer">Presentation</a>
+          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report`}>Export PDF</a>
+          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck`}>Export deck</a>
         </div>
       </div>
     </header>

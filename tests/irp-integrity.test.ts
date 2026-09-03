@@ -22,7 +22,9 @@ import { demoAssessment } from "../lib/analysis/engine";
 import { DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT } from "../lib/analysis/irp-demo";
 import { quoteFunding } from "../lib/run-quotes";
 import { buildGapDeck, buildGapReport, buildNetworkGapReport } from "../lib/exports/gap";
+import { buildGapPdf, buildGapPptx } from "../lib/exports/documents";
 import { validateIrpDocuments } from "../lib/irp-preflight";
+import pdf from "pdf-parse/lib/pdf-parse.js";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
   const result = demoAssessment("", "health-center");
@@ -218,6 +220,23 @@ test("printable report keeps every finding while exporting only the curated road
   assert.match(report, /roadmap-references/);
   assert.match(deck, /Remediation Roadmap/);
   assert.match(report, /Consolidated Remediation Findings/);
+});
+
+test("download exports produce native PDF and PowerPoint files", async () => {
+  const result = demoAssessment("", "health-center");
+  const pdfFile = await buildGapPdf(result);
+  const deck = await buildGapPptx(result);
+  const parsed = await pdf(pdfFile);
+
+  assert.equal(pdfFile.subarray(0, 5).toString("ascii"), "%PDF-");
+  assert.equal(deck.subarray(0, 2).toString("ascii"), "PK");
+  assert.ok(pdfFile.length > 10_000);
+  assert.ok(deck.length > 10_000);
+  assert.ok(parsed.numpages >= 5);
+  assert.match(parsed.text, /Executive Summary/);
+  assert.match(parsed.text, /Consolidated Remediation Findings/);
+  assert.match(parsed.text, /Priority Remediation Roadmap/);
+  assert.match(parsed.text, /Control Traceability Appendix/);
 });
 
 test("positive evidence requires an exact quote from the supplied chunk", () => {

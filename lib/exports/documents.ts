@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import PptxGenJS from "pptxgenjs";
 import { standardLabel } from "@/lib/analysis/standards";
+import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
 import { noEmDash, sanitizeForExport } from "@/lib/sanitize";
 
 const COLORS = {
@@ -39,6 +40,7 @@ function priorityColor(value: unknown) {
 
 function scoreColor(score: number) {
   if (score >= 85) return COLORS.low;
+  if (score >= 70) return COLORS.medium;
   if (score >= 50) return COLORS.high;
   return COLORS.critical;
 }
@@ -197,28 +199,39 @@ export async function buildGapPdf(result: any) {
   const buckets = Object.values(r.bucket_scores || {}) as any[];
   const standards = Object.entries(r.score_breakdown || {}) as Array<[string, any]>;
   const score = number(r.compliance_score);
+  const readiness = readinessProfile(score);
+  const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
+  const summaryCards = capabilitySummary.total ? [
+    { label: "Readiness profile", value: readiness, color: scoreColor(score) },
+    { label: "Established", value: String(capabilitySummary.established), color: COLORS.low },
+    { label: "Developing", value: String(capabilitySummary.developing), color: COLORS.high },
+    { label: "Needs attention", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
+  ] : [
+    { label: "Readiness profile", value: readiness, color: scoreColor(score) },
+    { label: "Controls reviewed", value: String(number(r.counts?.total) || controls.length) },
+    { label: "Findings", value: String(findings.length) },
+    { label: "Standards", value: String(standards.length) }
+  ];
 
   return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
     cover(doc, org, "Incident Response Plan Gap Analysis");
     newSection(doc, "Executive Summary", clean(r.document_name || "Incident Response Plan"));
-    metricCards(doc, [
-      { label: "Overall score", value: `${score}/100`, color: scoreColor(score) },
-      { label: "Posture", value: clean(r.overall_posture || "Not rated"), color: scoreColor(score) },
-      { label: "Controls reviewed", value: String(number(r.counts?.total) || controls.length) },
-      { label: "Findings", value: String(findings.length) }
-    ]);
-    body(doc, r.posture_summary || "No posture summary was recorded.");
+    metricCards(doc, summaryCards);
+    body(doc, capabilityReadinessText(capabilitySummary));
+    body(doc, "This readiness profile reflects documented policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.");
 
-    heading(doc, "Incident Response Capability Scores");
-    renderTable(doc, [
-      { label: "Capability", width: 236, value: (row) => row.label },
-      { label: "Points", width: 94, value: (row) => `${row.points_earned} / ${row.points_possible}` },
-      { label: "Score", width: 72, value: (row) => `${row.score}%` },
-      { label: "Controls", width: 98, value: (row) => row.controls_reviewed }
-    ], buckets);
-    body(doc, "Fixed capability point budgets total 100. Control results within each capability determine the points earned.");
+    if (buckets.length) {
+      heading(doc, "Incident Response Capability Scores");
+      renderTable(doc, [
+        { label: "Capability", width: 236, value: (row) => row.label },
+        { label: "Points", width: 94, value: (row) => `${row.points_earned} / ${row.points_possible}` },
+        { label: "Score", width: 72, value: (row) => `${row.score}%` },
+        { label: "Controls", width: 98, value: (row) => row.controls_reviewed }
+      ], buckets);
+      body(doc, "Fixed capability point budgets total 100. Control results within each capability determine the points earned.");
+    }
 
-    heading(doc, "Standards Alignment");
+    heading(doc, "Standards Documentation Coverage");
     renderTable(doc, [
       { label: "Standard", width: 200, value: (row) => standardLabel(row[0]) },
       { label: "Score", width: 65, value: (row) => `${row[1].score}/100` },
@@ -231,9 +244,10 @@ export async function buildGapPdf(result: any) {
     heading(doc, "Assessment Basis");
     body(doc, `Control boards: ${r.control_board?.citation || "Not recorded"}`);
     body(doc, `Scoring: ${r.scoring_method || "Control-level scoring method not recorded"}`);
+    body(doc, `Internal readiness index: ${score}/100. This index is retained for trend analysis and is not a legal compliance determination.`);
     heading(doc, "Data Handling");
     body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
-    body(doc, "This advisory disclosure does not affect the control-based compliance score.");
+    body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
 
     newSection(doc, "Consolidated Remediation Findings", `${findings.length} documented findings across the selected control boards`);
     renderTable(doc, [
@@ -270,15 +284,24 @@ export async function buildNetworkGapPdf(result: any) {
   const organizations = Array.isArray(r.organizations) ? r.organizations : [];
   const gaps = Array.isArray(r.common_gaps) ? r.common_gaps : [];
   const score = number(r.compliance_score);
+  const readiness = readinessProfile(score);
+  const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
+  const summaryCards = capabilitySummary.total ? [
+    { label: "Readiness profile", value: readiness, color: scoreColor(score) },
+    { label: "Established", value: String(capabilitySummary.established), color: COLORS.low },
+    { label: "Developing", value: String(capabilitySummary.developing), color: COLORS.high },
+    { label: "Needs attention", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
+  ] : [
+    { label: "Readiness profile", value: readiness, color: scoreColor(score) },
+    { label: "Organizations", value: String(organizations.length) },
+    { label: "Common gaps", value: String(gaps.length) }
+  ];
   return createPdf(`${clean(r.network_name)} - Network IRP Gap Analysis`, (doc) => {
     cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`);
-    newSection(doc, "Network Executive Summary", clean(r.overall_posture));
-    metricCards(doc, [
-      { label: "Network score", value: `${score}/100`, color: scoreColor(score) },
-      { label: "Organizations", value: String(organizations.length) },
-      { label: "Common gaps", value: String(gaps.length) }
-    ]);
-    body(doc, r.posture_summary || "No network posture summary was recorded.");
+    newSection(doc, "Network Executive Summary", readiness);
+    metricCards(doc, summaryCards);
+    body(doc, capabilityReadinessText(capabilitySummary));
+    body(doc, `This network profile summarizes documented capability readiness across ${organizations.length} independently assessed organizations.`);
     heading(doc, "Capability Averages");
     renderTable(doc, [
       { label: "Capability", width: 250, value: (row) => row.label },
@@ -288,10 +311,12 @@ export async function buildNetworkGapPdf(result: any) {
     ], Object.values(r.bucket_scores || {}));
     heading(doc, "Organization Comparison");
     renderTable(doc, [
-      { label: "Organization", width: 260, value: (row) => row.organization_name },
-      { label: "Posture", width: 150, value: (row) => row.overall_posture },
-      { label: "Score", width: 90, value: (row) => `${row.compliance_score}/100` }
+      { label: "Organization", width: 210, value: (row) => row.organization_name },
+      { label: "Readiness", width: 105, value: (row) => readinessProfile(row.compliance_score) },
+      { label: "Capability profile", width: 185, value: (row) => capabilityReadinessText(capabilityReadinessSummary(row.bucket_scores)) }
     ], organizations);
+    heading(doc, "Assessment Basis");
+    body(doc, `Internal network readiness index: ${score}/100. This index is retained for trend analysis and is not a legal compliance determination.`);
     newSection(doc, "Common Capability Gaps", "Ranked by organizations affected and priority");
     renderTable(doc, [
       { label: "Priority", width: 55, value: (row) => row.risk_level },
@@ -347,11 +372,14 @@ export async function buildGapPptx(result: any) {
   coverSlide.addText("Incident Response Plan Gap Analysis", { x: 0.78, y: 3.38, w: 9, h: 0.45, fontFace: "Aptos", fontSize: 17, color: "D7C4FF", margin: 0 });
   coverSlide.addText(`Confidential | ${new Date().toLocaleDateString("en-US")}`, { x: 0.78, y: 6.7, w: 5, h: 0.2, fontFace: "Aptos", fontSize: 7.5, color: "A99BBC", margin: 0 });
 
-  const summary = pptx.addSlide();
-  addDeckTitle(summary, "Executive summary", r.overall_posture || "Assessment result", r.posture_summary);
   const score = number(r.compliance_score);
-  summary.addText(String(score), { x: 0.72, y: 2.05, w: 2.3, h: 1.35, fontFace: "Aptos Display", fontSize: 56, bold: true, color: scoreColor(score).slice(1), align: "center", margin: 0, fit: "shrink" });
-  summary.addText("OVERALL SCORE / 100", { x: 0.72, y: 3.45, w: 2.3, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
+  const readiness = readinessProfile(score);
+  const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
+  const summary = pptx.addSlide();
+  addDeckTitle(summary, "Executive summary", `${readiness} IRP Readiness`, capabilityReadinessText(capabilitySummary));
+  summary.addText(readiness.toUpperCase(), { x: 0.72, y: 2.22, w: 2.3, h: 0.72, fontFace: "Aptos Display", fontSize: 25, bold: true, color: scoreColor(score).slice(1), align: "center", margin: 0, fit: "shrink" });
+  summary.addText("READINESS PROFILE", { x: 0.72, y: 3.05, w: 2.3, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
+  summary.addText(`Internal readiness index ${score}/100 for trend analysis`, { x: 0.72, y: 3.44, w: 2.3, h: 0.35, fontFace: "Aptos", fontSize: 7.5, color: "71697E", align: "center", margin: 0, fit: "shrink" });
   const counts = ["critical", "high", "medium", "low"].map((key) => ({ key, value: number(r.counts?.[key]) }));
   counts.forEach((entry, index) => {
     const x = 3.45 + (index % 2) * 4.45;
@@ -364,7 +392,7 @@ export async function buildGapPptx(result: any) {
 
   const capabilities = Object.values(r.bucket_scores || {}) as any[];
   const capabilitySlide = pptx.addSlide();
-  addDeckTitle(capabilitySlide, "100-point scoring model", "Incident Response Capabilities", "Fixed capability budgets total 100 points.");
+  addDeckTitle(capabilitySlide, "Capability readiness model", "Incident Response Capabilities", "Weighted capability evidence supports a consistent readiness profile and trend index.");
   capabilities.slice(0, 12).forEach((bucket, index) => {
     const column = index % 2;
     const row = Math.floor(index / 2);
@@ -380,7 +408,7 @@ export async function buildGapPptx(result: any) {
   addDeckFooter(pptx, capabilitySlide, `${org} | IRP Gap Analysis`);
 
   const standardsSlide = pptx.addSlide();
-  addDeckTitle(standardsSlide, "Traceability", "Standards Alignment", "Each selected publication remains separately scored and identifiable.");
+  addDeckTitle(standardsSlide, "Traceability", "Standards Documentation Coverage", "Each selected publication remains separately measured and identifiable.");
   const standards = Object.entries(r.score_breakdown || {}) as Array<[string, any]>;
   standards.forEach(([standard, value], index) => {
     const y = 1.92 + index * 0.68;
@@ -430,11 +458,18 @@ export async function buildNetworkGapPptx(result: any) {
   coverSlide.addText(network, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
   coverSlide.addText(`Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`, { x: 0.78, y: 3.2, w: 10.8, h: 0.45, fontFace: "Aptos", fontSize: 16, color: "D7C4FF", margin: 0 });
 
+  const score = number(r.compliance_score);
+  const readiness = readinessProfile(score);
+  const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
   const summary = pptx.addSlide();
-  addDeckTitle(summary, "Network posture", clean(r.overall_posture), clean(r.posture_summary));
-  summary.addText(String(number(r.compliance_score)), { x: 0.8, y: 2.05, w: 2.5, h: 1.4, fontFace: "Aptos Display", fontSize: 58, bold: true, color: scoreColor(number(r.compliance_score)).slice(1), align: "center", margin: 0 });
-  summary.addText("NETWORK SCORE / 100", { x: 0.8, y: 3.5, w: 2.5, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
-  addBulletList(summary, organizations.map((organization: any) => `${organization.organization_name}: ${organization.compliance_score}/100, ${organization.overall_posture}`), { x: 3.8, y: 1.9, w: 8.2, h: 4.8, fontSize: 13 });
+  addDeckTitle(summary, "Network readiness", `${readiness} IRP Readiness`, capabilityReadinessText(capabilitySummary));
+  summary.addText(readiness.toUpperCase(), { x: 0.8, y: 2.2, w: 2.5, h: 0.75, fontFace: "Aptos Display", fontSize: 25, bold: true, color: scoreColor(score).slice(1), align: "center", margin: 0, fit: "shrink" });
+  summary.addText("NETWORK READINESS PROFILE", { x: 0.8, y: 3.05, w: 2.5, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
+  summary.addText(`Internal readiness index ${score}/100 for trend analysis`, { x: 0.8, y: 3.43, w: 2.5, h: 0.35, fontFace: "Aptos", fontSize: 7.5, color: "71697E", align: "center", margin: 0, fit: "shrink" });
+  addBulletList(summary, organizations.map((organization: any) => {
+    const profile = capabilityReadinessSummary(organization.bucket_scores);
+    return `${organization.organization_name}: ${readinessProfile(organization.compliance_score)}; ${capabilityReadinessText(profile)}`;
+  }), { x: 3.8, y: 1.9, w: 8.2, h: 4.8, fontSize: 13 });
   addDeckFooter(pptx, summary, `${network} | Network IRP Gap Analysis`);
 
   const priorities = Array.isArray(r.network_priorities) ? r.network_priorities : [];

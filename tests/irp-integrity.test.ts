@@ -24,6 +24,7 @@ import { quoteFunding } from "../lib/run-quotes";
 import { buildGapDeck, buildGapReport, buildNetworkGapReport } from "../lib/exports/gap";
 import { buildGapPdf, buildGapPptx } from "../lib/exports/documents";
 import { validateIrpDocuments } from "../lib/irp-preflight";
+import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "../lib/report-readiness";
 import pdf from "pdf-parse/lib/pdf-parse.js";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
@@ -234,9 +235,28 @@ test("download exports produce native PDF and PowerPoint files", async () => {
   assert.ok(deck.length > 10_000);
   assert.ok(parsed.numpages >= 5);
   assert.match(parsed.text, /Executive Summary/);
+  assert.match(parsed.text, /READINESS PROFILE/i);
+  assert.match(parsed.text, /Standards\s+Documentation\s+Coverage/);
+  assert.match(parsed.text, /Internal readiness\s+index/);
   assert.match(parsed.text, /Consolidated Remediation Findings/);
   assert.match(parsed.text, /Priority Remediation Roadmap/);
   assert.match(parsed.text, /Control Traceability Appendix/);
+});
+
+test("stored scores render as customer-facing readiness profiles without changing report data", () => {
+  const bucketScores = {
+    governance: { score: 82 },
+    detection: { score: 58 },
+    recovery: { score: 24 }
+  };
+  const summary = capabilityReadinessSummary(bucketScores);
+
+  assert.equal(readinessProfile(26), "Foundational");
+  assert.equal(readinessProfile(50), "Developing");
+  assert.equal(readinessProfile(70), "Established");
+  assert.equal(readinessProfile(85), "Mature");
+  assert.deepEqual(summary, { total: 3, established: 1, developing: 1, needsAttention: 1 });
+  assert.equal(capabilityReadinessText(summary), "1 established, 1 developing, and 1 needs attention across 3 assessed capabilities.");
 });
 
 test("positive evidence requires an exact quote from the supplied chunk", () => {

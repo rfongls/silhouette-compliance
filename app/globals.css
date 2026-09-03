@@ -181,8 +181,12 @@
 .irp-overall-score{display:grid;width:100%;max-width:100%;min-width:0;align-content:center;justify-items:center;padding:14px;border:1px solid color-mix(in srgb,var(--posture) 45%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--posture) 8%,transparent);overflow:hidden}
 .irp-overall-score>span{color:var(--muted);font-size:11px;text-transform:uppercase}
 .irp-overall-score b{font-size:58px;line-height:1;color:var(--posture)}
+.irp-overall-score b.irp-readiness-label{font-size:20px;line-height:1.15;text-align:center}
 .irp-overall-score small{color:var(--muted)}
 .irp-overall-score em{margin-top:9px;color:var(--muted);font-size:10px;font-style:normal;text-align:center}
+.irp-scoring-methodology{margin-top:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested)}
+.irp-scoring-methodology summary{padding:11px 14px;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer}
+.irp-scoring-methodology p{margin:0;padding:0 14px 13px;color:var(--muted);font-size:11px;line-height:1.5}
 .irp-section-heading{align-items:flex-end;margin:28px 0 12px}
 .irp-section-heading h3{margin:4px 0 0;font-size:24px}
 .irp-bucket-section{min-width:0}

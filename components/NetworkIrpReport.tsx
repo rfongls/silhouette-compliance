@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
+import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
 
 const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
 const PRIORITY_ORDER: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
@@ -16,6 +17,8 @@ function postureClass(score: number) {
 export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: string }) {
   const [sort, setSort] = useState<"affected" | "severity">("affected");
   const score = Number(result.compliance_score || 0);
+  const readiness = readinessProfile(score);
+  const capabilitySummary = capabilityReadinessSummary(result.bucket_scores);
   const organizations = Array.isArray(result.organizations) ? result.organizations : [];
   const gaps = useMemo(() => {
     const rows = Array.isArray(result.common_gaps) ? [...result.common_gaps] : [];
@@ -32,7 +35,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         <p>{organizations.length} independent organization report{organizations.length === 1 ? "" : "s"} consolidated into this network report.</p>
       </div>
       <div className="irp-report-heading-actions">
-        <span className={`irp-posture-badge ${postureClass(score)}`}>{result.overall_posture}</span>
+        <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>
         <div className="irp-export-actions">
           <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report`}>Export PDF</a>
           <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck`}>Export deck</a>
@@ -49,13 +52,13 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
 
     <section className="irp-posture-panel">
       <div className="irp-posture-copy">
-        <span className="mono">Network posture</span>
-        <h3>{result.overall_posture}</h3>
-        <p>{result.posture_summary}</p>
-        <p className="muted">The network score is the equal average of the independent organization scores. Each organization remains available as its own report.</p>
+        <span className="mono">Network readiness profile</span>
+        <h3>{readiness}</h3>
+        <p>{capabilityReadinessText(capabilitySummary)}</p>
+        <p className="muted">The network profile summarizes capability readiness across independently assessed organizations. Each organization remains available as its own report.</p>
       </div>
       <div className="irp-standard-scores">
-        <span className="mono">Standards alignment averages</span>
+        <span className="mono">Standards documentation coverage</span>
         {Object.entries(result.score_breakdown || {}).map(([standard, breakdown]: [string, any]) => <div className="irp-standard-score" key={standard}>
           <div><b>{standardLabel(standard)}</b><span>{breakdown.organizations_reviewed} organizations</span></div>
           <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(breakdown.score || 0)))}%` }} /></div>
@@ -63,13 +66,18 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         </div>)}
       </div>
       <div className={`irp-overall-score ${postureClass(score)}`}>
-        <span>Network score</span><b>{score}</b><small>/100</small><em>{organizations.length} organizations assessed</em>
+        {capabilitySummary.total ? <><span>Capability profile</span><b>{capabilitySummary.established}</b><small>established</small><em>{capabilitySummary.developing} developing | {capabilitySummary.needsAttention} need attention</em></> : <><span>Readiness profile</span><b className="irp-readiness-label">{readiness}</b><em>{organizations.length} organizations assessed</em></>}
       </div>
     </section>
 
+    <details className="irp-scoring-methodology">
+      <summary>Scoring methodology</summary>
+      <p>The internal network readiness index is {score}/100 and is retained for trend analysis. It summarizes weighted IRP capability evidence and is not a legal compliance determination.</p>
+    </details>
+
     {Object.keys(result.bucket_scores || {}).length ? <section className="irp-bucket-section">
       <div className="irp-section-heading">
-        <div><span className="mono">100-point scoring model</span><h3>Network capability averages</h3></div>
+        <div><span className="mono">Capability readiness model</span><h3>Network capability averages</h3></div>
         <span className="muted">Each value is the average capability score across independently assessed organizations.</span>
       </div>
       <div className="irp-bucket-grid">
@@ -85,11 +93,11 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       <div className="irp-section-heading"><div><span className="mono">Organization comparison</span><h3>Independent results</h3></div></div>
       <div className="irp-findings-table-wrap">
         <table className="table irp-network-org-table">
-          <thead><tr><th>Organization</th><th>Posture</th><th>Score</th>{Object.keys(result.score_breakdown || {}).map((standard) => <th key={standard}>{standardLabel(standard)}</th>)}</tr></thead>
+          <thead><tr><th>Organization</th><th>Readiness</th><th>Capability profile</th>{Object.keys(result.score_breakdown || {}).map((standard) => <th key={standard}>{standardLabel(standard)}</th>)}</tr></thead>
           <tbody>{organizations.map((organization: any) => <tr key={organization.assessment_id}>
             <td><b>{organization.organization_name}</b></td>
-            <td><span className={`irp-posture-badge ${postureClass(Number(organization.compliance_score || 0))}`}>{organization.overall_posture}</span></td>
-            <td><b>{organization.compliance_score}/100</b></td>
+            <td><span className={`irp-posture-badge ${postureClass(Number(organization.compliance_score || 0))}`}>{readinessProfile(organization.compliance_score)}</span></td>
+            <td>{capabilityReadinessText(capabilityReadinessSummary(organization.bucket_scores))}</td>
             {Object.keys(result.score_breakdown || {}).map((standard) => <td key={standard}>{organization.score_breakdown?.[standard]?.score ?? "-"}</td>)}
           </tr>)}</tbody>
         </table>

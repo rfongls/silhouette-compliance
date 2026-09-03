@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
+import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
 
 type AssessmentExport = {
   assessmentId: string;
@@ -57,6 +58,8 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
     actionable.filter((finding: any) => findingSeverity(finding) === severity).length
   ]));
   const score = Number(result.compliance_score || 0);
+  const readiness = readinessProfile(score);
+  const capabilitySummary = capabilityReadinessSummary(result.bucket_scores);
 
   function togglePhase(name: string) {
     setOpenPhases((current) => {
@@ -75,7 +78,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         <p>{result.document_name || "Incident Response Plan"}{demo ? " | Fictional demonstration report" : ""}</p>
       </div>
       <div className="irp-report-heading-actions">
-        <span className={`irp-posture-badge ${postureClass(score)}`}>{result.overall_posture}</span>
+        <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>
         {!demo && assessments.length === 1 ? <div className="irp-export-actions">
           <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=report`}>Export PDF</a>
           <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=deck`}>Export deck</a>
@@ -97,13 +100,13 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
 
     <section className="irp-posture-panel">
       <div className="irp-posture-copy">
-        <span className="mono">Overall posture</span>
-        <h3>{result.overall_posture}</h3>
-        <p>{result.posture_summary}</p>
-        <p className="muted">The score reflects the submitted policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.</p>
+        <span className="mono">IRP readiness profile</span>
+        <h3>{readiness}</h3>
+        <p>{capabilityReadinessText(capabilitySummary)}</p>
+        <p className="muted">This profile reflects documented policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.</p>
       </div>
       <div className="irp-standard-scores">
-        <span className="mono">Standards alignment</span>
+        <span className="mono">Standards documentation coverage</span>
         {Object.entries(result.score_breakdown || {}).map(([standard, breakdown]: [string, any]) => <div className="irp-standard-score" key={standard}>
           <div><b>{standardLabel(standard)}</b><span>{breakdown.controls_reviewed} controls</span></div>
           <div className="irp-score-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(breakdown.score || 0)))}%` }} /></div>
@@ -111,16 +114,27 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
         </div>)}
       </div>
       <div className={`irp-overall-score ${postureClass(score)}`}>
-        <span>Overall score</span>
-        <b>{score}</b>
-        <small>/100</small>
-        <em>{result.counts?.total || controlResults.length} applicable controls reviewed</em>
+        {capabilitySummary.total ? <>
+          <span>Capability profile</span>
+          <b>{capabilitySummary.established}</b>
+          <small>established</small>
+          <em>{capabilitySummary.developing} developing | {capabilitySummary.needsAttention} need attention</em>
+        </> : <>
+          <span>Readiness profile</span>
+          <b className="irp-readiness-label">{readiness}</b>
+          <em>{result.counts?.total || controlResults.length} applicable controls reviewed</em>
+        </>}
       </div>
     </section>
 
+    <details className="irp-scoring-methodology">
+      <summary>Scoring methodology</summary>
+      <p>The internal readiness index is {score}/100 and is retained for trend analysis. It measures documented evidence across weighted IRP capabilities and is not a legal compliance determination.</p>
+    </details>
+
     {bucketScores.length ? <section className="irp-bucket-section">
       <div className="irp-section-heading">
-        <div><span className="mono">100-point scoring model</span><h3>Incident response capabilities</h3></div>
+        <div><span className="mono">Capability readiness model</span><h3>Incident response capabilities</h3></div>
         <span className="muted">Each capability has a fixed point budget. Standards provide traceability into these scores.</span>
       </div>
       <div className="irp-bucket-grid">

@@ -115,10 +115,10 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       </div>
       <div className={`irp-overall-score ${postureClass(score)}`}>
         {capabilitySummary.total ? <>
-          <span>Capability profile</span>
-          <b>{capabilitySummary.established}</b>
-          <small>established</small>
-          <em>{capabilitySummary.developing} developing | {capabilitySummary.needsAttention} need attention</em>
+          <span>Capabilities assessed</span>
+          <b>{capabilitySummary.total}</b>
+          <small>readiness areas</small>
+          <em>{capabilitySummary.established} established | {capabilitySummary.developing} developing | {capabilitySummary.needsAttention} prioritized</em>
         </> : <>
           <span>Readiness profile</span>
           <b className="irp-readiness-label">{readiness}</b>

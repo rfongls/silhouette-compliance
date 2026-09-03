@@ -66,7 +66,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
         </div>)}
       </div>
       <div className={`irp-overall-score ${postureClass(score)}`}>
-        {capabilitySummary.total ? <><span>Capability profile</span><b>{capabilitySummary.established}</b><small>established</small><em>{capabilitySummary.developing} developing | {capabilitySummary.needsAttention} need attention</em></> : <><span>Readiness profile</span><b className="irp-readiness-label">{readiness}</b><em>{organizations.length} organizations assessed</em></>}
+        {capabilitySummary.total ? <><span>Capabilities assessed</span><b>{capabilitySummary.total}</b><small>network readiness areas</small><em>{capabilitySummary.established} established | {capabilitySummary.developing} developing | {capabilitySummary.needsAttention} prioritized</em></> : <><span>Readiness profile</span><b className="irp-readiness-label">{readiness}</b><em>{organizations.length} organizations assessed</em></>}
       </div>
     </section>
 

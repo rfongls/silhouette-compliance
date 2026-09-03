@@ -202,10 +202,10 @@ export async function buildGapPdf(result: any) {
   const readiness = readinessProfile(score);
   const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
   const summaryCards = capabilitySummary.total ? [
-    { label: "Readiness profile", value: readiness, color: scoreColor(score) },
+    { label: "Capabilities assessed", value: String(capabilitySummary.total), color: scoreColor(score) },
     { label: "Established", value: String(capabilitySummary.established), color: COLORS.low },
     { label: "Developing", value: String(capabilitySummary.developing), color: COLORS.high },
-    { label: "Needs attention", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
+    { label: "Priority areas", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
   ] : [
     { label: "Readiness profile", value: readiness, color: scoreColor(score) },
     { label: "Controls reviewed", value: String(number(r.counts?.total) || controls.length) },
@@ -215,7 +215,7 @@ export async function buildGapPdf(result: any) {
 
   return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
     cover(doc, org, "Incident Response Plan Gap Analysis");
-    newSection(doc, "Executive Summary", clean(r.document_name || "Incident Response Plan"));
+    newSection(doc, "Executive Summary", `${readiness} readiness | ${clean(r.document_name || "Incident Response Plan")}`);
     metricCards(doc, summaryCards);
     body(doc, capabilityReadinessText(capabilitySummary));
     body(doc, "This readiness profile reflects documented policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.");
@@ -287,10 +287,10 @@ export async function buildNetworkGapPdf(result: any) {
   const readiness = readinessProfile(score);
   const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
   const summaryCards = capabilitySummary.total ? [
-    { label: "Readiness profile", value: readiness, color: scoreColor(score) },
+    { label: "Capabilities assessed", value: String(capabilitySummary.total), color: scoreColor(score) },
     { label: "Established", value: String(capabilitySummary.established), color: COLORS.low },
     { label: "Developing", value: String(capabilitySummary.developing), color: COLORS.high },
-    { label: "Needs attention", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
+    { label: "Priority areas", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
   ] : [
     { label: "Readiness profile", value: readiness, color: scoreColor(score) },
     { label: "Organizations", value: String(organizations.length) },

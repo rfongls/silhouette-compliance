@@ -36,6 +36,5 @@ export function capabilityReadinessSummary(bucketScores: unknown): CapabilityRea
 
 export function capabilityReadinessText(summary: CapabilityReadinessSummary) {
   if (!summary.total) return "Capability readiness will appear when scored capability data is available.";
-  const attentionVerb = summary.needsAttention === 1 ? "needs" : "need";
-  return `${summary.established} established, ${summary.developing} developing, and ${summary.needsAttention} ${attentionVerb} attention across ${summary.total} assessed capabilities.`;
+  return `${summary.total} capabilities assessed: ${summary.established} established, ${summary.developing} developing, and ${summary.needsAttention} prioritized for improvement.`;
 }

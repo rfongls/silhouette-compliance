@@ -256,7 +256,7 @@ test("stored scores render as customer-facing readiness profiles without changin
   assert.equal(readinessProfile(70), "Established");
   assert.equal(readinessProfile(85), "Mature");
   assert.deepEqual(summary, { total: 3, established: 1, developing: 1, needsAttention: 1 });
-  assert.equal(capabilityReadinessText(summary), "1 established, 1 developing, and 1 needs attention across 3 assessed capabilities.");
+  assert.equal(capabilityReadinessText(summary), "3 capabilities assessed: 1 established, 1 developing, and 1 prioritized for improvement.");
 });
 
 test("positive evidence requires an exact quote from the supplied chunk", () => {

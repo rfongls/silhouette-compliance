@@ -6,7 +6,10 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true,
     cpus: 1,
-    workerThreads: false
+    workerThreads: false,
+    // PDFKit resolves bundled AFM fonts through package-internal import maps.
+    // Keep it external so production Node resolves those assets from node_modules.
+    serverComponentsExternalPackages: ["pdfkit"]
   },
   webpack(config) {
     config.resolve.alias["@"] = path.resolve(__dirname);

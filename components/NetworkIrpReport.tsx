@@ -26,6 +26,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       ? (PRIORITY_ORDER[right.risk_level] || 0) - (PRIORITY_ORDER[left.risk_level] || 0) || right.affected_count - left.affected_count
       : right.affected_count - left.affected_count || (PRIORITY_ORDER[right.risk_level] || 0) - (PRIORITY_ORDER[left.risk_level] || 0));
   }, [result.common_gaps, sort]);
+  const totalFindings = SEVERITIES.reduce((total, severity) => total + Number(result.severity_counts?.[severity.toLocaleLowerCase()] || 0), 0);
 
   return <div className="irp-web-report irp-network-report">
     <header className="irp-report-heading">
@@ -65,8 +66,10 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
           <strong>{breakdown.score}</strong>
         </div>)}
       </div>
-      <div className={`irp-overall-score ${postureClass(score)}`}>
-        {capabilitySummary.total ? <><span>Capabilities assessed</span><b>{capabilitySummary.total}</b><small>network readiness areas</small><em>{capabilitySummary.established} established | {capabilitySummary.developing} developing | {capabilitySummary.needsAttention} prioritized</em></> : <><span>Readiness profile</span><b className="irp-readiness-label">{readiness}</b><em>{organizations.length} organizations assessed</em></>}
+      <div className="irp-overall-score findings">
+        <span>Total findings</span>
+        <b>{totalFindings || gaps.length}</b>
+        <small>across the assessed network</small>
       </div>
     </section>
 

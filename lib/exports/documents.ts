@@ -202,7 +202,7 @@ export async function buildGapPdf(result: any) {
   const readiness = readinessProfile(score);
   const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
   const summaryCards = capabilitySummary.total ? [
-    { label: "Capabilities assessed", value: String(capabilitySummary.total), color: scoreColor(score) },
+    { label: "Total findings", value: String(findings.length), color: COLORS.purple },
     { label: "Established", value: String(capabilitySummary.established), color: COLORS.low },
     { label: "Developing", value: String(capabilitySummary.developing), color: COLORS.high },
     { label: "Priority areas", value: String(capabilitySummary.needsAttention), color: COLORS.critical }
@@ -286,8 +286,9 @@ export async function buildNetworkGapPdf(result: any) {
   const score = number(r.compliance_score);
   const readiness = readinessProfile(score);
   const capabilitySummary = capabilityReadinessSummary(r.bucket_scores);
+  const totalFindings = ["critical", "high", "medium", "low"].reduce((total, priority) => total + number(r.severity_counts?.[priority]), 0) || gaps.length;
   const summaryCards = capabilitySummary.total ? [
-    { label: "Capabilities assessed", value: String(capabilitySummary.total), color: scoreColor(score) },
+    { label: "Total findings", value: String(totalFindings), color: COLORS.purple },
     { label: "Established", value: String(capabilitySummary.established), color: COLORS.low },
     { label: "Developing", value: String(capabilitySummary.developing), color: COLORS.high },
     { label: "Priority areas", value: String(capabilitySummary.needsAttention), color: COLORS.critical }

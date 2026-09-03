@@ -154,6 +154,7 @@
 .irp-posture-badge.moderate,.irp-overall-score.moderate{--posture:var(--medium)}
 .irp-posture-badge.limited,.irp-overall-score.limited{--posture:var(--high)}
 .irp-posture-badge.weak,.irp-overall-score.weak{--posture:var(--critical)}
+.irp-overall-score.findings{--posture:var(--accent)}
 .irp-posture-badge{border-color:color-mix(in srgb,var(--posture) 55%,var(--line));background:color-mix(in srgb,var(--posture) 10%,transparent);color:var(--posture)}
 .irp-severity-strip{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
 .irp-severity-card{--severity:var(--medium);display:grid;width:100%;max-width:100%;gap:3px;min-width:0;padding:14px;text-align:left;border:1px solid color-mix(in srgb,var(--severity) 38%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--severity) 8%,var(--surface-nested));color:var(--text);cursor:pointer;overflow:hidden}

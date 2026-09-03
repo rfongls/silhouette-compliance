@@ -186,6 +186,36 @@ test("roadmap keeps the top five actions per priority without removing detailed 
   assert.equal(immediate?.items.some((item) => item.title === "CR-7 remediation"), false);
 });
 
+test("printable report keeps every finding while exporting only the curated roadmap", () => {
+  const findings = Array.from({ length: 7 }, (_, index) => ({
+    control_id: `CR-${index + 1}`,
+    control_ids: [`CR-${index + 1}`],
+    control_count: 1,
+    standards: ["NIST"],
+    status: "No",
+    risk_level: "Critical",
+    capability: `Critical capability ${index + 1}`,
+    finding: `Detailed critical finding ${index + 1}`
+  }));
+  const result = {
+    organization_name: "Export Test Health Center",
+    compliance_score: 40,
+    overall_posture: "Non-Compliant",
+    posture_summary: "Export contract test",
+    findings,
+    remediation_roadmap: buildRemediationRoadmap(findings)
+  };
+  const report = buildGapReport(result);
+  const deck = buildGapDeck(result);
+
+  for (const finding of findings) assert.match(report, new RegExp(finding.finding));
+  assert.equal((report.match(/CR-\d remediation/g) || []).length, 5);
+  assert.equal((deck.match(/CR-\d remediation/g) || []).length, 5);
+  assert.match(report, /Priority Remediation Roadmap/);
+  assert.match(deck, /Remediation Roadmap/);
+  assert.match(report, /Consolidated Remediation Findings/);
+});
+
 test("positive evidence requires an exact quote from the supplied chunk", () => {
   const evidence = "The incident coordinator reports suspected incidents within 24 hours.";
   assert.equal(validateEvidenceStatus("Yes", "reports suspected incidents within 24 hours", evidence), "Yes");

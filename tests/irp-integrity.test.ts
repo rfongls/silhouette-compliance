@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import JSZip from "jszip";
 import {
   calculateComplianceScore,
   calculateBucketedComplianceScore,
@@ -22,7 +23,8 @@ import { demoAssessment } from "../lib/analysis/engine";
 import { DEMO_POLICY_SECTIONS, DEMO_POLICY_TEXT } from "../lib/analysis/irp-demo";
 import { quoteFunding } from "../lib/run-quotes";
 import { buildGapDeck, buildGapReport, buildNetworkGapReport } from "../lib/exports/gap";
-import { buildGapPdf, buildGapPptx } from "../lib/exports/documents";
+import { buildGapExecutivePdf, buildGapFindingsPdf, buildGapPptx } from "../lib/exports/documents";
+import { buildPdfPackage } from "../lib/exports/pdf-package";
 import { validateIrpDocuments } from "../lib/irp-preflight";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "../lib/report-readiness";
 import pdf from "pdf-parse/lib/pdf-parse.js";
@@ -223,32 +225,51 @@ test("printable report keeps every finding while exporting only the curated road
   assert.match(report, /Consolidated Remediation Findings/);
 });
 
-test("download exports produce native PDF and PowerPoint files", async () => {
+test("download exports produce separate executive and detailed PDFs in one package", async () => {
   const result = demoAssessment("", "health-center");
-  const pdfFile = await buildGapPdf(result);
+  const executivePdf = await buildGapExecutivePdf(result);
+  const findingsPdf = await buildGapFindingsPdf(result);
+  const reportPackage = await buildPdfPackage([
+    { name: "executive-report.pdf", data: executivePdf },
+    { name: "detailed-findings.pdf", data: findingsPdf }
+  ]);
   const deck = await buildGapPptx(result);
-  const parsed = await pdf(pdfFile);
+  const executive = await pdf(executivePdf);
+  const detailed = await pdf(findingsPdf);
+  const archive = await JSZip.loadAsync(reportPackage);
+  const files = Object.keys(archive.files).sort();
 
-  assert.equal(pdfFile.subarray(0, 5).toString("ascii"), "%PDF-");
+  assert.equal(executivePdf.subarray(0, 5).toString("ascii"), "%PDF-");
+  assert.equal(findingsPdf.subarray(0, 5).toString("ascii"), "%PDF-");
   assert.equal(deck.subarray(0, 2).toString("ascii"), "PK");
-  assert.ok(pdfFile.length > 10_000);
+  assert.deepEqual(files, ["detailed-findings.pdf", "executive-report.pdf"]);
+  for (const file of files) {
+    const contents = await archive.file(file)?.async("nodebuffer");
+    assert.equal(contents?.subarray(0, 5).toString("ascii"), "%PDF-");
+  }
+  assert.ok(executivePdf.length > 8_000);
+  assert.ok(findingsPdf.length > 10_000);
   assert.ok(deck.length > 10_000);
-  assert.ok(parsed.numpages >= 5);
-  assert.ok(parsed.numpages <= 9, `Demo PDF unexpectedly expanded to ${parsed.numpages} pages`);
-  assert.equal(
-    (parsed.text.match(/Silhouette LLC \| Confidential Compliance Gap Analysis/g) || []).length,
-    parsed.numpages - 1,
-    "Every non-cover page should have one footer without creating footer-only pages"
-  );
-  assert.match(parsed.text, /Table of Contents/);
-  assert.ok(pdfFile.includes(Buffer.from("/Outlines")), "PDF should expose a bookmark outline");
-  assert.match(parsed.text, /Executive Summary/);
-  assert.match(parsed.text, /READINESS PROFILE/i);
-  assert.match(parsed.text, /Standards\s+Documentation\s+Coverage/);
-  assert.match(parsed.text, /Internal readiness\s+index/);
-  assert.match(parsed.text, /Consolidated Remediation Findings/);
-  assert.match(parsed.text, /Priority Remediation Roadmap/);
-  assert.match(parsed.text, /Control Traceability Appendix/);
+  for (const parsed of [executive, detailed]) {
+    assert.equal(
+      (parsed.text.match(/Silhouette LLC \| Confidential Compliance Gap Analysis/g) || []).length,
+      parsed.numpages - 1,
+      "Every non-cover page should have one footer without creating footer-only pages"
+    );
+    assert.match(parsed.text, /Table of Contents/);
+  }
+  assert.ok(executivePdf.includes(Buffer.from("/Outlines")), "Executive PDF should expose a bookmark outline");
+  assert.ok(findingsPdf.includes(Buffer.from("/Outlines")), "Detailed PDF should expose a bookmark outline");
+  assert.match(executive.text, /Executive Summary/);
+  assert.match(executive.text, /READINESS PROFILE/i);
+  assert.match(executive.text, /Standards\s+Documentation\s+Coverage/);
+  assert.match(executive.text, /Internal readiness\s+index/);
+  assert.match(executive.text, /Priority Remediation Roadmap/);
+  assert.doesNotMatch(executive.text, /Complete Remediation Findings/);
+  assert.doesNotMatch(executive.text, /Control Traceability Appendix/);
+  assert.match(detailed.text, /Reviewer Overview/);
+  assert.match(detailed.text, /Complete Remediation Findings/);
+  assert.match(detailed.text, /Control Traceability Appendix/);
 });
 
 test("stored scores render as customer-facing readiness profiles without changing report data", () => {

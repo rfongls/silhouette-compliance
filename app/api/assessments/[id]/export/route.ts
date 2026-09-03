@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/authz";
-import { buildGapPdf, buildGapPptx } from "@/lib/exports/documents";
+import { buildGapExecutivePdf, buildGapFindingsPdf, buildGapPptx } from "@/lib/exports/documents";
+import { buildPdfPackage } from "@/lib/exports/pdf-package";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/sanitize";
 
@@ -24,10 +25,17 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       "cache-control": "private, no-store"
     } });
   }
-  const report = await buildGapPdf(result);
-  return new Response(new Uint8Array(report), { headers: {
-    "content-type": "application/pdf",
-    "content-disposition": `attachment; filename="${name}-irp-gap-analysis.pdf"`,
+  const [executiveReport, detailedFindings] = await Promise.all([
+    buildGapExecutivePdf(result),
+    buildGapFindingsPdf(result)
+  ]);
+  const reportPackage = await buildPdfPackage([
+    { name: `${name}-irp-executive-report.pdf`, data: executiveReport },
+    { name: `${name}-irp-detailed-findings.pdf`, data: detailedFindings }
+  ]);
+  return new Response(new Uint8Array(reportPackage), { headers: {
+    "content-type": "application/zip",
+    "content-disposition": `attachment; filename="${name}-irp-report-package.zip"`,
     "cache-control": "private, no-store"
   } });
 }

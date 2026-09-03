@@ -319,7 +319,7 @@ function renderControlAppendix(doc: PdfDoc, controls: any[]) {
   });
 }
 
-export async function buildGapPdf(result: any) {
+export async function buildGapExecutivePdf(result: any) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
   const findings = Array.isArray(r.findings) ? r.findings : [];
@@ -378,21 +378,49 @@ export async function buildGapPdf(result: any) {
     body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
 
-    newSection(doc, "Consolidated Remediation Findings", `${findings.length} documented findings across the selected control boards`, navigation);
-    renderFindings(doc, findings);
-
     newSection(doc, "Priority Remediation Roadmap", "Highest-priority actions by implementation horizon", navigation);
     renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : []);
     heading(doc, "Conclusion and Limitations");
     body(doc, "This assessment covers submitted documentation only. Operational controls and configurations not captured in reviewed artifacts are outside scope. Findings should be reviewed with compliance counsel before regulatory submission.");
-
-    if (controls.length) {
-      newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`, navigation);
-      renderControlAppendix(doc, controls);
-    }
     renderPdfNavigation(doc, navigation);
   });
 }
+
+export async function buildGapFindingsPdf(result: any) {
+  const r = sanitizeForExport(result) as any;
+  const org = clean(r.organization_name || "Organization");
+  const findings = Array.isArray(r.findings) ? r.findings : [];
+  const controls = Array.isArray(r.control_results) ? r.control_results : findings;
+  const standards = Object.keys(r.score_breakdown || {});
+  const severityCounts = ["Critical", "High", "Medium", "Low"].map((severity) => ({
+    label: severity,
+    value: String(findings.filter((finding: any) => clean(finding.risk_level).toLocaleLowerCase() === severity.toLocaleLowerCase()).length),
+    color: priorityColor(severity)
+  }));
+
+  return createPdf(`${org} - Detailed IRP Findings and Evidence`, (doc) => {
+    cover(doc, org, "Detailed IRP Findings and Control Evidence");
+    const navigation = startPdfNavigation(doc);
+    newSection(doc, "Reviewer Overview", `${findings.length} findings and ${controls.length} control evaluation records`, navigation);
+    metricCards(doc, severityCounts);
+    body(doc, "This supporting document contains the complete remediation finding set and control-level traceability for detailed review. It accompanies the executive IRP gap analysis report.");
+    heading(doc, "Assessment Scope");
+    body(doc, `Document: ${r.document_name || "Incident Response Plan"}`);
+    body(doc, `Standards reviewed: ${standards.map((standard) => standardLabel(standard)).join(", ") || "Not recorded"}`);
+    body(doc, `Control boards: ${r.control_board?.citation || "Not recorded"}`);
+
+    newSection(doc, "Complete Remediation Findings", `${findings.length} documented findings across the selected control boards`, navigation);
+    if (findings.length) renderFindings(doc, findings);
+    else body(doc, "No remediation findings were recorded for this assessment.");
+
+    newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`, navigation);
+    if (controls.length) renderControlAppendix(doc, controls);
+    else body(doc, "No control-level evaluation records were stored for this assessment.");
+    renderPdfNavigation(doc, navigation);
+  });
+}
+
+export const buildGapPdf = buildGapExecutivePdf;
 
 export async function buildNetworkGapPdf(result: any) {
   const r = sanitizeForExport(result) as any;
@@ -442,6 +470,65 @@ export async function buildNetworkGapPdf(result: any) {
       { label: "Organizations", width: 115, value: (row) => (row.affected_organizations || []).join(", ") },
       { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${organizations.length}` }
     ], gaps, 6.6);
+    renderPdfNavigation(doc, navigation);
+  });
+}
+
+type NetworkAssessmentExport = { orgName: string; result: any };
+
+export async function buildNetworkFindingsPdf(result: any, assessments: NetworkAssessmentExport[]) {
+  const r = sanitizeForExport(result) as any;
+  const rows = assessments.map((assessment) => ({
+    orgName: clean(assessment.orgName || assessment.result?.organization_name || "Organization"),
+    result: sanitizeForExport(assessment.result || {}) as any
+  }));
+  const gaps = Array.isArray(r.common_gaps) ? r.common_gaps : [];
+  const totalFindings = rows.reduce((total, row) => total + (Array.isArray(row.result.findings) ? row.result.findings.length : 0), 0);
+  const totalControls = rows.reduce((total, row) => {
+    const controls = Array.isArray(row.result.control_results) ? row.result.control_results : row.result.findings;
+    return total + (Array.isArray(controls) ? controls.length : 0);
+  }, 0);
+  const standards = new Set(rows.flatMap((row) => Object.keys(row.result.score_breakdown || {})));
+
+  return createPdf(`${clean(r.network_name)} - Detailed Network IRP Findings and Evidence`, (doc) => {
+    cover(doc, clean(r.network_name || "Healthcare Network"), `Detailed Network IRP Findings and Evidence | ${rows.length} organizations`);
+    const navigation = startPdfNavigation(doc);
+    newSection(doc, "Reviewer Overview", "Complete organization findings and control-level evidence", navigation);
+    metricCards(doc, [
+      { label: "Organizations", value: String(rows.length) },
+      { label: "Findings", value: String(totalFindings), color: COLORS.purple },
+      { label: "Controls reviewed", value: String(totalControls) },
+      { label: "Standards", value: String(standards.size) }
+    ]);
+    body(doc, "This supporting document contains the complete organization-level remediation findings and control traceability that accompany the network executive report.");
+
+    newSection(doc, "Cross-Organization Findings", "Common capability gaps ranked by organizations affected and priority", navigation);
+    if (gaps.length) {
+      renderTable(doc, [
+        { label: "Priority", width: 55, value: (row) => row.risk_level },
+        { label: "Capability", width: 95, value: (row) => row.control_name || row.control_id },
+        { label: "Requirement", width: 185, value: (row) => row.requirement },
+        { label: "Organizations", width: 115, value: (row) => (row.affected_organizations || []).join(", ") },
+        { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${rows.length}` }
+      ], gaps, 6.6);
+    } else {
+      body(doc, "No cross-organization findings were recorded.");
+    }
+
+    newSection(doc, "Organization Findings and Evidence", `${rows.length} independently assessed organizations`, navigation);
+    rows.forEach((row, index) => {
+      if (index > 0) doc.addPage();
+      heading(doc, row.orgName);
+      const findings = Array.isArray(row.result.findings) ? row.result.findings : [];
+      const controls = Array.isArray(row.result.control_results) ? row.result.control_results : findings;
+      body(doc, `${findings.length} findings | ${controls.length} control evaluation records`);
+      heading(doc, "Complete Remediation Findings");
+      if (findings.length) renderFindings(doc, findings);
+      else body(doc, "No remediation findings were recorded for this organization.");
+      heading(doc, "Control Traceability");
+      if (controls.length) renderControlAppendix(doc, controls);
+      else body(doc, "No control-level evaluation records were stored for this organization.");
+    });
     renderPdfNavigation(doc, navigation);
   });
 }

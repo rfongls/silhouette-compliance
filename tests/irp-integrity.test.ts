@@ -27,6 +27,7 @@ import { buildGapExecutivePdf, buildGapFindingsPdf, buildGapPptx } from "../lib/
 import { buildPdfPackage } from "../lib/exports/pdf-package";
 import { validateIrpDocuments } from "../lib/irp-preflight";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "../lib/report-readiness";
+import { resolveRoadmapItem } from "../lib/analysis/remediation";
 import pdf from "pdf-parse/lib/pdf-parse.js";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
@@ -227,7 +228,9 @@ test("printable report keeps every finding while exporting only the curated road
   assert.match(report, /roadmap-phase-header/);
   assert.match(report, /roadmap-item-content/);
   assert.match(report, /roadmap-references/);
+  assert.match(report, /Mapped controls/);
   assert.match(deck, /Remediation Roadmap/);
+  assert.match(deck, /Mapped controls/);
   assert.match(report, /Consolidated Remediation Findings/);
 });
 
@@ -451,4 +454,19 @@ test("IRP checkout purchases only the organization credit shortfall", () => {
 
 test("admin IRP runs never require purchased organization credits", () => {
   assert.deepEqual(quoteFunding(12, 0, true), { creditsApplied: 0, creditsToPurchase: 0 });
+});
+
+test("legacy aggregate roadmap references resolve to mapped source controls", () => {
+  const resolved = resolveRoadmapItem({
+    title: "IDENTIFICATION-REPORTING-12 remediation",
+    references: ["IDENTIFICATION-REPORTING-12"]
+  }, [{
+    control_id: "IDENTIFICATION-REPORTING-12",
+    control_ids: ["IR-6", "IR-10", "164.308(a)(6)", "IR-10"],
+    bucket_id: "identification-reporting",
+    capability: "Incident identification and reporting"
+  }]);
+
+  assert.deepEqual(resolved.references, ["IR-6", "IR-10", "164.308(a)(6)"]);
+  assert.doesNotMatch(resolved.references.join(" "), /IDENTIFICATION-REPORTING/);
 });

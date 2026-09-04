@@ -117,7 +117,8 @@ function planFor(finding: Finding): RemediationPlan {
 }
 
 function findingReferences(finding: Finding) {
-  return finding.control_ids?.length ? finding.control_ids : [finding.control_id].filter(Boolean) as string[];
+  const references = finding.control_ids?.length ? finding.control_ids : [finding.control_id];
+  return [...new Set(references.filter(Boolean).map((reference) => String(reference)))];
 }
 
 export function buildActionableRoadmapItem(finding: Finding, number: number) {
@@ -140,13 +141,15 @@ function findSourceFinding(item: RoadmapItem, findings: Finding[]) {
   const references = new Set((item.references || []).map((value) => String(value).toLocaleUpperCase()));
   return findings.find((finding) => {
     if (item.bucket_id && finding.bucket_id === item.bucket_id && (!item.capability || finding.capability === item.capability)) return true;
-    return findingReferences(finding).some((reference) => references.has(reference.toLocaleUpperCase())) ||
+    return Boolean(finding.control_id && references.has(finding.control_id.toLocaleUpperCase())) ||
+      findingReferences(finding).some((reference) => references.has(reference.toLocaleUpperCase())) ||
       Boolean(finding.control_id && String(item.title || "").toLocaleUpperCase().startsWith(finding.control_id.toLocaleUpperCase()));
   });
 }
 
 export function resolveRoadmapItem(item: RoadmapItem, findings: Finding[] = []) {
-  const finding = findSourceFinding(item, findings) || {
+  const sourceFinding = findSourceFinding(item, findings);
+  const finding = sourceFinding || {
     bucket_id: item.bucket_id,
     capability: item.capability,
     control_id: item.references?.[0]
@@ -160,6 +163,6 @@ export function resolveRoadmapItem(item: RoadmapItem, findings: Finding[] = []) 
     deliverable: item.deliverable || plan.deliverable,
     validation: item.validation || plan.validation,
     gap_summary: item.gap_summary || finding.finding || (legacyGenerated ? item.description : undefined),
-    references: item.references?.length ? item.references : findingReferences(finding)
+    references: sourceFinding ? findingReferences(sourceFinding) : (item.references?.length ? item.references : findingReferences(finding))
   };
 }

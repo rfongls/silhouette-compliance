@@ -207,7 +207,10 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
                       <div><dt>Deliverable</dt><dd>{item.deliverable}</dd></div>
                       <div><dt>Validate</dt><dd>{item.validation}</dd></div>
                     </dl>
-                    <footer>{(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}</footer>
+                    <footer>
+                      {(item.references || []).length ? <span>Mapped controls</span> : null}
+                      {(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}
+                    </footer>
                   </div>
                 </div>;
               }) : <p className="muted">No actions assigned to this phase.</p>}

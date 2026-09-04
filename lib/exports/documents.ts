@@ -298,7 +298,7 @@ function renderRoadmap(doc: PdfDoc, phases: any[], findings: any[] = []) {
         doc.fillColor("#374151").font("Helvetica").fontSize(8).text(value, 156, detailY, { width: 381, lineGap: 2 });
         detailY += Math.max(11, doc.heightOfString(value, { width: 381, lineGap: 2 })) + 4;
       });
-      if (references) doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.5).text(`CONTROLS  ${references}`, 82, y + height - 11, { width: 455 });
+      if (references) doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.5).text(`MAPPED CONTROLS  ${references}`, 82, y + height - 11, { width: 455 });
       doc.x = 46;
       doc.y = y + height + 6;
     });
@@ -685,7 +685,8 @@ export async function buildGapPptx(result: any) {
     addDeckTitle(slide, `Roadmap phase ${index + 1}`, clean(phase.name), clean(phase.timeframe));
     addBulletList(slide, (phase.items || []).map((rawItem: any) => {
       const item = resolveRoadmapItem(rawItem, findings);
-      return `${item.title}: ${item.implementation} Deliverable: ${item.deliverable}. Validate: ${item.validation}`;
+      const references = Array.isArray(item.references) && item.references.length ? ` Mapped controls: ${item.references.join(", ")}.` : "";
+      return `${item.title}: ${item.implementation} Deliverable: ${item.deliverable}. Validate: ${item.validation}.${references}`;
     }), { y: 1.85, h: 4.85, fontSize: 12 });
     addDeckFooter(pptx, slide, `${org} | Priority Remediation Roadmap`);
   });

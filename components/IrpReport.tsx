@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
+import { humanizeControlText } from "@/lib/sanitize";
 
 type AssessmentExport = {
   assessmentId: string;
@@ -175,7 +176,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
             <td>{(control.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</td>
             <td><span className={`irp-status status-${String(control.status).toLocaleLowerCase()}`}>{control.status}</span></td>
             <td><span className={`irp-priority severity-${findingSeverity(control).toLocaleLowerCase()}`}>{findingSeverity(control)}</span></td>
-            <td><b>{control.requirement || control.control_name}</b><p>{control.evidence || "Not addressed"}</p></td>
+            <td><b>{humanizeControlText(control.requirement || control.control_name)}</b><p>{control.evidence || "Not addressed"}</p></td>
           </tr>)}</tbody>
         </table>
       </div>

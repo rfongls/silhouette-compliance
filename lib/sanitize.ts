@@ -8,6 +8,15 @@ export function noEmDash(value: string) {
     .replace(/\uFEFF/g, "");
 }
 
+export function humanizeControlText(value: unknown) {
+  return noEmDash(String(value ?? ""))
+    .replace(/\{\{\s*insert:\s*param,\s*[^}]+\}\}/gi, "organization-defined value")
+    .replace(/\{\{\s*[^}]+\}\}/g, "defined value")
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function sanitizeForExport<T>(value: T): T {
   if (typeof value === "string") return noEmDash(value) as T;
   if (Array.isArray(value)) return value.map(sanitizeForExport) as T;

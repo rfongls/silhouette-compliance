@@ -2,7 +2,7 @@ import PDFDocument from "pdfkit";
 import PptxGenJS from "pptxgenjs";
 import { standardLabel } from "@/lib/analysis/standards";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
-import { noEmDash, sanitizeForExport } from "@/lib/sanitize";
+import { humanizeControlText, noEmDash, sanitizeForExport } from "@/lib/sanitize";
 
 const COLORS = {
   ink: "#17131f",
@@ -353,7 +353,7 @@ function renderControlAppendix(doc: PdfDoc, controls: any[]) {
       .text(`STANDARD  ${standardNames(control)}   |   STATUS  ${status.toUpperCase()}   |   PRIORITY  ${priority.toUpperCase()}`, { width: 500, lineGap: 1 });
     doc.moveDown(0.4);
     doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(7).text("REQUIREMENT", { width: 500 });
-    body(doc, control.requirement || "No requirement text was recorded.", { width: 500, lineGap: 2 });
+    body(doc, humanizeControlText(control.requirement) || "No requirement text was recorded.", { width: 500, lineGap: 2 });
     doc.moveDown(0.35);
     doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(7).text("DOCUMENTED EVIDENCE", { width: 500 });
     body(doc, control.evidence || control.evidence_quote || "No supporting evidence was identified in the submitted documentation.", { width: 500, lineGap: 2 });
@@ -505,7 +505,7 @@ export async function buildNetworkGapPdf(result: any) {
     renderTable(doc, [
       { label: "Priority", width: 55, value: (row) => row.risk_level },
       { label: "Capability", width: 95, value: (row) => row.control_name || row.control_id },
-      { label: "Requirement", width: 185, value: (row) => row.requirement },
+      { label: "Requirement", width: 185, value: (row) => humanizeControlText(row.requirement) },
       { label: "Organizations", width: 115, value: (row) => (row.affected_organizations || []).join(", ") },
       { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${organizations.length}` }
     ], gaps, 6.6);
@@ -546,7 +546,7 @@ export async function buildNetworkFindingsPdf(result: any, assessments: NetworkA
       renderTable(doc, [
         { label: "Priority", width: 55, value: (row) => row.risk_level },
         { label: "Capability", width: 95, value: (row) => row.control_name || row.control_id },
-        { label: "Requirement", width: 185, value: (row) => row.requirement },
+        { label: "Requirement", width: 185, value: (row) => humanizeControlText(row.requirement) },
         { label: "Organizations", width: 115, value: (row) => (row.affected_organizations || []).join(", ") },
         { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${rows.length}` }
       ], gaps, 6.6);

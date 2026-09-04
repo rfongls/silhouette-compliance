@@ -226,7 +226,9 @@ test("printable report keeps every finding while exporting only the curated road
 });
 
 test("download exports produce separate executive and detailed PDFs in one package", async () => {
-  const result = demoAssessment("", "health-center");
+  const result: any = demoAssessment("", "health-center");
+  result.control_results = structuredClone(result.findings);
+  result.control_results[0].requirement = "Disseminate the policy to {{ insert: param, ac-1_prm_1 }} and review it annually.";
   const executivePdf = await buildGapExecutivePdf(result);
   const findingsPdf = await buildGapFindingsPdf(result);
   const reportPackage = await buildPdfPackage([
@@ -275,6 +277,8 @@ test("download exports produce separate executive and detailed PDFs in one packa
   assert.match(detailed.text, /Reviewer Overview/);
   assert.match(detailed.text, /Complete Remediation Findings/);
   assert.match(detailed.text, /Control Traceability Appendix/);
+  assert.match(detailed.text, /organization-defined value/);
+  assert.doesNotMatch(detailed.text, /insert:\s*param|\{\{/i);
 });
 
 test("stored scores render as customer-facing readiness profiles without changing report data", () => {

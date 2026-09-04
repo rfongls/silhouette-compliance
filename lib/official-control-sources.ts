@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import pdf from "pdf-parse/lib/pdf-parse.js";
 import type { NormalizedControl } from "@/lib/control-boards";
+import { humanizeControlText } from "@/lib/sanitize";
 
 type SourceFormat = "nist-oscal" | "csf-oscal" | "html" | "xml" | "pdf";
 
@@ -91,23 +92,51 @@ function sourceHash(value: string) {
   return crypto.createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-function textFromParts(parts: any[]): string {
-  return (parts || []).flatMap((part) => [part?.prose, textFromParts(part?.parts || [])]).filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+function oscalParameterValue(parameter: any) {
+  const explicit = Array.isArray(parameter?.values) ? parameter.values.find(Boolean) : null;
+  if (explicit) return String(explicit);
+  const choices = Array.isArray(parameter?.select?.choice) ? parameter.select.choice.filter(Boolean) : [];
+  if (choices.length) return choices.map(String).join(" or ");
+  const label = (parameter?.props || []).find((prop: any) => prop?.name === "label")?.value;
+  return label ? `organization-defined ${String(label).toLocaleLowerCase()}` : "organization-defined value";
+}
+
+function oscalParameters(...collections: any[][]) {
+  return new Map(collections.flat().filter(Boolean).map((parameter: any) => [String(parameter.id || "").toLocaleLowerCase(), oscalParameterValue(parameter)]));
+}
+
+function oscalProse(value: unknown, parameters: Map<string, string>) {
+  const resolved = String(value || "").replace(/\{\{\s*insert:\s*param,\s*([^}]+)\}\}/gi, (_match, id) => (
+    parameters.get(String(id).trim().toLocaleLowerCase()) || "organization-defined value"
+  ));
+  return humanizeControlText(resolved);
+}
+
+function textFromParts(parts: any[], parameters = new Map<string, string>()): string {
+  return humanizeControlText((parts || [])
+    .flatMap((part) => [oscalProse(part?.prose, parameters), textFromParts(part?.parts || [], parameters)])
+    .filter(Boolean)
+    .join(" "));
 }
 
 function nistControls(raw: string): NormalizedControl[] {
   const parsed = JSON.parse(raw);
   const groups = parsed?.catalog?.groups || [];
+  const catalogParameters = parsed?.catalog?.params || [];
   const relevantFamilies = new Set(["ac", "au", "cp", "ir", "ra", "si"]);
   return groups
     .filter((group: any) => relevantFamilies.has(String(group?.id || "").toLocaleLowerCase()))
-    .flatMap((group: any) => (group.controls || []).map((control: any) => ({
-      id: String(control.id || "").toLocaleUpperCase(),
-      standard: "NIST",
-      category: String(group.title || group.id || ""),
-      requirement: [control.title, textFromParts(control.parts || [])].filter(Boolean).join(": "),
-      risk_level: ({ ir: "Critical", cp: "High", au: "High", ra: "High", si: "High", ac: "Medium" } as Record<string, string>)[String(group.id || "").toLocaleLowerCase()] || "Medium"
-    })))
+    .flatMap((group: any) => (group.controls || []).map((control: any) => {
+      const parameters = oscalParameters(catalogParameters, group.params || [], control.params || []);
+      const statements = (control.parts || []).filter((part: any) => String(part?.name || "").toLocaleLowerCase() === "statement");
+      return {
+        id: String(control.id || "").toLocaleUpperCase(),
+        standard: "NIST",
+        category: String(group.title || group.id || ""),
+        requirement: [control.title, textFromParts(statements.length ? statements : control.parts || [], parameters)].filter(Boolean).join(": "),
+        risk_level: ({ ir: "Critical", cp: "High", au: "High", ra: "High", si: "High", ac: "Medium" } as Record<string, string>)[String(group.id || "").toLocaleLowerCase()] || "Medium"
+      };
+    }))
     .filter((control: NormalizedControl) => control.id && control.requirement);
 }
 

@@ -1,5 +1,6 @@
 import { INDUSTRY_STANDARDS } from "@/lib/analysis/standards";
 import { prisma } from "@/lib/prisma";
+import { humanizeControlText } from "@/lib/sanitize";
 
 export type NormalizedControl = {
   id: string;
@@ -47,7 +48,7 @@ export function normalizeControlImport(value: unknown, fallbackStandard = ""): N
       if (!control || typeof control !== "object") return null;
       const row = control as Record<string, unknown>;
       const id = String(row.id || row.control_id || row.controlId || row.requirement_id || row.key || `control-${index + 1}`).trim();
-      const requirement = String(row.requirement || row.description || row.text || row.control || "").trim();
+      const requirement = humanizeControlText(row.requirement || row.description || row.text || row.control || "");
       if (!id || !requirement) return null;
       const optional = (key: string) => {
         const value = String(row[key] || "").trim();

@@ -175,6 +175,27 @@ test("CSF OSCAL parsing emits every nested subcategory outcome", () => {
   assert.ok(controls.every((control) => control.standard === "CSF" && control.risk_level === "Critical"));
 });
 
+test("NIST OSCAL parsing resolves parameters and excludes guidance from report requirements", () => {
+  const raw = JSON.stringify({ catalog: { groups: [{
+    id: "ac",
+    title: "Access Control",
+    controls: [{
+      id: "ac-1",
+      title: "Policy and Procedures",
+      params: [{ id: "ac-1_prm_1", props: [{ name: "label", value: "personnel or roles" }] }],
+      parts: [
+        { name: "statement", prose: "Disseminate the policy to {{ insert: param, ac-1_prm_1 }}." },
+        { name: "guidance", prose: "Lengthy implementation discussion that is not part of the control statement." },
+        { name: "assessment-objective", prose: "Determine whether the discussion was followed." }
+      ]
+    }]
+  }] } });
+  const [control] = officialSourceParsers.nistControls(raw);
+  assert.equal(control.id, "AC-1");
+  assert.match(control.requirement, /organization-defined personnel or roles/);
+  assert.doesNotMatch(control.requirement, /\{\{|implementation discussion|Determine whether/);
+});
+
 test("HITECH parsing excludes unrelated statute text and keeps sections 13400 through 13424", () => {
   const text = [
     "Table of contents SEC. 13400 definitions SEC. 13424 studies",

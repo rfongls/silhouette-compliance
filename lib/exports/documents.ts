@@ -260,15 +260,14 @@ function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[strin
 
 function renderRoadmap(doc: PdfDoc, phases: any[], findings: any[] = []) {
   phases.forEach((phase, phaseIndex) => {
-    const color = priorityColor(phase.color);
+    const color = COLORS.purple;
     const items = Array.isArray(phase.items) ? phase.items.slice(0, 5) : [];
     ensureSpace(doc, 54);
     const top = doc.y;
-    doc.roundedRect(46, top, doc.page.width - 92, 39, 5).fillAndStroke("#faf9fc", COLORS.line);
-    doc.circle(64, top + 19.5, 11).fill(color);
-    doc.fillColor(COLORS.white).font("Helvetica-Bold").fontSize(8).text(String(phaseIndex + 1), 58, top + 16, { width: 12, align: "center" });
-    doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(13).text(clean(phase.name), 84, top + 8, { width: 300 });
-    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(7.5).text(clean(phase.timeframe), 84, top + 24, { width: 300 });
+    doc.roundedRect(46, top, doc.page.width - 92, 39, 5).fillAndStroke(COLORS.purpleSoft, COLORS.line);
+    doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(`PHASE ${String(phaseIndex + 1).padStart(2, "0")}`, 60, top + 16, { width: 54 });
+    doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(13).text(clean(phase.name), 122, top + 8, { width: 262 });
+    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(7.5).text(clean(phase.timeframe), 122, top + 24, { width: 262 });
     doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(`${clean(phase.color || "Medium").toUpperCase()} PRIORITY`, doc.page.width - 172, top + 16, { width: 120, align: "right" });
     doc.x = 46;
     doc.y = top + 47;
@@ -291,8 +290,7 @@ function renderRoadmap(doc: PdfDoc, phases: any[], findings: any[] = []) {
       ensureSpace(doc, height + 5);
       const y = doc.y;
       doc.roundedRect(46, y, doc.page.width - 92, height, 4).strokeColor(COLORS.line).stroke();
-      doc.circle(64, y + 16, 9).strokeColor(color).stroke();
-      doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(clean(item.number || itemIndex + 1), 59, y + 13, { width: 10, align: "center" });
+      doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(String(item.number || itemIndex + 1).padStart(2, "0"), 58, y + 12, { width: 16, align: "left" });
       doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(title, 82, y + 9, { width: 455, lineGap: 1 });
       let detailY = y + 14 + titleHeight;
       detailRows.forEach(([label, value]) => {

@@ -186,11 +186,11 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
     {result.remediation_roadmap?.phases?.length ? <section className="irp-roadmap">
       <div className="irp-section-heading"><div><span className="mono">Action plan</span><h3>30 / 60 / 90 day remediation roadmap</h3></div></div>
       <div className="irp-roadmap-list">
-        {result.remediation_roadmap.phases.map((phase: any) => {
+        {result.remediation_roadmap.phases.map((phase: any, phaseIndex: number) => {
           const isOpen = openPhases.has(phase.name);
           return <article key={phase.name} className={`severity-${phase.color || "medium"}`}>
             <button type="button" className="irp-roadmap-toggle" onClick={() => togglePhase(phase.name)} aria-expanded={isOpen}>
-              <span className="irp-roadmap-dot" />
+              <span className="irp-roadmap-phase">Phase {phaseIndex + 1}</span>
               <span><b>{phase.name}</b><small>{phase.timeframe}</small></span>
               <em>{phase.items?.length || 0} action{phase.items?.length === 1 ? "" : "s"}</em>
               <strong aria-hidden="true">{isOpen ? "-" : "+"}</strong>
@@ -199,7 +199,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
               {phase.items?.length ? phase.items.map((rawItem: any) => {
                 const item = resolveRoadmapItem(rawItem, findings);
                 return <div key={`${phase.name}-${item.number}-${item.title}`}>
-                  <span>{item.number}</span>
+                  <span>{String(item.number || 1).padStart(2, "0")}</span>
                   <div className="irp-roadmap-action">
                     <b>{item.title}</b>
                     <dl>

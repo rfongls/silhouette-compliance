@@ -38,3 +38,7 @@ export function capabilityReadinessText(summary: CapabilityReadinessSummary) {
   if (!summary.total) return "Capability readiness will appear when scored capability data is available.";
   return `${summary.total} capabilities assessed: ${summary.established} established, ${summary.developing} developing, and ${summary.needsAttention} prioritized for improvement.`;
 }
+
+export const SCORING_METHODOLOGY = "This assessment measures documented evidence across incident response capabilities. Controls are weighted by priority and consolidated into fixed capability point budgets, so overlapping standards provide traceability without being counted multiple times. Use the capability profile, findings, and remediation roadmap to prioritize improvement. This is an evidence-based readiness assessment, not a legal compliance determination.";
+
+export const NETWORK_SCORING_METHODOLOGY = "Each organization is assessed independently using documented evidence across incident response capabilities. Controls are weighted by priority and consolidated into fixed capability point budgets, so overlapping standards provide traceability without being counted multiple times. Network results summarize capability readiness and common remediation priorities across the participating organizations. This is an evidence-based readiness assessment, not a legal compliance determination.";

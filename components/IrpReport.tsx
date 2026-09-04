@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
-import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
+import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText } from "@/lib/sanitize";
 
 type AssessmentExport = {
@@ -122,7 +122,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
 
     <details className="irp-scoring-methodology">
       <summary>Scoring methodology</summary>
-      <p>The internal readiness index is {score}/100 and is retained for trend analysis. It measures documented evidence across weighted IRP capabilities and is not a legal compliance determination.</p>
+      <p>{SCORING_METHODOLOGY}</p>
     </details>
 
     {bucketScores.length ? <section className="irp-bucket-section">

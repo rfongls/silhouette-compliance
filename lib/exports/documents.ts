@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import PptxGenJS from "pptxgenjs";
 import { standardLabel } from "@/lib/analysis/standards";
-import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
+import { capabilityReadinessSummary, capabilityReadinessText, NETWORK_SCORING_METHODOLOGY, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText, noEmDash, sanitizeForExport } from "@/lib/sanitize";
 
 const COLORS = {
@@ -215,7 +215,7 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
   });
 }
 
-function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[string, any]>, score: number) {
+function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[string, any]>) {
   const snapshots = Array.isArray(report.control_board?.snapshot) ? report.control_board.snapshot : [];
   const snapshotsByStandard = new Map(
     snapshots.map((snapshot: any) => [clean(snapshot.standardKey).toLocaleLowerCase(), snapshot])
@@ -253,7 +253,7 @@ function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[strin
     { rule: "Capability scoring", application: "Applicable controls are grouped into curated IRP capability buckets. Bucket point budgets normalize the readiness index to 100." },
     { rule: "Essential controls", application: "A missing essential control caps its capability bucket at 50. A partially evidenced essential control caps it at 75." },
     { rule: "Standards alignment", application: "Each publication remains a separate alignment view and is not counted again in the overall readiness calculation." },
-    { rule: "Readiness index", application: `${score}/100 for internal trend analysis. This is not a legal compliance determination.` }
+    { rule: "Interpretation", application: SCORING_METHODOLOGY }
   ], 7.2);
 }
 
@@ -412,7 +412,7 @@ export async function buildGapExecutivePdf(result: any) {
       { label: "Failed", width: 60, value: (row) => row[1].controls_failed }
     ], standards);
 
-    renderAssessmentBasis(doc, r, standards, score);
+    renderAssessmentBasis(doc, r, standards);
     heading(doc, "Data Handling");
     body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
@@ -500,7 +500,7 @@ export async function buildNetworkGapPdf(result: any) {
       { label: "Capability profile", width: 185, value: (row) => capabilityReadinessText(capabilityReadinessSummary(row.bucket_scores)) }
     ], organizations);
     heading(doc, "Assessment Basis");
-    body(doc, `Internal network readiness index: ${score}/100. This index is retained for trend analysis and is not a legal compliance determination.`);
+    body(doc, NETWORK_SCORING_METHODOLOGY);
     newSection(doc, "Common Capability Gaps", "Ranked by organizations affected and priority", navigation);
     renderTable(doc, [
       { label: "Priority", width: 55, value: (row) => row.risk_level },
@@ -623,7 +623,7 @@ export async function buildGapPptx(result: any) {
   addDeckTitle(summary, "Executive summary", `${readiness} IRP Readiness`, capabilityReadinessText(capabilitySummary));
   summary.addText(readiness.toUpperCase(), { x: 0.72, y: 2.22, w: 2.3, h: 0.72, fontFace: "Aptos Display", fontSize: 25, bold: true, color: scoreColor(score).slice(1), align: "center", margin: 0, fit: "shrink" });
   summary.addText("READINESS PROFILE", { x: 0.72, y: 3.05, w: 2.3, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
-  summary.addText(`Internal readiness index ${score}/100 for trend analysis`, { x: 0.72, y: 3.44, w: 2.3, h: 0.35, fontFace: "Aptos", fontSize: 7.5, color: "71697E", align: "center", margin: 0, fit: "shrink" });
+  summary.addText("Capability-based assessment", { x: 0.72, y: 3.44, w: 2.3, h: 0.35, fontFace: "Aptos", fontSize: 7.5, color: "71697E", align: "center", margin: 0, fit: "shrink" });
   const counts = ["critical", "high", "medium", "low"].map((key) => ({ key, value: number(r.counts?.[key]) }));
   counts.forEach((entry, index) => {
     const x = 3.45 + (index % 2) * 4.45;
@@ -709,7 +709,7 @@ export async function buildNetworkGapPptx(result: any) {
   addDeckTitle(summary, "Network readiness", `${readiness} IRP Readiness`, capabilityReadinessText(capabilitySummary));
   summary.addText(readiness.toUpperCase(), { x: 0.8, y: 2.2, w: 2.5, h: 0.75, fontFace: "Aptos Display", fontSize: 25, bold: true, color: scoreColor(score).slice(1), align: "center", margin: 0, fit: "shrink" });
   summary.addText("NETWORK READINESS PROFILE", { x: 0.8, y: 3.05, w: 2.5, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "71697E", align: "center", charSpacing: 1.5, margin: 0 });
-  summary.addText(`Internal readiness index ${score}/100 for trend analysis`, { x: 0.8, y: 3.43, w: 2.5, h: 0.35, fontFace: "Aptos", fontSize: 7.5, color: "71697E", align: "center", margin: 0, fit: "shrink" });
+  summary.addText("Capability-based assessment", { x: 0.8, y: 3.43, w: 2.5, h: 0.35, fontFace: "Aptos", fontSize: 7.5, color: "71697E", align: "center", margin: 0, fit: "shrink" });
   addBulletList(summary, organizations.map((organization: any) => {
     const profile = capabilityReadinessSummary(organization.bucket_scores);
     return `${organization.organization_name}: ${readinessProfile(organization.compliance_score)}; ${capabilityReadinessText(profile)}`;

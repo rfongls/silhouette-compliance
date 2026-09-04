@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
-import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "@/lib/report-readiness";
+import { capabilityReadinessSummary, capabilityReadinessText, NETWORK_SCORING_METHODOLOGY, readinessProfile } from "@/lib/report-readiness";
 
 const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
 const PRIORITY_ORDER: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
@@ -74,7 +74,7 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
 
     <details className="irp-scoring-methodology">
       <summary>Scoring methodology</summary>
-      <p>The internal network readiness index is {score}/100 and is retained for trend analysis. It summarizes weighted IRP capability evidence and is not a legal compliance determination.</p>
+      <p>{NETWORK_SCORING_METHODOLOGY}</p>
     </details>
 
     {Object.keys(result.bucket_scores || {}).length ? <section className="irp-bucket-section">

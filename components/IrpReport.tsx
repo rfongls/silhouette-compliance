@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
+import { resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText } from "@/lib/sanitize";
 
@@ -195,10 +196,21 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
               <strong aria-hidden="true">{isOpen ? "-" : "+"}</strong>
             </button>
             {isOpen ? <div className="irp-roadmap-items">
-              {phase.items?.length ? phase.items.map((item: any) => <div key={`${phase.name}-${item.number}-${item.title}`}>
-                <span>{item.number}</span>
-                <div><b>{item.title}</b><p>{item.description}</p><footer>{(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}</footer></div>
-              </div>) : <p className="muted">No actions assigned to this phase.</p>}
+              {phase.items?.length ? phase.items.map((rawItem: any) => {
+                const item = resolveRoadmapItem(rawItem, findings);
+                return <div key={`${phase.name}-${item.number}-${item.title}`}>
+                  <span>{item.number}</span>
+                  <div className="irp-roadmap-action">
+                    <b>{item.title}</b>
+                    <dl>
+                      <div><dt>Implement</dt><dd>{item.implementation}</dd></div>
+                      <div><dt>Deliverable</dt><dd>{item.deliverable}</dd></div>
+                      <div><dt>Validate</dt><dd>{item.validation}</dd></div>
+                    </dl>
+                    <footer>{(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}</footer>
+                  </div>
+                </div>;
+              }) : <p className="muted">No actions assigned to this phase.</p>}
             </div> : null}
           </article>;
         })}

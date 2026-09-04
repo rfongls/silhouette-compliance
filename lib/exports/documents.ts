@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import PptxGenJS from "pptxgenjs";
 import { standardLabel } from "@/lib/analysis/standards";
+import { resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, NETWORK_SCORING_METHODOLOGY, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText, noEmDash, sanitizeForExport } from "@/lib/sanitize";
 
@@ -257,7 +258,7 @@ function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[strin
   ], 7.2);
 }
 
-function renderRoadmap(doc: PdfDoc, phases: any[]) {
+function renderRoadmap(doc: PdfDoc, phases: any[], findings: any[] = []) {
   phases.forEach((phase, phaseIndex) => {
     const color = priorityColor(phase.color);
     const items = Array.isArray(phase.items) ? phase.items.slice(0, 5) : [];
@@ -272,24 +273,33 @@ function renderRoadmap(doc: PdfDoc, phases: any[]) {
     doc.x = 46;
     doc.y = top + 47;
 
-    items.forEach((item: any, itemIndex: number) => {
+    items.forEach((rawItem: any, itemIndex: number) => {
+      const item = resolveRoadmapItem(rawItem, findings);
       doc.font("Helvetica-Bold").fontSize(9);
       const title = clean(item.title);
-      const description = clean(item.description);
+      const detailRows = [
+        ["IMPLEMENT", clean(item.implementation)],
+        ["DELIVERABLE", clean(item.deliverable)],
+        ["VALIDATE", clean(item.validation)]
+      ];
       const references = Array.isArray(item.references) ? item.references.map(clean).join(" | ") : "";
       const titleHeight = doc.heightOfString(title, { width: 455, lineGap: 1 });
       doc.font("Helvetica").fontSize(8);
-      const descriptionHeight = doc.heightOfString(description, { width: 455, lineGap: 2 });
+      const detailsHeight = detailRows.reduce((height, row) => height + Math.max(11, doc.heightOfString(row[1], { width: 375, lineGap: 2 })) + 4, 0);
       const referencesHeight = references ? 13 : 0;
-      const height = Math.max(48, 18 + titleHeight + descriptionHeight + referencesHeight);
+      const height = Math.max(76, 22 + titleHeight + detailsHeight + referencesHeight);
       ensureSpace(doc, height + 5);
       const y = doc.y;
       doc.roundedRect(46, y, doc.page.width - 92, height, 4).strokeColor(COLORS.line).stroke();
       doc.circle(64, y + 16, 9).strokeColor(color).stroke();
       doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(clean(item.number || itemIndex + 1), 59, y + 13, { width: 10, align: "center" });
       doc.fillColor(COLORS.ink).font("Helvetica-Bold").fontSize(9).text(title, 82, y + 9, { width: 455, lineGap: 1 });
-      const descriptionY = y + 12 + titleHeight;
-      doc.fillColor("#374151").font("Helvetica").fontSize(8).text(description, 82, descriptionY, { width: 455, lineGap: 2 });
+      let detailY = y + 14 + titleHeight;
+      detailRows.forEach(([label, value]) => {
+        doc.fillColor(COLORS.purple).font("Helvetica-Bold").fontSize(6.5).text(label, 82, detailY + 1, { width: 72 });
+        doc.fillColor("#374151").font("Helvetica").fontSize(8).text(value, 156, detailY, { width: 381, lineGap: 2 });
+        detailY += Math.max(11, doc.heightOfString(value, { width: 381, lineGap: 2 })) + 4;
+      });
       if (references) doc.fillColor(COLORS.muted).font("Helvetica-Bold").fontSize(6.5).text(`CONTROLS  ${references}`, 82, y + height - 11, { width: 455 });
       doc.x = 46;
       doc.y = y + height + 6;
@@ -418,7 +428,7 @@ export async function buildGapExecutivePdf(result: any) {
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
 
     newSection(doc, "Priority Remediation Roadmap", "Highest-priority actions by implementation horizon", navigation);
-    renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : []);
+    renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : [], findings);
     heading(doc, "Conclusion and Limitations");
     body(doc, "This assessment covers submitted documentation only. Operational controls and configurations not captured in reviewed artifacts are outside scope. Findings should be reviewed with compliance counsel before regulatory submission.");
     renderPdfNavigation(doc, navigation);
@@ -675,7 +685,10 @@ export async function buildGapPptx(result: any) {
   phases.forEach((phase: any, index: number) => {
     const slide = pptx.addSlide();
     addDeckTitle(slide, `Roadmap phase ${index + 1}`, clean(phase.name), clean(phase.timeframe));
-    addBulletList(slide, (phase.items || []).map((item: any) => `${item.title}: ${item.description}`), { y: 1.85, h: 4.85, fontSize: 13.5 });
+    addBulletList(slide, (phase.items || []).map((rawItem: any) => {
+      const item = resolveRoadmapItem(rawItem, findings);
+      return `${item.title}: ${item.implementation} Deliverable: ${item.deliverable}. Validate: ${item.validation}`;
+    }), { y: 1.85, h: 4.85, fontSize: 12 });
     addDeckFooter(pptx, slide, `${org} | Priority Remediation Roadmap`);
   });
 

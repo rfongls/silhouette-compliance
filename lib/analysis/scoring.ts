@@ -2,6 +2,7 @@ import { z } from "zod";
 import { callAnthropicJson, type ModelUsage } from "@/lib/analysis/anthropic";
 import { buildControlEvaluationPrompt, buildSystemPrompt, type AnalysisScope } from "@/lib/analysis/prompts";
 import { IRP_CAPABILITY_BUCKETS, IRP_SCORING_PROFILE_VERSION, profileIrpControls, type ProfiledControl } from "@/lib/analysis/scoring-profile";
+import { buildActionableRoadmapItem } from "@/lib/analysis/remediation";
 import type { NormalizedControl } from "@/lib/control-boards";
 
 export const IRP_CONTROL_BATCH_SIZE = 20;
@@ -297,12 +298,7 @@ export function buildRemediationRoadmap(findings: any[]) {
         .filter((finding) => finding.status !== "Yes" && phase.risks.has(finding.risk_level))
         .sort(remediationPriority)
         .slice(0, 5)
-        .map((finding, index) => ({
-          number: index + 1,
-          title: `${finding.control_id} remediation`,
-          description: finding.finding,
-          references: [finding.control_id]
-        }))
+        .map((finding, index) => buildActionableRoadmapItem(finding, index + 1))
     }))
   };
 }

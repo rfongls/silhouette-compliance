@@ -187,8 +187,11 @@ test("roadmap keeps the top five actions per priority without removing detailed 
   const immediate = roadmap.phases.find((phase) => phase.name === "Immediate");
   assert.equal(findings.length, 7);
   assert.equal(immediate?.items.length, 5);
-  assert.equal(immediate?.items[0].title, "CR-6 remediation");
-  assert.equal(immediate?.items.some((item) => item.title === "CR-7 remediation"), false);
+  assert.equal(immediate?.items[0].title, "Implement CR-6");
+  assert.equal(immediate?.items.some((item) => item.title === "Implement CR-7"), false);
+  assert.match(immediate?.items[0].implementation || "", /Document and implement/);
+  assert.ok(immediate?.items[0].deliverable);
+  assert.ok(immediate?.items[0].validation);
 });
 
 test("printable report keeps every finding while exporting only the curated roadmap", () => {
@@ -214,8 +217,11 @@ test("printable report keeps every finding while exporting only the curated road
   const deck = buildGapDeck(result);
 
   for (const finding of findings) assert.match(report, new RegExp(finding.finding));
-  assert.equal((report.match(/CR-\d remediation/g) || []).length, 5);
-  assert.equal((deck.match(/CR-\d remediation/g) || []).length, 5);
+  assert.equal((report.match(/Implement Critical capability/g) || []).length, 5);
+  assert.equal((deck.match(/Implement Critical capability/g) || []).length, 5);
+  assert.match(report, /<dt>Implement<\/dt>/);
+  assert.match(report, /<dt>Deliverable<\/dt>/);
+  assert.match(report, /<dt>Validate<\/dt>/);
   assert.match(report, /Priority Remediation Roadmap/);
   assert.match(report, /roadmap-phase priority-critical/);
   assert.match(report, /roadmap-phase-header/);

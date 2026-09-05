@@ -100,7 +100,6 @@ function cover(doc: PdfDoc, title: string, subtitle: string) {
   doc.fillColor(COLORS.white).font("Times-Bold").fontSize(34).text(clean(title), 54, 256, { width: doc.page.width - 108, lineGap: 5 });
   doc.rect(54, doc.y + 18, 330, 3).fill(COLORS.purple);
   doc.fillColor("#d7c4ff").font("Helvetica").fontSize(13).text(clean(subtitle), 54, doc.y + 28, { width: 430, lineGap: 4 });
-  doc.fontSize(9).text(`Confidential | ${new Date().toLocaleDateString("en-US")}`, 54, doc.page.height - 104, { lineBreak: false });
 }
 
 function currentPageIndex(doc: PdfDoc) {

@@ -196,20 +196,17 @@ export function IrpReport({ result, demo, profile = "customer", showHeading = tr
                 return <div key={`${phase.name}-${item.number}-${item.title}`}>
                   <span>{String(item.number || 1).padStart(2, "0")}</span>
                   <div className="irp-roadmap-action">
-                    <b>{item.title}</b>
+                    <div className="irp-roadmap-action-title">
+                      <b>{item.title}</b>
+                      {(item.references || []).length ? <div className="irp-roadmap-control-list" aria-label="Mapped controls">
+                        {(item.references || []).map((reference: string) => <small key={reference} title={`Mapped control ${reference}`}>{reference}</small>)}
+                      </div> : null}
+                    </div>
                     <dl>
                       <div className="irp-roadmap-detail implementation"><dt>Implement</dt><dd>{item.implementation}</dd></div>
                       <div className="irp-roadmap-detail deliverable"><dt>Deliverable</dt><dd>{item.deliverable}</dd></div>
                       <div className="irp-roadmap-detail validation"><dt>Validate</dt><dd>{item.validation}</dd></div>
                     </dl>
-                    <footer className="irp-roadmap-detail mapped-controls">
-                      {(item.references || []).length ? <>
-                        <span>Mapped controls</span>
-                        <div className="irp-roadmap-control-list">
-                          {(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}
-                        </div>
-                      </> : null}
-                    </footer>
                   </div>
                 </div>;
               }) : <p className="muted">No actions assigned to this phase.</p>}

@@ -267,10 +267,11 @@ test("download exports produce separate executive and detailed PDFs in one packa
   assert.ok(deck.length > 10_000);
   for (const parsed of [executive, detailed]) {
     assert.equal(
-      (parsed.text.match(/Silhouette LLC \| Confidential Compliance Gap Analysis/g) || []).length,
+      (parsed.text.match(/Silhouette LLC \| Incident Response Plan Analysis/g) || []).length,
       parsed.numpages - 1,
       "Every non-cover page should have one footer without creating footer-only pages"
     );
+    assert.doesNotMatch(parsed.text, /Confidential/);
     assert.match(parsed.text, /Table of Contents/);
   }
   assert.ok(executivePdf.includes(Buffer.from("/Outlines")), "Executive PDF should expose a bookmark outline");

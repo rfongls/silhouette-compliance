@@ -85,7 +85,7 @@ function addPdfFooters(doc: PdfDoc) {
     const y = doc.page.height - 31;
     doc.save().strokeColor(COLORS.line).lineWidth(0.5).moveTo(46, y - 7).lineTo(doc.page.width - 46, y - 7).stroke();
     doc.font("Helvetica").fontSize(7).fillColor(COLORS.muted)
-      .text("Silhouette LLC | Confidential Compliance Gap Analysis", 46, y, { width: 360, height: 10, lineBreak: false })
+      .text("Silhouette LLC | Incident Response Plan Analysis", 46, y, { width: 360, height: 10, lineBreak: false })
       .text(`${index + 1} of ${range.count}`, doc.page.width - 110, y, { width: 64, height: 10, align: "right", lineBreak: false });
     doc.restore();
     doc.page.margins.bottom = previousBottomMargin;

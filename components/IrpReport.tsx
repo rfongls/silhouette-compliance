@@ -198,13 +198,17 @@ export function IrpReport({ result, demo, profile = "customer", showHeading = tr
                   <div className="irp-roadmap-action">
                     <b>{item.title}</b>
                     <dl>
-                      <div><dt>Implement</dt><dd>{item.implementation}</dd></div>
-                      <div><dt>Deliverable</dt><dd>{item.deliverable}</dd></div>
-                      <div><dt>Validate</dt><dd>{item.validation}</dd></div>
+                      <div className="irp-roadmap-detail implementation"><dt>Implement</dt><dd>{item.implementation}</dd></div>
+                      <div className="irp-roadmap-detail deliverable"><dt>Deliverable</dt><dd>{item.deliverable}</dd></div>
+                      <div className="irp-roadmap-detail validation"><dt>Validate</dt><dd>{item.validation}</dd></div>
                     </dl>
-                    <footer>
-                      {(item.references || []).length ? <span>Mapped controls</span> : null}
-                      {(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}
+                    <footer className="irp-roadmap-detail mapped-controls">
+                      {(item.references || []).length ? <>
+                        <span>Mapped controls</span>
+                        <div className="irp-roadmap-control-list">
+                          {(item.references || []).map((reference: string) => <small key={reference}>{reference}</small>)}
+                        </div>
+                      </> : null}
                     </footer>
                   </div>
                 </div>;

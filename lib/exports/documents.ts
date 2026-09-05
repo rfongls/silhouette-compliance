@@ -8,7 +8,7 @@ function internalReport(options?: ReportExportOptions) {
   return options?.profile === "internal";
 }
 import { standardLabel } from "@/lib/analysis/standards";
-import { limitRoadmapActions, resolveRoadmapItem } from "@/lib/analysis/remediation";
+import { roadmapForReport, resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, NETWORK_SCORING_METHODOLOGY, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText, noEmDash, sanitizeForExport } from "@/lib/sanitize";
 
@@ -272,7 +272,7 @@ function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[strin
 }
 
 function renderRoadmap(doc: PdfDoc, phases: any[], findings: any[] = []) {
-  limitRoadmapActions(phases).forEach((phase, phaseIndex) => {
+  roadmapForReport(phases, findings).forEach((phase, phaseIndex) => {
     const color = COLORS.purple;
     const items = Array.isArray(phase.items) ? phase.items : [];
     ensureSpace(doc, 54);
@@ -439,7 +439,7 @@ export async function buildGapExecutivePdf(result: any, options?: ReportExportOp
     body(doc, `Uploader attestation: ${r.data_handling?.message || "No uploader data-handling attestation was recorded for this assessment."}`);
     body(doc, "This advisory disclosure does not affect the documented readiness analysis.");
 
-    newSection(doc, "Priority Remediation Roadmap", "Five highest-leverage actions by implementation horizon", navigation);
+    newSection(doc, "Priority Remediation Roadmap", "Five prioritized actions in each 30, 60, and 90-day implementation phase", navigation);
     renderRoadmap(doc, Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : [], findings);
     heading(doc, "Conclusion and Limitations");
     body(doc, "This assessment covers submitted documentation only. Operational controls and configurations not captured in reviewed artifacts are outside scope. Findings should be reviewed with compliance counsel before regulatory submission.");
@@ -707,7 +707,10 @@ export async function buildGapPptx(result: any, options?: ReportExportOptions) {
     addDeckFooter(pptx, slide, `${org} | IRP Gap Analysis`, preparedBy);
   }
 
-  const phases = limitRoadmapActions(Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : []);
+  const phases = roadmapForReport(
+    Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : [],
+    Array.isArray(r.findings) ? r.findings : []
+  );
   phases.forEach((phase: any, index: number) => {
     const slide = pptx.addSlide();
     addDeckTitle(slide, `Roadmap phase ${index + 1}`, clean(phase.name), clean(phase.timeframe));

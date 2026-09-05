@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
-import { limitRoadmapActions, resolveRoadmapItem } from "@/lib/analysis/remediation";
+import { roadmapForReport, resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText } from "@/lib/sanitize";
 import type { ReportProfile } from "@/lib/report-profile";
@@ -35,7 +35,10 @@ function postureClass(score: number) {
 }
 
 export function IrpReport({ result, demo, profile = "customer", showHeading = true }: { result: any; demo: boolean; profile?: ReportProfile; showHeading?: boolean }) {
-  const roadmapPhases = limitRoadmapActions(Array.isArray(result.remediation_roadmap?.phases) ? result.remediation_roadmap.phases : []);
+  const roadmapPhases = roadmapForReport(
+    Array.isArray(result.remediation_roadmap?.phases) ? result.remediation_roadmap.phases : [],
+    Array.isArray(result.findings) ? result.findings : []
+  );
   const [filter, setFilter] = useState<FindingFilter>("all");
   const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
   const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([roadmapPhases[0]?.name].filter(Boolean) as string[]));
@@ -181,7 +184,7 @@ export function IrpReport({ result, demo, profile = "customer", showHeading = tr
     </details> : null}
 
     {roadmapPhases.length ? <section className="irp-roadmap">
-      <div className="irp-section-heading"><div><span className="mono">Action plan</span><h3>Priority remediation roadmap</h3><p className="muted">Five highest-leverage actions sequenced by implementation horizon.</p></div></div>
+      <div className="irp-section-heading"><div><span className="mono">Action plan</span><h3>Priority remediation roadmap</h3><p className="muted">Five prioritized actions in each 30, 60, and 90-day implementation phase.</p></div></div>
       <div className="irp-roadmap-list">
         {roadmapPhases.map((phase: any, phaseIndex: number) => {
           const isOpen = openPhases.has(phase.name);

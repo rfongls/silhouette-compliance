@@ -223,14 +223,24 @@ export function demoAssessment(_orgName = "", industry = "health-center") {
     remediation_roadmap: { phases: [
       { name: "Immediate", timeframe: "Within 30 days", color: "critical", items: [
         { number: 1, title: "Correct records retention", description: "Revise the policy and records schedule to retain required HIPAA documentation for at least six years.", references: ["164.316(b)(2)(i)"] },
-        { number: 2, title: "Publish a notification matrix", description: "Document notification triggers, decision owners, regulatory clocks, external recipients, and after-hours contacts.", references: ["164.308(a)(6)(ii)", "IR-6"] }
+        { number: 2, title: "Publish a notification matrix", description: "Document notification triggers, decision owners, regulatory clocks, external recipients, and after-hours contacts.", references: ["164.308(a)(6)(ii)", "IR-6"] },
+        { number: 3, title: "Establish IRP governance and decision authority", description: "Name the incident commander, alternates, approval authority, accountable functions, and escalation path used to activate the plan.", references: ["IR-4"] },
+        { number: 4, title: "Define triage, severity, and escalation rules", description: "Publish severity criteria, response targets, escalation thresholds, and plan activation requirements for representative incident types.", references: ["IR-4"] },
+        { number: 5, title: "Implement incident identification and intake procedures", description: "Document reporting channels, required incident record fields, after-hours handling, assignment, and tracking procedures.", references: ["164.308(a)(6)(ii)", "IR-6"] }
       ] },
       { name: "Mid-term", timeframe: "31 to 60 days", color: "high", items: [
-        { number: 3, title: "Establish the exercise program", description: "Set a required tabletop cadence, scenario rotation, participants, success criteria, and after-action deliverables.", references: ["IR-3"] },
-        { number: 4, title: "Formalize evidence protection", description: "Define repository access controls, integrity checks, chain-of-custody triggers, and evidence review procedures.", references: ["AU-9"] }
+        { number: 6, title: "Establish the exercise program", description: "Set a required tabletop cadence, scenario rotation, participants, success criteria, and after-action deliverables.", references: ["IR-3"] },
+        { number: 7, title: "Formalize evidence protection", description: "Define repository access controls, integrity checks, chain-of-custody triggers, and evidence review procedures.", references: ["AU-9"] },
+        { number: 8, title: "Formalize containment and eradication procedures", description: "Define containment decision criteria, eradication steps, emergency-change authority, documentation, and approval requirements.", references: ["IR-4"] },
+        { number: 9, title: "Create an incident communications plan", description: "Document internal and external communication channels, message approval, stakeholder updates, and alternate communication methods.", references: ["IR-6"] },
+        { number: 10, title: "Define third-party coordination requirements", description: "Document vendor notification triggers, contact paths, evidence-sharing rules, contractual escalation, and response coordination expectations.", references: ["IR-6"] }
       ] },
       { name: "Long-term", timeframe: "61 to 90 days", color: "medium", items: [
-        { number: 5, title: "Track corrective actions", description: "Assign owners and due dates to after-action items and report overdue actions to the Compliance Committee.", references: ["IR-8"] }
+        { number: 11, title: "Track corrective actions", description: "Assign due dates to after-action items and report overdue actions to the Compliance Committee.", references: ["IR-8"] },
+        { number: 12, title: "Establish validated recovery procedures", description: "Define restoration sequencing, validation criteria, business approval, monitoring, and rollback requirements before returning systems to service.", references: ["IR-4"] },
+        { number: 13, title: "Formalize privacy response controls", description: "Document privacy review triggers, breach-risk analysis, notification decision records, and handling requirements for sensitive information.", references: ["164.308(a)(6)(ii)"] },
+        { number: 14, title: "Implement plan maintenance and version control", description: "Set annual and event-driven review requirements, approval records, acknowledgment tracking, and treatment of superseded copies.", references: ["IR-8"] },
+        { number: 15, title: "Validate the complete IRP", description: "Run a cross-functional tabletop exercise, record observed gaps, approve corrective actions, and update the plan from lessons learned.", references: ["IR-3", "IR-8"] }
       ] }
     ] },
     data_handling: { message: "This fictional demonstration is rendered from bundled policy and report data in the browser. It does not upload content or call an external AI provider." },

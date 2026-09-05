@@ -2,7 +2,7 @@ import { z } from "zod";
 import { callAnthropicJson, type ModelUsage } from "@/lib/analysis/anthropic";
 import { buildControlEvaluationPrompt, buildSystemPrompt, type AnalysisScope } from "@/lib/analysis/prompts";
 import { IRP_CAPABILITY_BUCKETS, IRP_SCORING_PROFILE_VERSION, profileIrpControls, type ProfiledControl } from "@/lib/analysis/scoring-profile";
-import { buildActionableRoadmapItem, limitRoadmapActions } from "@/lib/analysis/remediation";
+import { buildActionableRoadmapItem, prioritizeRemediationFindings, scheduleRoadmapActions } from "@/lib/analysis/remediation";
 import type { NormalizedControl } from "@/lib/control-boards";
 
 export const IRP_CONTROL_BATCH_SIZE = 20;
@@ -272,28 +272,13 @@ export function consolidateRemediationFindings(controlResults: any[]) {
   });
 }
 
-function remediationPriority(a: any, b: any) {
-  const priority = { Critical: 4, High: 3, Medium: 2, Low: 1 } as Record<string, number>;
-  const riskDifference = (priority[b.risk_level] || 0) - (priority[a.risk_level] || 0);
-  if (riskDifference) return riskDifference;
-  const statusDifference = (b.status === "No" ? 1 : 0) - (a.status === "No" ? 1 : 0);
-  if (statusDifference) return statusDifference;
-  const controlDifference = Number(b.control_count || b.control_ids?.length || 1) - Number(a.control_count || a.control_ids?.length || 1);
-  if (controlDifference) return controlDifference;
-  const standardDifference = Number(b.standards?.length || 0) - Number(a.standards?.length || 0);
-  if (standardDifference) return standardDifference;
-  return String(a.control_id || "").localeCompare(String(b.control_id || ""));
-}
-
 export function buildRemediationRoadmap(findings: any[]) {
-  const selected = findings
-    .filter((finding) => finding.status !== "Yes")
-    .sort(remediationPriority)
-    .slice(0, 5);
+  const selected = prioritizeRemediationFindings(findings).slice(0, 15);
   return {
-    phases: limitRoadmapActions([{
-      items: selected.map((finding, index) => buildActionableRoadmapItem(finding, index + 1))
-    }])
+    phases: scheduleRoadmapActions(
+      selected.map((finding, index) => buildActionableRoadmapItem(finding, index + 1)),
+      5
+    )
   };
 }
 

@@ -1,10 +1,14 @@
 type Finding = {
   control_id?: string;
   control_ids?: string[];
+  control_count?: number;
   control_name?: string;
   capability?: string;
   bucket_id?: string;
   finding?: string;
+  risk_level?: string;
+  standards?: string[];
+  status?: string;
 };
 
 type RoadmapItem = {
@@ -181,26 +185,60 @@ const ROADMAP_HORIZONS = [
   { name: "Long-term", timeframe: "61 to 90 days", color: "medium" }
 ];
 
-function roadmapAllocations(total: number) {
-  if (total <= 0) return [0, 0, 0];
-  if (total === 1) return [1, 0, 0];
-  if (total === 2) return [1, 1, 0];
-  if (total === 3) return [1, 1, 1];
-  if (total === 4) return [2, 1, 1];
-  return [2, 2, total - 4];
-}
-
-export function limitRoadmapActions(phases: RoadmapPhase[] = [], limit = 5) {
-  const items = phases
-    .flatMap((phase) => Array.isArray(phase.items) ? phase.items : [])
-    .slice(0, Math.max(0, limit))
-    .map((item, index) => ({ ...item, number: index + 1 }));
-  const allocations = roadmapAllocations(items.length);
-  let offset = 0;
+export function scheduleRoadmapActions(items: RoadmapItem[] = [], actionsPerPhase = 5) {
+  const phaseLimit = Math.max(0, actionsPerPhase);
+  let number = 0;
 
   return ROADMAP_HORIZONS.flatMap((horizon, index) => {
-    const horizonItems = items.slice(offset, offset + allocations[index]);
-    offset += allocations[index];
+    const horizonItems = items
+      .slice(index * phaseLimit, (index + 1) * phaseLimit)
+      .map((item) => ({ ...item, number: ++number }));
+    return horizonItems.length ? [{ ...horizon, items: horizonItems }] : [];
+  });
+}
+
+export function prioritizeRemediationFindings(findings: Finding[] = []) {
+  const priority = { Critical: 4, High: 3, Medium: 2, Low: 1 } as Record<string, number>;
+  return findings
+    .filter((finding) => finding.status !== "Yes")
+    .sort((a, b) => {
+      const riskDifference = (priority[b.risk_level || ""] || 0) - (priority[a.risk_level || ""] || 0);
+      if (riskDifference) return riskDifference;
+      const statusDifference = (b.status === "No" ? 1 : 0) - (a.status === "No" ? 1 : 0);
+      if (statusDifference) return statusDifference;
+      const controlDifference = Number(b.control_count || b.control_ids?.length || 1) - Number(a.control_count || a.control_ids?.length || 1);
+      if (controlDifference) return controlDifference;
+      const standardDifference = Number(b.standards?.length || 0) - Number(a.standards?.length || 0);
+      if (standardDifference) return standardDifference;
+      return String(a.control_id || "").localeCompare(String(b.control_id || ""));
+    });
+}
+
+export function roadmapForReport(phases: RoadmapPhase[] = [], findings: Finding[] = [], actionsPerPhase = 5) {
+  const limited = limitRoadmapActions(phases, actionsPerPhase);
+  const expected = Math.min(actionsPerPhase * ROADMAP_HORIZONS.length, prioritizeRemediationFindings(findings).length);
+  const existingCount = limited.reduce((total, phase) => total + (phase.items?.length || 0), 0);
+  if (existingCount >= expected) return limited;
+
+  const items = prioritizeRemediationFindings(findings)
+    .slice(0, actionsPerPhase * ROADMAP_HORIZONS.length)
+    .map((finding, index) => buildActionableRoadmapItem(finding, index + 1));
+  return scheduleRoadmapActions(items, actionsPerPhase);
+}
+
+export function limitRoadmapActions(phases: RoadmapPhase[] = [], actionsPerPhase = 5) {
+  const phaseLimit = Math.max(0, actionsPerPhase);
+  const sourceBuckets = [
+    Array.isArray(phases[0]?.items) ? phases[0].items : [],
+    Array.isArray(phases[1]?.items) ? phases[1].items : [],
+    phases.slice(2).flatMap((phase) => Array.isArray(phase.items) ? phase.items : [])
+  ];
+  let number = 0;
+
+  return ROADMAP_HORIZONS.flatMap((horizon, index) => {
+    const horizonItems = sourceBuckets[index]
+      .slice(0, phaseLimit)
+      .map((item) => ({ ...item, number: ++number }));
     return horizonItems.length ? [{ ...horizon, items: horizonItems }] : [];
   });
 }

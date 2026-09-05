@@ -27,7 +27,7 @@ import { buildGapExecutivePdf, buildGapFindingsPdf, buildGapPptx } from "../lib/
 import { buildPdfPackage } from "../lib/exports/pdf-package";
 import { validateIrpDocuments } from "../lib/irp-preflight";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "../lib/report-readiness";
-import { limitRoadmapActions, resolveRoadmapItem } from "../lib/analysis/remediation";
+import { limitRoadmapActions, roadmapForReport, resolveRoadmapItem } from "../lib/analysis/remediation";
 import { canAccessReportProfile, parseReportProfile } from "../lib/report-profile";
 import pdf from "pdf-parse/lib/pdf-parse.js";
 
@@ -39,7 +39,8 @@ test("healthcare demo uses a realistic fictional IRP and complete sample report"
   assert.ok(result.findings.some((finding: any) => finding.status === "Yes"));
   assert.ok(result.findings.some((finding: any) => finding.status === "Partial"));
   assert.ok(result.findings.some((finding: any) => finding.status === "No"));
-  assert.equal(result.remediation_roadmap.phases.flatMap((phase: any) => phase.items).length, 5);
+  assert.equal(result.remediation_roadmap.phases.flatMap((phase: any) => phase.items).length, 15);
+  assert.deepEqual(result.remediation_roadmap.phases.map((phase: any) => phase.items.length), [5, 5, 5]);
 });
 
 test("healthcare demo policy has substantive, traceable content in all 12 sections", () => {
@@ -175,30 +176,30 @@ test("related control failures consolidate into one remediation finding with tra
   assert.equal(findings[0].risk_level, "Critical");
 });
 
-test("roadmap keeps five actions total without removing detailed findings", () => {
-  const findings = Array.from({ length: 7 }, (_, index) => ({
+test("roadmap keeps five actions per phase without removing detailed findings", () => {
+  const findings = Array.from({ length: 18 }, (_, index) => ({
     control_id: `CR-${index + 1}`,
     control_ids: Array.from({ length: index + 1 }, (__, controlIndex) => `CR-${index + 1}-${controlIndex + 1}`),
     control_count: index + 1,
     standards: index % 2 ? ["NIST"] : ["NIST", "HIPAA"],
-    status: index === 6 ? "Partial" : "No",
+    status: "No",
     risk_level: "Critical",
     finding: `Critical remediation ${index + 1}`
   }));
   const roadmap = buildRemediationRoadmap(findings);
   const immediate = roadmap.phases.find((phase) => phase.name === "Immediate");
-  assert.equal(findings.length, 7);
-  assert.deepEqual(roadmap.phases.map((phase) => phase.items.length), [2, 2, 1]);
+  assert.equal(findings.length, 18);
+  assert.deepEqual(roadmap.phases.map((phase) => phase.items.length), [5, 5, 5]);
   assert.deepEqual(roadmap.phases.map((phase) => phase.timeframe), ["Within 30 days", "31 to 60 days", "61 to 90 days"]);
-  assert.equal(immediate?.items[0].title, "Implement CR-6");
-  assert.equal(roadmap.phases.flatMap((phase) => phase.items).some((item) => item.title === "Implement CR-7"), false);
+  assert.equal(immediate?.items[0].title, "Implement CR-18");
+  assert.equal(roadmap.phases.flatMap((phase) => phase.items).some((item) => item.title === "Implement CR-3"), false);
   assert.match(immediate?.items[0].implementation || "", /Document and implement/);
   assert.ok(immediate?.items[0].deliverable);
   assert.ok(immediate?.items[0].validation);
 });
 
-test("roadmap selects five actions globally and legacy roadmaps are capped for display", () => {
-  const risks = ["Low", "Medium", "Critical", "High", "Critical", "Medium", "High", "Low"];
+test("roadmap selects fifteen actions globally and legacy roadmaps are capped per phase", () => {
+  const risks = ["Low", "Medium", "Critical", "High", "Critical", "Medium", "High", "Low", "Critical", "High", "Medium", "Low", "Critical", "High", "Medium", "Low", "Critical", "High"];
   const findings = risks.map((risk_level, index) => ({
     control_id: `MIX-${index + 1}`,
     control_count: index + 1,
@@ -209,19 +210,41 @@ test("roadmap selects five actions globally and legacy roadmaps are capped for d
   }));
   const roadmap = buildRemediationRoadmap(findings);
   const actions = roadmap.phases.flatMap((phase) => phase.items);
-  assert.equal(actions.length, 5);
+  assert.equal(actions.length, 15);
   assert.deepEqual(roadmap.phases.map((phase) => phase.name), ["Immediate", "Mid-term", "Long-term"]);
-  assert.deepEqual(actions.map((item) => item.number), [1, 2, 3, 4, 5]);
+  assert.deepEqual(actions.map((item) => item.number), Array.from({ length: 15 }, (_, index) => index + 1));
 
   const legacy = [
-    { name: "Immediate", items: Array.from({ length: 4 }, (_, index) => ({ title: `Critical ${index + 1}` })) },
-    { name: "Stabilize", items: Array.from({ length: 4 }, (_, index) => ({ title: `High ${index + 1}` })) }
+    { name: "Immediate", items: Array.from({ length: 7 }, (_, index) => ({ title: `Critical ${index + 1}` })) },
+    { name: "Stabilize", items: Array.from({ length: 7 }, (_, index) => ({ title: `High ${index + 1}` })) },
+    { name: "Operationalize", items: Array.from({ length: 4 }, (_, index) => ({ title: `Medium ${index + 1}` })) },
+    { name: "Sustain", items: Array.from({ length: 4 }, (_, index) => ({ title: `Low ${index + 1}` })) }
   ];
-  assert.deepEqual(limitRoadmapActions(legacy).map((phase) => phase.items?.length), [2, 2, 1]);
+  assert.deepEqual(limitRoadmapActions(legacy).map((phase) => phase.items?.length), [5, 5, 5]);
 });
 
-test("printable report keeps every finding while exporting only the curated roadmap", () => {
-  const findings = Array.from({ length: 7 }, (_, index) => ({
+test("stored five-action roadmaps expand from retained findings without another assessment run", () => {
+  const findings = Array.from({ length: 18 }, (_, index) => ({
+    control_id: `STORED-${index + 1}`,
+    control_count: index + 1,
+    standards: ["NIST"],
+    status: "No",
+    risk_level: index < 6 ? "Critical" : index < 12 ? "High" : "Medium",
+    finding: `Stored remediation ${index + 1}`
+  }));
+  const stored = [
+    { name: "Immediate", items: [{ title: "Stored 1" }, { title: "Stored 2" }] },
+    { name: "Mid-term", items: [{ title: "Stored 3" }, { title: "Stored 4" }] },
+    { name: "Long-term", items: [{ title: "Stored 5" }] }
+  ];
+
+  const roadmap = roadmapForReport(stored, findings);
+  assert.deepEqual(roadmap.map((phase) => phase.items.length), [5, 5, 5]);
+  assert.deepEqual(roadmap.flatMap((phase) => phase.items).map((item) => item.number), Array.from({ length: 15 }, (_, index) => index + 1));
+});
+
+test("printable report keeps every finding while exporting the curated five-per-phase roadmap", () => {
+  const findings = Array.from({ length: 18 }, (_, index) => ({
     control_id: `CR-${index + 1}`,
     control_ids: [`CR-${index + 1}`],
     control_count: 1,
@@ -243,8 +266,8 @@ test("printable report keeps every finding while exporting only the curated road
   const deck = buildGapDeck(result);
 
   for (const finding of findings) assert.match(report, new RegExp(finding.finding));
-  assert.equal((report.match(/Implement Critical capability/g) || []).length, 5);
-  assert.equal((deck.match(/Implement Critical capability/g) || []).length, 5);
+  assert.equal((report.match(/Implement Critical capability/g) || []).length, 15);
+  assert.equal((deck.match(/Implement Critical capability/g) || []).length, 15);
   assert.match(report, /<dt>Implement<\/dt>/);
   assert.match(report, /<dt>Deliverable<\/dt>/);
   assert.match(report, /<dt>Validate<\/dt>/);

@@ -5,6 +5,7 @@ import { standardLabel } from "@/lib/analysis/standards";
 import { resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText } from "@/lib/sanitize";
+import type { ReportProfile } from "@/lib/report-profile";
 
 type AssessmentExport = {
   assessmentId: string;
@@ -39,7 +40,7 @@ function postureClass(score: number) {
   return "weak";
 }
 
-export function IrpReport({ result, assessments, demo }: { result: any; assessments: AssessmentExport[]; demo: boolean }) {
+export function IrpReport({ result, assessments, demo, profile = "customer" }: { result: any; assessments: AssessmentExport[]; demo: boolean; profile?: ReportProfile }) {
   const [filter, setFilter] = useState<FindingFilter>("all");
   const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
   const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([result.remediation_roadmap?.phases?.[0]?.name].filter(Boolean)));
@@ -62,6 +63,8 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
   const score = Number(result.compliance_score || 0);
   const readiness = readinessProfile(score);
   const capabilitySummary = capabilityReadinessSummary(result.bucket_scores);
+  const internal = profile === "internal";
+  const exportProfile = `profile=${internal ? "internal" : "customer"}`;
 
   function togglePhase(name: string) {
     setOpenPhases((current) => {
@@ -73,6 +76,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
   }
 
   return <div className="irp-web-report">
+    {internal ? <div className="irp-internal-watermark">Internal QA - Not for Customer Distribution</div> : null}
     <header className="irp-report-heading">
       <div>
         <span className="mono">Incident Response Plan gap analysis</span>
@@ -82,8 +86,8 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>
         {!demo && assessments.length === 1 ? <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=report`}>Export PDF</a>
-          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=deck`}>Export deck</a>
+          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=report&${exportProfile}`}>Export PDF</a>
+          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=deck&${exportProfile}`}>Export deck</a>
         </div> : null}
       </div>
     </header>
@@ -143,7 +147,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
     <section className="irp-findings-section">
       <div className="irp-section-heading">
         <div><span className="mono">Remediation findings</span><h3>Consolidated findings</h3></div>
-        <span className="muted">Related control gaps are grouped into actionable capabilities. Full control traceability follows.</span>
+        <span className="muted">Related control gaps are grouped into actionable capabilities.{internal ? " Full control traceability follows." : " Mapped references remain visible without exposing the complete control library."}</span>
       </div>
       <div className="irp-filter-bar" aria-label="Filter findings">
         <button type="button" className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>All <span>{findings.length}</span></button>
@@ -166,7 +170,7 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       </div>
     </section>
 
-    {controlResults.length ? <details className="irp-traceability">
+    {internal && controlResults.length ? <details className="irp-traceability">
       <summary><span><b>Control traceability appendix</b><small>{controlResults.length} applicable controls with source evidence and evaluation status</small></span><strong>View controls</strong></summary>
       <div className="irp-findings-table-wrap">
         <table className="table irp-traceability-table">
@@ -229,8 +233,8 @@ export function IrpReport({ result, assessments, demo }: { result: any; assessme
       {assessments.map((assessment) => <div key={assessment.assessmentId}>
         <div><b>{assessment.orgName}</b>{assessment.reused ? <span className="badge">Existing result reused</span> : null}</div>
         <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=report`} target="_blank">Report</a>
-          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=deck`} target="_blank">Deck</a>
+          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=report&${exportProfile}`} target="_blank">Report</a>
+          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=deck&${exportProfile}`} target="_blank">Deck</a>
         </div>
       </div>)}
     </section> : null}

@@ -73,7 +73,8 @@ test("network PDF exports separate executive analysis from organization evidence
   ];
   const network = buildNetworkReport("Hawaii Care Network", assessments);
   const executive = await pdf(await buildNetworkGapPdf(network));
-  const detailed = await pdf(await buildNetworkFindingsPdf(network, assessments));
+  const detailed = await pdf(await buildNetworkFindingsPdf(network, assessments, { profile: "customer" }));
+  const internal = await pdf(await buildNetworkFindingsPdf(network, assessments, { profile: "internal" }));
 
   assert.match(executive.text, /Network Executive Summary/);
   assert.match(executive.text, /Common Capability Gaps/);
@@ -83,5 +84,8 @@ test("network PDF exports separate executive analysis from organization evidence
   assert.match(detailed.text, /Center Beta/);
   assert.match(detailed.text, /Center Alpha needs a documented IRP/);
   assert.match(detailed.text, /Center Beta needs a complete exercise record/);
-  assert.match(detailed.text, /Control Traceability/);
+  assert.doesNotMatch(detailed.text, /Control Traceability/);
+  assert.match(detailed.text, /without\s+disclosing the full internal control library/i);
+  assert.match(internal.text, /Internal QA - Not for Customer Distribution/i);
+  assert.match(internal.text, /Control Traceability/);
 });

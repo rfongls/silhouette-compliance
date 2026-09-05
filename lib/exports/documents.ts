@@ -1,5 +1,12 @@
 import PDFDocument from "pdfkit";
 import PptxGenJS from "pptxgenjs";
+import type { ReportProfile } from "@/lib/report-profile";
+
+type ReportExportOptions = { profile?: ReportProfile };
+
+function internalReport(options?: ReportExportOptions) {
+  return options?.profile === "internal";
+}
 import { standardLabel } from "@/lib/analysis/standards";
 import { resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, NETWORK_SCORING_METHODOLOGY, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
@@ -376,7 +383,7 @@ function renderControlAppendix(doc: PdfDoc, controls: any[]) {
   });
 }
 
-export async function buildGapExecutivePdf(result: any) {
+export async function buildGapExecutivePdf(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
   const findings = Array.isArray(r.findings) ? r.findings : [];
@@ -399,7 +406,7 @@ export async function buildGapExecutivePdf(result: any) {
   ];
 
   return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
-    cover(doc, org, "Incident Response Plan Gap Analysis");
+    cover(doc, org, `Incident Response Plan Gap Analysis${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Executive Summary", `${readiness} readiness | ${clean(r.document_name || "Incident Response Plan")}`, navigation);
     metricCards(doc, summaryCards);
@@ -440,7 +447,7 @@ export async function buildGapExecutivePdf(result: any) {
   });
 }
 
-export async function buildGapFindingsPdf(result: any) {
+export async function buildGapFindingsPdf(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
   const findings = Array.isArray(r.findings) ? r.findings : [];
@@ -452,12 +459,15 @@ export async function buildGapFindingsPdf(result: any) {
     color: priorityColor(severity)
   }));
 
-  return createPdf(`${org} - Detailed IRP Findings and Evidence`, (doc) => {
-    cover(doc, org, "Detailed IRP Findings and Control Evidence");
+  const internal = internalReport(options);
+  return createPdf(`${org} - ${internal ? "Internal IRP Control Matrix" : "IRP Findings and Evidence"}`, (doc) => {
+    cover(doc, org, `${internal ? "Internal QA - Not for Customer Distribution | " : ""}Detailed IRP Findings and Evidence`);
     const navigation = startPdfNavigation(doc);
-    newSection(doc, "Reviewer Overview", `${findings.length} findings and ${controls.length} control evaluation records`, navigation);
+    newSection(doc, "Reviewer Overview", internal ? `${findings.length} findings and ${controls.length} control evaluation records` : `${findings.length} remediation findings`, navigation);
     metricCards(doc, severityCounts);
-    body(doc, "This supporting document contains the complete remediation finding set and control-level traceability for detailed review. It accompanies the executive IRP gap analysis report.");
+    body(doc, internal
+      ? "Internal QA - Not for Customer Distribution. This document contains the complete remediation finding set and control-level evaluation matrix."
+      : "This customer supporting document contains the complete remediation finding set and the mapped references needed to act on each finding. It does not disclose the full internal control library.");
     heading(doc, "Assessment Scope");
     body(doc, `Document: ${r.document_name || "Incident Response Plan"}`);
     body(doc, `Standards reviewed: ${standards.map((standard) => standardLabel(standard)).join(", ") || "Not recorded"}`);
@@ -467,16 +477,18 @@ export async function buildGapFindingsPdf(result: any) {
     if (findings.length) renderFindings(doc, findings);
     else body(doc, "No remediation findings were recorded for this assessment.");
 
-    newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`, navigation);
-    if (controls.length) renderControlAppendix(doc, controls);
-    else body(doc, "No control-level evaluation records were stored for this assessment.");
+    if (internal) {
+      newSection(doc, "Control Traceability Appendix", `${controls.length} control-level evaluation records`, navigation);
+      if (controls.length) renderControlAppendix(doc, controls);
+      else body(doc, "No control-level evaluation records were stored for this assessment.");
+    }
     renderPdfNavigation(doc, navigation);
   });
 }
 
 export const buildGapPdf = buildGapExecutivePdf;
 
-export async function buildNetworkGapPdf(result: any) {
+export async function buildNetworkGapPdf(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const organizations = Array.isArray(r.organizations) ? r.organizations : [];
   const gaps = Array.isArray(r.common_gaps) ? r.common_gaps : [];
@@ -495,7 +507,7 @@ export async function buildNetworkGapPdf(result: any) {
     { label: "Common gaps", value: String(gaps.length) }
   ];
   return createPdf(`${clean(r.network_name)} - Network IRP Gap Analysis`, (doc) => {
-    cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`);
+    cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Network Executive Summary", readiness, navigation);
     metricCards(doc, summaryCards);
@@ -530,7 +542,7 @@ export async function buildNetworkGapPdf(result: any) {
 
 type NetworkAssessmentExport = { orgName: string; result: any };
 
-export async function buildNetworkFindingsPdf(result: any, assessments: NetworkAssessmentExport[]) {
+export async function buildNetworkFindingsPdf(result: any, assessments: NetworkAssessmentExport[], options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const rows = assessments.map((assessment) => ({
     orgName: clean(assessment.orgName || assessment.result?.organization_name || "Organization"),
@@ -544,8 +556,9 @@ export async function buildNetworkFindingsPdf(result: any, assessments: NetworkA
   }, 0);
   const standards = new Set(rows.flatMap((row) => Object.keys(row.result.score_breakdown || {})));
 
-  return createPdf(`${clean(r.network_name)} - Detailed Network IRP Findings and Evidence`, (doc) => {
-    cover(doc, clean(r.network_name || "Healthcare Network"), `Detailed Network IRP Findings and Evidence | ${rows.length} organizations`);
+  const internal = internalReport(options);
+  return createPdf(`${clean(r.network_name)} - ${internal ? "Internal Network IRP Control Matrix" : "Network IRP Findings and Evidence"}`, (doc) => {
+    cover(doc, clean(r.network_name || "Healthcare Network"), `${internal ? "Internal QA - Not for Customer Distribution | " : ""}Detailed Network IRP Findings and Evidence | ${rows.length} organizations`);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Reviewer Overview", "Complete organization findings and control-level evidence", navigation);
     metricCards(doc, [
@@ -554,7 +567,9 @@ export async function buildNetworkFindingsPdf(result: any, assessments: NetworkA
       { label: "Controls reviewed", value: String(totalControls) },
       { label: "Standards", value: String(standards.size) }
     ]);
-    body(doc, "This supporting document contains the complete organization-level remediation findings and control traceability that accompany the network executive report.");
+    body(doc, internal
+      ? "Internal QA - Not for Customer Distribution. This document contains complete organization findings and control-level evaluation matrices."
+      : "This customer supporting document contains complete organization remediation findings and their mapped references without disclosing the full internal control library.");
 
     newSection(doc, "Cross-Organization Findings", "Common capability gaps ranked by organizations affected and priority", navigation);
     if (gaps.length) {
@@ -579,9 +594,11 @@ export async function buildNetworkFindingsPdf(result: any, assessments: NetworkA
       heading(doc, "Complete Remediation Findings");
       if (findings.length) renderFindings(doc, findings);
       else body(doc, "No remediation findings were recorded for this organization.");
-      heading(doc, "Control Traceability");
-      if (controls.length) renderControlAppendix(doc, controls);
-      else body(doc, "No control-level evaluation records were stored for this organization.");
+      if (internal) {
+        heading(doc, "Control Traceability");
+        if (controls.length) renderControlAppendix(doc, controls);
+        else body(doc, "No control-level evaluation records were stored for this organization.");
+      }
     });
     renderPdfNavigation(doc, navigation);
   });
@@ -612,7 +629,7 @@ async function outputDeck(pptx: PptxGenJS) {
   throw new Error("PowerPoint generation returned an unsupported output type.");
 }
 
-export async function buildGapPptx(result: any) {
+export async function buildGapPptx(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
   const pptx = new PptxGenJS();
@@ -629,7 +646,7 @@ export async function buildGapPptx(result: any) {
   coverSlide.addText(org, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
   coverSlide.addShape(pptx.ShapeType.rect, { x: 0.78, y: 3.08, w: 4.25, h: 0.05, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
   coverSlide.addText("Incident Response Plan Gap Analysis", { x: 0.78, y: 3.38, w: 9, h: 0.45, fontFace: "Aptos", fontSize: 17, color: "D7C4FF", margin: 0 });
-  coverSlide.addText(`Confidential | ${new Date().toLocaleDateString("en-US")}`, { x: 0.78, y: 6.7, w: 5, h: 0.2, fontFace: "Aptos", fontSize: 7.5, color: "A99BBC", margin: 0 });
+  coverSlide.addText(`${internalReport(options) ? "INTERNAL QA - NOT FOR CUSTOMER DISTRIBUTION | " : "Confidential | "}${new Date().toLocaleDateString("en-US")}`, { x: 0.78, y: 6.7, w: 8, h: 0.2, fontFace: "Aptos", fontSize: 7.5, color: "A99BBC", margin: 0 });
 
   const score = number(r.compliance_score);
   const readiness = readinessProfile(score);
@@ -706,7 +723,7 @@ export async function buildGapPptx(result: any) {
   return outputDeck(pptx);
 }
 
-export async function buildNetworkGapPptx(result: any) {
+export async function buildNetworkGapPptx(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const network = clean(r.network_name || "Healthcare Network");
   const organizations = Array.isArray(r.organizations) ? r.organizations : [];
@@ -720,6 +737,7 @@ export async function buildNetworkGapPptx(result: any) {
   coverSlide.addText("SILHOUETTE LLC", { x: 0.78, y: 1.15, w: 4.8, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "D7C4FF", charSpacing: 3, margin: 0 });
   coverSlide.addText(network, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
   coverSlide.addText(`Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`, { x: 0.78, y: 3.2, w: 10.8, h: 0.45, fontFace: "Aptos", fontSize: 16, color: "D7C4FF", margin: 0 });
+  if (internalReport(options)) coverSlide.addText("INTERNAL QA - NOT FOR CUSTOMER DISTRIBUTION", { x: 0.78, y: 6.7, w: 7.2, h: 0.2, fontFace: "Aptos", fontSize: 7.5, bold: true, color: "A99BBC", margin: 0 });
 
   const score = number(r.compliance_score);
   const readiness = readinessProfile(score);

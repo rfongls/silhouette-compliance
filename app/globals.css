@@ -275,6 +275,16 @@
 .irp-report-selector{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested)}
 .irp-report-selector button{min-height:38px;padding:8px 12px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--muted);font:700 12px/1.25 "DM Sans",sans-serif;cursor:pointer}
 .irp-report-selector button:hover,.irp-report-selector button.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text)}
+.irp-report-mode-bar{display:flex;justify-content:space-between;gap:18px;align-items:center;margin:0 0 10px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--surface-nested)}
+.irp-report-mode-bar>div:first-child{display:grid;gap:4px;min-width:0}
+.irp-report-mode-bar p{margin:0;color:var(--muted);font-size:11px}
+.irp-report-mode-switch{display:flex;flex:none;gap:4px;padding:4px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.irp-report-mode-switch button{min-height:34px;padding:7px 12px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--muted);font:700 11px/1.2 "DM Sans",sans-serif;cursor:pointer}
+.irp-report-mode-switch button:hover,.irp-report-mode-switch button.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text)}
+.irp-internal-notice,.irp-internal-watermark{display:flex;gap:12px;align-items:center;padding:10px 14px;border:1px solid color-mix(in srgb,var(--high) 55%,var(--line));border-radius:7px;background:color-mix(in srgb,var(--high) 9%,var(--surface-nested));color:var(--text)}
+.irp-internal-notice{margin:0 0 10px}
+.irp-internal-notice span{color:var(--muted);font-size:11px}
+.irp-internal-watermark{justify-content:center;margin:0 0 18px;color:var(--high);font:700 10px/1.4 var(--mono);letter-spacing:.08em;text-align:center;text-transform:uppercase}
 .irp-network-org-table{min-width:840px;margin:0}
 .irp-network-org-table .irp-posture-badge{font-size:9px}
 .irp-network-gap-table{min-width:1080px;margin:0;table-layout:fixed}
@@ -300,6 +310,7 @@
 @media(max-width:1050px){.irp-posture-panel{grid-template-columns:minmax(0,1fr) 180px}.irp-standard-scores{grid-column:1/-1;grid-row:2}}
 @media(max-width:900px){.irp-severity-strip,.irp-bucket-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.irp-report-heading,.irp-section-heading,.irp-report-footer{align-items:flex-start;flex-direction:column}.irp-report-heading-actions{align-items:flex-start}.irp-export-actions{justify-content:flex-start}.irp-posture-panel{grid-template-columns:1fr}.irp-standard-scores{grid-column:auto;grid-row:auto}.irp-overall-score{min-height:150px}.irp-demo-document header dl{grid-template-columns:1fr}.irp-assessment-exports>div:not(.irp-section-heading){align-items:flex-start;flex-direction:column}.irp-roadmap-action dl>div{grid-template-columns:1fr;gap:2px}.irp-roadmap-action dt{white-space:normal}}
+@media(max-width:720px){.irp-report-mode-bar,.irp-internal-notice{align-items:flex-start;flex-direction:column}.irp-report-mode-switch{width:100%}.irp-report-mode-switch button{flex:1}}
 @media(max-width:600px){.irp-bucket-grid{grid-template-columns:1fr}.irp-bucket-card header{flex-direction:column}.irp-traceability summary{align-items:flex-start;flex-direction:column}}
 @media(max-width:480px){.irp-severity-strip{grid-template-columns:1fr}.irp-standard-score{grid-template-columns:minmax(80px,1fr) minmax(70px,1.2fr) 30px}.irp-roadmap-toggle{grid-template-columns:54px minmax(0,1fr) 18px}.irp-roadmap-toggle em{display:none}.irp-roadmap-items{padding-left:16px}.irp-roadmap-action dl>div{grid-template-columns:1fr;gap:1px}}
 @media(max-width:620px){.irp-process-card,.irp-result-card{padding:18px}.irp-process-card>h2{font-size:30px}.irp-wizard-page{min-height:0}.irp-wizard-page>h3{font-size:27px}.irp-choice-grid,.irp-industry-grid,.irp-standard-grid,.irp-review-summary{grid-template-columns:1fr}.irp-choice{min-height:0}.irp-review-summary>div{grid-template-columns:1fr;gap:5px}.irp-review-summary>div:nth-child(odd),.irp-review-summary>div:nth-child(even){padding-left:0;padding-right:0}.irp-stage-heading{align-items:flex-start;flex-direction:column}.irp-stage-heading .btn{width:100%}.irp-run-actions{display:grid}.irp-run-actions .btn,.irp-confirmation-actions .btn{width:100%}.irp-wizard-actions .btn{min-width:110px}}

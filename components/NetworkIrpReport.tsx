@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
 import { capabilityReadinessSummary, capabilityReadinessText, NETWORK_SCORING_METHODOLOGY, readinessProfile } from "@/lib/report-readiness";
+import type { ReportProfile } from "@/lib/report-profile";
 
 const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
 const PRIORITY_ORDER: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
@@ -14,7 +15,7 @@ function postureClass(score: number) {
   return "weak";
 }
 
-export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: string }) {
+export function NetworkIrpReport({ result, quoteId, profile = "customer" }: { result: any; quoteId: string; profile?: ReportProfile }) {
   const [sort, setSort] = useState<"affected" | "severity">("affected");
   const score = Number(result.compliance_score || 0);
   const readiness = readinessProfile(score);
@@ -27,8 +28,11 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       : right.affected_count - left.affected_count || (PRIORITY_ORDER[right.risk_level] || 0) - (PRIORITY_ORDER[left.risk_level] || 0));
   }, [result.common_gaps, sort]);
   const totalFindings = SEVERITIES.reduce((total, severity) => total + Number(result.severity_counts?.[severity.toLocaleLowerCase()] || 0), 0);
+  const internal = profile === "internal";
+  const exportProfile = `profile=${internal ? "internal" : "customer"}`;
 
   return <div className="irp-web-report irp-network-report">
+    {internal ? <div className="irp-internal-watermark">Internal QA - Not for Customer Distribution</div> : null}
     <header className="irp-report-heading">
       <div>
         <span className="mono">Network incident response plan gap analysis</span>
@@ -38,8 +42,8 @@ export function NetworkIrpReport({ result, quoteId }: { result: any; quoteId: st
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>
         <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report`}>Export PDF</a>
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck`}>Export deck</a>
+          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report&${exportProfile}`}>Export PDF</a>
+          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck&${exportProfile}`}>Export deck</a>
         </div>
       </div>
     </header>

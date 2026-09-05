@@ -28,6 +28,7 @@ import { buildPdfPackage } from "../lib/exports/pdf-package";
 import { validateIrpDocuments } from "../lib/irp-preflight";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "../lib/report-readiness";
 import { resolveRoadmapItem } from "../lib/analysis/remediation";
+import { canAccessReportProfile, parseReportProfile } from "../lib/report-profile";
 import pdf from "pdf-parse/lib/pdf-parse.js";
 
 test("healthcare demo uses a realistic fictional IRP and complete sample report", () => {
@@ -239,7 +240,8 @@ test("download exports produce separate executive and detailed PDFs in one packa
   result.control_results = structuredClone(result.findings);
   result.control_results[0].requirement = "Disseminate the policy to {{ insert: param, ac-1_prm_1 }} and review it annually.";
   const executivePdf = await buildGapExecutivePdf(result);
-  const findingsPdf = await buildGapFindingsPdf(result);
+  const findingsPdf = await buildGapFindingsPdf(result, { profile: "customer" });
+  const internalPdf = await buildGapFindingsPdf(result, { profile: "internal" });
   const reportPackage = await buildPdfPackage([
     { name: "executive-report.pdf", data: executivePdf },
     { name: "detailed-findings.pdf", data: findingsPdf }
@@ -247,6 +249,7 @@ test("download exports produce separate executive and detailed PDFs in one packa
   const deck = await buildGapPptx(result);
   const executive = await pdf(executivePdf);
   const detailed = await pdf(findingsPdf);
+  const internal = await pdf(internalPdf);
   const archive = await JSZip.loadAsync(reportPackage);
   const files = Object.keys(archive.files).sort();
 
@@ -259,7 +262,8 @@ test("download exports produce separate executive and detailed PDFs in one packa
     assert.equal(contents?.subarray(0, 5).toString("ascii"), "%PDF-");
   }
   assert.ok(executivePdf.length > 8_000);
-  assert.ok(findingsPdf.length > 10_000);
+  assert.ok(findingsPdf.length > 5_000);
+  assert.ok(internalPdf.length > findingsPdf.length);
   assert.ok(deck.length > 10_000);
   for (const parsed of [executive, detailed]) {
     assert.equal(
@@ -287,9 +291,22 @@ test("download exports produce separate executive and detailed PDFs in one packa
   assert.doesNotMatch(executive.text, /Control Traceability Appendix/);
   assert.match(detailed.text, /Reviewer Overview/);
   assert.match(detailed.text, /Complete Remediation Findings/);
-  assert.match(detailed.text, /Control Traceability Appendix/);
-  assert.match(detailed.text, /organization-defined value/);
-  assert.doesNotMatch(detailed.text, /insert:\s*param|\{\{/i);
+  assert.doesNotMatch(detailed.text, /Control Traceability Appendix/);
+  assert.match(detailed.text, /does not disclose the full internal control library/i);
+  assert.match(internal.text, /Internal QA - Not for Customer Distribution/i);
+  assert.match(internal.text, /Control Traceability Appendix/);
+  assert.match(internal.text, /organization-defined value/);
+  assert.doesNotMatch(internal.text, /insert:\s*param|\{\{/i);
+});
+
+test("internal report profile is explicit and administrator-only", () => {
+  assert.equal(parseReportProfile(null), "customer");
+  assert.equal(parseReportProfile("customer"), "customer");
+  assert.equal(parseReportProfile("internal"), "internal");
+  assert.equal(parseReportProfile("unexpected"), null);
+  assert.equal(canAccessReportProfile("customer", "customer"), true);
+  assert.equal(canAccessReportProfile("internal", "customer"), false);
+  assert.equal(canAccessReportProfile("internal", "admin"), true);
 });
 
 test("stored scores render as customer-facing readiness profiles without changing report data", () => {

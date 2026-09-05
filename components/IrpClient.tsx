@@ -1030,7 +1030,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       )}
       {result ? <section ref={resultSectionRef} className="card irp-result-card">
         <div className="mono">Assessment result</div>
-        <IrpReportBundle assessments={assessments} networkReport={networkReport} quoteId={reportQuoteId} demo={demo} />
+        <IrpReportBundle assessments={assessments} networkReport={networkReport} quoteId={reportQuoteId} demo={demo} isAdmin={isAdmin} />
       </section> : null}
     </div>
   );

@@ -4,10 +4,12 @@ import { IrpReportBundle } from "@/components/IrpReportBundle";
 import { Nav } from "@/components/Nav";
 import { StoredReportActions } from "@/components/StoredReportActions";
 import { prisma } from "@/lib/prisma";
+import { isAdminSession } from "@/lib/view-role";
 
 export default async function IrpReportsPage({ params }: { params: { quoteId: string } }) {
   const session = await auth();
   if (!session?.user?.accountId) redirect("/signin");
+  const isAdmin = isAdminSession(session);
   const quote = await prisma.runQuote.findFirst({ where: { id: params.quoteId, accountId: session.user.accountId, module: "irp", reportDeletedAt: null } });
   if (!quote) notFound();
   const assessmentIds = Array.isArray(quote.reportAssessmentIds) ? quote.reportAssessmentIds.map(String) : [];
@@ -24,6 +26,6 @@ export default async function IrpReportsPage({ params }: { params: { quoteId: st
     <h1 style={{ fontFamily: "EB Garamond", fontSize: 44, margin: "8px 0 22px" }}>{quote.parentOrgName || assessments[0]?.orgName || "IRP"} reports</h1>
     <section className="card subcard" style={{ padding: 14, marginBottom: 18 }}><div className="mono">Account report</div><p style={{ marginBottom: 0 }}><span className="badge">Available</span> Stored securely in your report history</p></section>
     <StoredReportActions quoteId={quote.id}/>
-    <IrpReportBundle assessments={assessments} networkReport={quote.networkResult} quoteId={quote.id} demo={false}/>
+    <IrpReportBundle assessments={assessments} networkReport={quote.networkResult} quoteId={quote.id} demo={false} isAdmin={isAdmin}/>
   </section></main>;
 }

@@ -281,7 +281,7 @@ function renderRoadmap(doc: PdfDoc, phases: any[], findings: any[] = []) {
     doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(`PHASE ${String(phaseIndex + 1).padStart(2, "0")}`, 60, top + 16, { width: 54 });
     doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(13).text(clean(phase.name), 122, top + 8, { width: 262 });
     doc.fillColor(COLORS.muted).font("Helvetica").fontSize(7.5).text(clean(phase.timeframe), 122, top + 24, { width: 262 });
-    doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text(`${clean(phase.color || "Medium").toUpperCase()} PRIORITY`, doc.page.width - 172, top + 16, { width: 120, align: "right" });
+    doc.fillColor(color).font("Helvetica-Bold").fontSize(7).text("IMPLEMENTATION HORIZON", doc.page.width - 172, top + 16, { width: 120, align: "right" });
     doc.x = 46;
     doc.y = top + 47;
 

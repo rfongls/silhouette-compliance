@@ -2,7 +2,7 @@ import { z } from "zod";
 import { callAnthropicJson, type ModelUsage } from "@/lib/analysis/anthropic";
 import { buildControlEvaluationPrompt, buildSystemPrompt, type AnalysisScope } from "@/lib/analysis/prompts";
 import { IRP_CAPABILITY_BUCKETS, IRP_SCORING_PROFILE_VERSION, profileIrpControls, type ProfiledControl } from "@/lib/analysis/scoring-profile";
-import { buildActionableRoadmapItem } from "@/lib/analysis/remediation";
+import { buildActionableRoadmapItem, limitRoadmapActions } from "@/lib/analysis/remediation";
 import type { NormalizedControl } from "@/lib/control-boards";
 
 export const IRP_CONTROL_BATCH_SIZE = 20;
@@ -286,25 +286,14 @@ function remediationPriority(a: any, b: any) {
 }
 
 export function buildRemediationRoadmap(findings: any[]) {
-  const phases = [
-    { name: "Immediate", timeframe: "Within 30 days", color: "critical", risks: new Set(["Critical"]) },
-    { name: "Stabilize", timeframe: "31-60 days", color: "high", risks: new Set(["High"]) },
-    { name: "Operationalize", timeframe: "61-90 days", color: "medium", risks: new Set(["Medium"]) },
-    { name: "Sustain", timeframe: "Quarterly", color: "low", risks: new Set(["Low"]) }
-  ];
   const selected = findings
     .filter((finding) => finding.status !== "Yes")
     .sort(remediationPriority)
     .slice(0, 5);
   return {
-    phases: phases.map((phase) => ({
-      name: phase.name,
-      timeframe: phase.timeframe,
-      color: phase.color,
-      items: selected
-        .filter((finding) => phase.risks.has(finding.risk_level))
-        .map((finding) => buildActionableRoadmapItem(finding, selected.indexOf(finding) + 1))
-    })).filter((phase) => phase.items.length)
+    phases: limitRoadmapActions([{
+      items: selected.map((finding, index) => buildActionableRoadmapItem(finding, index + 1))
+    }])
   };
 }
 

@@ -188,9 +188,10 @@ test("roadmap keeps five actions total without removing detailed findings", () =
   const roadmap = buildRemediationRoadmap(findings);
   const immediate = roadmap.phases.find((phase) => phase.name === "Immediate");
   assert.equal(findings.length, 7);
-  assert.equal(immediate?.items.length, 5);
+  assert.deepEqual(roadmap.phases.map((phase) => phase.items.length), [2, 2, 1]);
+  assert.deepEqual(roadmap.phases.map((phase) => phase.timeframe), ["Within 30 days", "31 to 60 days", "61 to 90 days"]);
   assert.equal(immediate?.items[0].title, "Implement CR-6");
-  assert.equal(immediate?.items.some((item) => item.title === "Implement CR-7"), false);
+  assert.equal(roadmap.phases.flatMap((phase) => phase.items).some((item) => item.title === "Implement CR-7"), false);
   assert.match(immediate?.items[0].implementation || "", /Document and implement/);
   assert.ok(immediate?.items[0].deliverable);
   assert.ok(immediate?.items[0].validation);
@@ -209,14 +210,14 @@ test("roadmap selects five actions globally and legacy roadmaps are capped for d
   const roadmap = buildRemediationRoadmap(findings);
   const actions = roadmap.phases.flatMap((phase) => phase.items);
   assert.equal(actions.length, 5);
-  assert.deepEqual(roadmap.phases.map((phase) => phase.name), ["Immediate", "Stabilize", "Operationalize"]);
+  assert.deepEqual(roadmap.phases.map((phase) => phase.name), ["Immediate", "Mid-term", "Long-term"]);
   assert.deepEqual(actions.map((item) => item.number), [1, 2, 3, 4, 5]);
 
   const legacy = [
     { name: "Immediate", items: Array.from({ length: 4 }, (_, index) => ({ title: `Critical ${index + 1}` })) },
     { name: "Stabilize", items: Array.from({ length: 4 }, (_, index) => ({ title: `High ${index + 1}` })) }
   ];
-  assert.deepEqual(limitRoadmapActions(legacy).map((phase) => phase.items?.length), [4, 1]);
+  assert.deepEqual(limitRoadmapActions(legacy).map((phase) => phase.items?.length), [2, 2, 1]);
 });
 
 test("printable report keeps every finding while exporting only the curated roadmap", () => {

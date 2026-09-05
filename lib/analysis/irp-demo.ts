@@ -225,12 +225,12 @@ export function demoAssessment(_orgName = "", industry = "health-center") {
         { number: 1, title: "Correct records retention", description: "Revise the policy and records schedule to retain required HIPAA documentation for at least six years.", references: ["164.316(b)(2)(i)"] },
         { number: 2, title: "Publish a notification matrix", description: "Document notification triggers, decision owners, regulatory clocks, external recipients, and after-hours contacts.", references: ["164.308(a)(6)(ii)", "IR-6"] }
       ] },
-      { name: "Stabilize", timeframe: "31 to 60 days", color: "high", items: [
-        { number: 1, title: "Establish the exercise program", description: "Set a required tabletop cadence, scenario rotation, participants, success criteria, and after-action deliverables.", references: ["IR-3"] }
+      { name: "Mid-term", timeframe: "31 to 60 days", color: "high", items: [
+        { number: 3, title: "Establish the exercise program", description: "Set a required tabletop cadence, scenario rotation, participants, success criteria, and after-action deliverables.", references: ["IR-3"] },
+        { number: 4, title: "Formalize evidence protection", description: "Define repository access controls, integrity checks, chain-of-custody triggers, and evidence review procedures.", references: ["AU-9"] }
       ] },
-      { name: "Operationalize", timeframe: "61 to 90 days", color: "medium", items: [
-        { number: 1, title: "Formalize evidence protection", description: "Define repository access controls, integrity checks, chain-of-custody triggers, and evidence review procedures.", references: ["AU-9"] },
-        { number: 2, title: "Track corrective actions", description: "Assign owners and due dates to after-action items and report overdue actions to the Compliance Committee.", references: ["IR-8"] }
+      { name: "Long-term", timeframe: "61 to 90 days", color: "medium", items: [
+        { number: 5, title: "Track corrective actions", description: "Assign owners and due dates to after-action items and report overdue actions to the Compliance Committee.", references: ["IR-8"] }
       ] }
     ] },
     data_handling: { message: "This fictional demonstration is rendered from bundled policy and report data in the browser. It does not upload content or call an external AI provider." },

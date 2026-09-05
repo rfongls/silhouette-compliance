@@ -175,12 +175,32 @@ export function resolveRoadmapItem(item: RoadmapItem, findings: Finding[] = []) 
   };
 }
 
+const ROADMAP_HORIZONS = [
+  { name: "Immediate", timeframe: "Within 30 days", color: "critical" },
+  { name: "Mid-term", timeframe: "31 to 60 days", color: "high" },
+  { name: "Long-term", timeframe: "61 to 90 days", color: "medium" }
+];
+
+function roadmapAllocations(total: number) {
+  if (total <= 0) return [0, 0, 0];
+  if (total === 1) return [1, 0, 0];
+  if (total === 2) return [1, 1, 0];
+  if (total === 3) return [1, 1, 1];
+  if (total === 4) return [2, 1, 1];
+  return [2, 2, total - 4];
+}
+
 export function limitRoadmapActions(phases: RoadmapPhase[] = [], limit = 5) {
-  let remaining = Math.max(0, limit);
-  return phases.flatMap((phase) => {
-    if (remaining === 0) return [];
-    const items = Array.isArray(phase.items) ? phase.items.slice(0, remaining) : [];
-    remaining -= items.length;
-    return items.length ? [{ ...phase, items }] : [];
+  const items = phases
+    .flatMap((phase) => Array.isArray(phase.items) ? phase.items : [])
+    .slice(0, Math.max(0, limit))
+    .map((item, index) => ({ ...item, number: index + 1 }));
+  const allocations = roadmapAllocations(items.length);
+  let offset = 0;
+
+  return ROADMAP_HORIZONS.flatMap((horizon, index) => {
+    const horizonItems = items.slice(offset, offset + allocations[index]);
+    offset += allocations[index];
+    return horizonItems.length ? [{ ...horizon, items: horizonItems }] : [];
   });
 }

@@ -20,6 +20,14 @@ type RoadmapItem = {
   capability?: string;
 };
 
+type RoadmapPhase = {
+  name?: string;
+  timeframe?: string;
+  color?: string;
+  items?: RoadmapItem[];
+  [key: string]: unknown;
+};
+
 type RemediationPlan = {
   title: string;
   implementation: string;
@@ -165,4 +173,14 @@ export function resolveRoadmapItem(item: RoadmapItem, findings: Finding[] = []) 
     gap_summary: item.gap_summary || finding.finding || (legacyGenerated ? item.description : undefined),
     references: sourceFinding ? findingReferences(sourceFinding) : (item.references?.length ? item.references : findingReferences(finding))
   };
+}
+
+export function limitRoadmapActions(phases: RoadmapPhase[] = [], limit = 5) {
+  let remaining = Math.max(0, limit);
+  return phases.flatMap((phase) => {
+    if (remaining === 0) return [];
+    const items = Array.isArray(phase.items) ? phase.items.slice(0, remaining) : [];
+    remaining -= items.length;
+    return items.length ? [{ ...phase, items }] : [];
+  });
 }

@@ -27,7 +27,7 @@ import { buildGapExecutivePdf, buildGapFindingsPdf, buildGapPptx } from "../lib/
 import { buildPdfPackage } from "../lib/exports/pdf-package";
 import { validateIrpDocuments } from "../lib/irp-preflight";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile } from "../lib/report-readiness";
-import { resolveRoadmapItem } from "../lib/analysis/remediation";
+import { limitRoadmapActions, resolveRoadmapItem } from "../lib/analysis/remediation";
 import { canAccessReportProfile, parseReportProfile } from "../lib/report-profile";
 import pdf from "pdf-parse/lib/pdf-parse.js";
 
@@ -39,7 +39,7 @@ test("healthcare demo uses a realistic fictional IRP and complete sample report"
   assert.ok(result.findings.some((finding: any) => finding.status === "Yes"));
   assert.ok(result.findings.some((finding: any) => finding.status === "Partial"));
   assert.ok(result.findings.some((finding: any) => finding.status === "No"));
-  assert.ok(result.remediation_roadmap.phases.flatMap((phase: any) => phase.items).length >= 5);
+  assert.equal(result.remediation_roadmap.phases.flatMap((phase: any) => phase.items).length, 5);
 });
 
 test("healthcare demo policy has substantive, traceable content in all 12 sections", () => {
@@ -175,7 +175,7 @@ test("related control failures consolidate into one remediation finding with tra
   assert.equal(findings[0].risk_level, "Critical");
 });
 
-test("roadmap keeps the top five actions per priority without removing detailed findings", () => {
+test("roadmap keeps five actions total without removing detailed findings", () => {
   const findings = Array.from({ length: 7 }, (_, index) => ({
     control_id: `CR-${index + 1}`,
     control_ids: Array.from({ length: index + 1 }, (__, controlIndex) => `CR-${index + 1}-${controlIndex + 1}`),
@@ -194,6 +194,29 @@ test("roadmap keeps the top five actions per priority without removing detailed 
   assert.match(immediate?.items[0].implementation || "", /Document and implement/);
   assert.ok(immediate?.items[0].deliverable);
   assert.ok(immediate?.items[0].validation);
+});
+
+test("roadmap selects five actions globally and legacy roadmaps are capped for display", () => {
+  const risks = ["Low", "Medium", "Critical", "High", "Critical", "Medium", "High", "Low"];
+  const findings = risks.map((risk_level, index) => ({
+    control_id: `MIX-${index + 1}`,
+    control_count: index + 1,
+    standards: ["NIST"],
+    status: "No",
+    risk_level,
+    finding: `Mixed remediation ${index + 1}`
+  }));
+  const roadmap = buildRemediationRoadmap(findings);
+  const actions = roadmap.phases.flatMap((phase) => phase.items);
+  assert.equal(actions.length, 5);
+  assert.deepEqual(roadmap.phases.map((phase) => phase.name), ["Immediate", "Stabilize", "Operationalize"]);
+  assert.deepEqual(actions.map((item) => item.number), [1, 2, 3, 4, 5]);
+
+  const legacy = [
+    { name: "Immediate", items: Array.from({ length: 4 }, (_, index) => ({ title: `Critical ${index + 1}` })) },
+    { name: "Stabilize", items: Array.from({ length: 4 }, (_, index) => ({ title: `High ${index + 1}` })) }
+  ];
+  assert.deepEqual(limitRoadmapActions(legacy).map((phase) => phase.items?.length), [4, 1]);
 });
 
 test("printable report keeps every finding while exporting only the curated roadmap", () => {

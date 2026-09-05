@@ -231,9 +231,6 @@ export function demoAssessment(_orgName = "", industry = "health-center") {
       { name: "Operationalize", timeframe: "61 to 90 days", color: "medium", items: [
         { number: 1, title: "Formalize evidence protection", description: "Define repository access controls, integrity checks, chain-of-custody triggers, and evidence review procedures.", references: ["AU-9"] },
         { number: 2, title: "Track corrective actions", description: "Assign owners and due dates to after-action items and report overdue actions to the Compliance Committee.", references: ["IR-8"] }
-      ] },
-      { name: "Sustain", timeframe: "Quarterly", color: "low", items: [
-        { number: 1, title: "Review response readiness", description: "Review contact lists, lessons learned, exercise results, plan distribution, and staff acknowledgment each quarter.", references: ["IR-8"] }
       ] }
     ] },
     data_handling: { message: "This fictional demonstration is rendered from bundled policy and report data in the browser. It does not upload content or call an external AI provider." },

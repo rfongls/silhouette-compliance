@@ -273,6 +273,9 @@ export function consolidateRemediationFindings(controlResults: any[]) {
 }
 
 function remediationPriority(a: any, b: any) {
+  const priority = { Critical: 4, High: 3, Medium: 2, Low: 1 } as Record<string, number>;
+  const riskDifference = (priority[b.risk_level] || 0) - (priority[a.risk_level] || 0);
+  if (riskDifference) return riskDifference;
   const statusDifference = (b.status === "No" ? 1 : 0) - (a.status === "No" ? 1 : 0);
   if (statusDifference) return statusDifference;
   const controlDifference = Number(b.control_count || b.control_ids?.length || 1) - Number(a.control_count || a.control_ids?.length || 1);
@@ -289,17 +292,19 @@ export function buildRemediationRoadmap(findings: any[]) {
     { name: "Operationalize", timeframe: "61-90 days", color: "medium", risks: new Set(["Medium"]) },
     { name: "Sustain", timeframe: "Quarterly", color: "low", risks: new Set(["Low"]) }
   ];
+  const selected = findings
+    .filter((finding) => finding.status !== "Yes")
+    .sort(remediationPriority)
+    .slice(0, 5);
   return {
     phases: phases.map((phase) => ({
       name: phase.name,
       timeframe: phase.timeframe,
       color: phase.color,
-      items: findings
-        .filter((finding) => finding.status !== "Yes" && phase.risks.has(finding.risk_level))
-        .sort(remediationPriority)
-        .slice(0, 5)
-        .map((finding, index) => buildActionableRoadmapItem(finding, index + 1))
-    }))
+      items: selected
+        .filter((finding) => phase.risks.has(finding.risk_level))
+        .map((finding) => buildActionableRoadmapItem(finding, selected.indexOf(finding) + 1))
+    })).filter((phase) => phase.items.length)
   };
 }
 

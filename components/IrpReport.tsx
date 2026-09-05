@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { standardLabel } from "@/lib/analysis/standards";
-import { resolveRoadmapItem } from "@/lib/analysis/remediation";
+import { limitRoadmapActions, resolveRoadmapItem } from "@/lib/analysis/remediation";
 import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile, SCORING_METHODOLOGY } from "@/lib/report-readiness";
 import { humanizeControlText } from "@/lib/sanitize";
 import type { ReportProfile } from "@/lib/report-profile";
@@ -35,9 +35,10 @@ function postureClass(score: number) {
 }
 
 export function IrpReport({ result, demo, profile = "customer", showHeading = true }: { result: any; demo: boolean; profile?: ReportProfile; showHeading?: boolean }) {
+  const roadmapPhases = limitRoadmapActions(Array.isArray(result.remediation_roadmap?.phases) ? result.remediation_roadmap.phases : []);
   const [filter, setFilter] = useState<FindingFilter>("all");
   const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
-  const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([result.remediation_roadmap?.phases?.[0]?.name].filter(Boolean)));
+  const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([roadmapPhases[0]?.name].filter(Boolean) as string[]));
   const findings = Array.isArray(result.findings) ? result.findings : [];
   const controlResults = Array.isArray(result.control_results) ? result.control_results : findings;
   const bucketScores = Object.entries(result.bucket_scores || {}) as Array<[string, any]>;
@@ -179,10 +180,10 @@ export function IrpReport({ result, demo, profile = "customer", showHeading = tr
       </div>
     </details> : null}
 
-    {result.remediation_roadmap?.phases?.length ? <section className="irp-roadmap">
-      <div className="irp-section-heading"><div><span className="mono">Action plan</span><h3>30 / 60 / 90 day remediation roadmap</h3></div></div>
+    {roadmapPhases.length ? <section className="irp-roadmap">
+      <div className="irp-section-heading"><div><span className="mono">Action plan</span><h3>Priority remediation roadmap</h3><p className="muted">Five highest-leverage actions sequenced by implementation horizon.</p></div></div>
       <div className="irp-roadmap-list">
-        {result.remediation_roadmap.phases.map((phase: any, phaseIndex: number) => {
+        {roadmapPhases.map((phase: any, phaseIndex: number) => {
           const isOpen = openPhases.has(phase.name);
           return <article key={phase.name} className={`severity-${phase.color || "medium"}`}>
             <button type="button" className="irp-roadmap-toggle" onClick={() => togglePhase(phase.name)} aria-expanded={isOpen}>

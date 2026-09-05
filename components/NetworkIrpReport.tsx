@@ -15,7 +15,7 @@ function postureClass(score: number) {
   return "weak";
 }
 
-export function NetworkIrpReport({ result, quoteId, profile = "customer" }: { result: any; quoteId: string; profile?: ReportProfile }) {
+export function NetworkIrpReport({ result, profile = "customer", showHeading = true }: { result: any; profile?: ReportProfile; showHeading?: boolean }) {
   const [sort, setSort] = useState<"affected" | "severity">("affected");
   const score = Number(result.compliance_score || 0);
   const readiness = readinessProfile(score);
@@ -29,11 +29,10 @@ export function NetworkIrpReport({ result, quoteId, profile = "customer" }: { re
   }, [result.common_gaps, sort]);
   const totalFindings = SEVERITIES.reduce((total, severity) => total + Number(result.severity_counts?.[severity.toLocaleLowerCase()] || 0), 0);
   const internal = profile === "internal";
-  const exportProfile = `profile=${internal ? "internal" : "customer"}`;
 
   return <div className="irp-web-report irp-network-report">
     {internal ? <div className="irp-internal-watermark">Internal QA - Not for Customer Distribution</div> : null}
-    <header className="irp-report-heading">
+    {showHeading ? <header className="irp-report-heading">
       <div>
         <span className="mono">Network incident response plan gap analysis</span>
         <h2>{result.network_name}</h2>
@@ -41,12 +40,8 @@ export function NetworkIrpReport({ result, quoteId, profile = "customer" }: { re
       </div>
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>
-        <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=report&${exportProfile}`}>Export PDF</a>
-          <a className="btn secondary" href={`/api/run-quotes/${quoteId}/export?format=deck&${exportProfile}`}>Export deck</a>
-        </div>
       </div>
-    </header>
+    </header> : null}
 
     <section className="irp-severity-strip" aria-label="Network findings by priority">
       {SEVERITIES.map((severity) => <div key={severity} className={`irp-severity-card severity-${severity.toLocaleLowerCase()}`}>

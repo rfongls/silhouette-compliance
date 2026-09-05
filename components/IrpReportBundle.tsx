@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { IrpReport } from "@/components/IrpReport";
 import { NetworkIrpReport } from "@/components/NetworkIrpReport";
+import { StoredReportActions } from "@/components/StoredReportActions";
 import type { ReportProfile } from "@/lib/report-profile";
 
 type Assessment = { assessmentId: string; orgName: string; result: any; reused?: boolean };
 
-export function IrpReportBundle({ assessments, networkReport, quoteId, demo, isAdmin = false }: { assessments: Assessment[]; networkReport: any; quoteId: string | null; demo: boolean; isAdmin?: boolean }) {
+export function IrpReportBundle({ assessments, networkReport, quoteId, demo, isAdmin = false, historyView = false }: { assessments: Assessment[]; networkReport: any; quoteId: string | null; demo: boolean; isAdmin?: boolean; historyView?: boolean }) {
   const [selected, setSelected] = useState(networkReport ? "network" : assessments[0]?.assessmentId || "");
   const [profile, setProfile] = useState<ReportProfile>("customer");
   useEffect(() => {
@@ -15,7 +16,17 @@ export function IrpReportBundle({ assessments, networkReport, quoteId, demo, isA
   }, [networkReport, assessments]);
   const active = assessments.find((assessment) => assessment.assessmentId === selected) || assessments[0];
   if (!active && !networkReport) return null;
+  const profileQuery = `profile=${profile === "internal" ? "internal" : "customer"}`;
+  const exportBase = selected === "network" && quoteId
+    ? `/api/run-quotes/${quoteId}/export`
+    : active ? `/api/assessments/${active.assessmentId}/export` : "";
+  const hideIdentityHeading = historyView && (selected === "network" || (!networkReport && assessments.length === 1));
   return <>
+    {!demo && quoteId && exportBase ? <StoredReportActions
+      quoteId={quoteId}
+      pdfHref={`${exportBase}?format=report&${profileQuery}`}
+      deckHref={`${exportBase}?format=deck&${profileQuery}`}
+    /> : null}
     {isAdmin ? <section className="irp-report-mode-bar" aria-label="Report audience">
       <div><span className="mono">Report audience</span><p>Switch the presentation without rerunning or changing the stored assessment.</p></div>
       <div className="irp-report-mode-switch" role="group" aria-label="Report audience selection">
@@ -29,7 +40,7 @@ export function IrpReportBundle({ assessments, networkReport, quoteId, demo, isA
       {assessments.map((assessment) => <button type="button" key={assessment.assessmentId} className={selected === assessment.assessmentId ? "active" : ""} onClick={() => setSelected(assessment.assessmentId)}>{assessment.orgName}</button>)}
     </nav> : null}
     {selected === "network" && networkReport && quoteId
-      ? <NetworkIrpReport result={networkReport} quoteId={quoteId} profile={profile} />
-      : active ? <IrpReport result={active.result} assessments={assessments} demo={demo} profile={profile} /> : null}
+      ? <NetworkIrpReport result={networkReport} profile={profile} showHeading={!hideIdentityHeading} />
+      : active ? <IrpReport result={active.result} demo={demo} profile={profile} showHeading={!hideIdentityHeading} /> : null}
   </>;
 }

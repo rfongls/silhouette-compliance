@@ -7,12 +7,6 @@ import { capabilityReadinessSummary, capabilityReadinessText, readinessProfile, 
 import { humanizeControlText } from "@/lib/sanitize";
 import type { ReportProfile } from "@/lib/report-profile";
 
-type AssessmentExport = {
-  assessmentId: string;
-  orgName: string;
-  reused?: boolean;
-};
-
 type FindingFilter = "all" | "critical" | "high" | "medium" | "low" | `standard:${string}`;
 type PrioritySort = "none" | "high-first" | "low-first";
 
@@ -40,7 +34,7 @@ function postureClass(score: number) {
   return "weak";
 }
 
-export function IrpReport({ result, assessments, demo, profile = "customer" }: { result: any; assessments: AssessmentExport[]; demo: boolean; profile?: ReportProfile }) {
+export function IrpReport({ result, demo, profile = "customer", showHeading = true }: { result: any; demo: boolean; profile?: ReportProfile; showHeading?: boolean }) {
   const [filter, setFilter] = useState<FindingFilter>("all");
   const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
   const [openPhases, setOpenPhases] = useState<Set<string>>(() => new Set([result.remediation_roadmap?.phases?.[0]?.name].filter(Boolean)));
@@ -64,7 +58,6 @@ export function IrpReport({ result, assessments, demo, profile = "customer" }: {
   const readiness = readinessProfile(score);
   const capabilitySummary = capabilityReadinessSummary(result.bucket_scores);
   const internal = profile === "internal";
-  const exportProfile = `profile=${internal ? "internal" : "customer"}`;
 
   function togglePhase(name: string) {
     setOpenPhases((current) => {
@@ -77,7 +70,7 @@ export function IrpReport({ result, assessments, demo, profile = "customer" }: {
 
   return <div className="irp-web-report">
     {internal ? <div className="irp-internal-watermark">Internal QA - Not for Customer Distribution</div> : null}
-    <header className="irp-report-heading">
+    {showHeading ? <header className="irp-report-heading">
       <div>
         <span className="mono">Incident Response Plan gap analysis</span>
         <h2>{result.organization_name}</h2>
@@ -85,12 +78,8 @@ export function IrpReport({ result, assessments, demo, profile = "customer" }: {
       </div>
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>
-        {!demo && assessments.length === 1 ? <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=report&${exportProfile}`}>Export PDF</a>
-          <a className="btn secondary" href={`/api/assessments/${assessments[0].assessmentId}/export?format=deck&${exportProfile}`}>Export deck</a>
-        </div> : null}
       </div>
-    </header>
+    </header> : null}
 
     <section className="irp-severity-strip" aria-label="Actionable findings by priority">
       {SEVERITIES.map((severity) => <button
@@ -230,15 +219,5 @@ export function IrpReport({ result, assessments, demo, profile = "customer" }: {
       <div><b>Data handling</b><span>{result.data_handling?.message || "Submitted policy text is processed in memory for this assessment and is not stored."}</span></div>
     </footer> : null}
 
-    {!demo && assessments.length > 1 ? <section className="irp-assessment-exports">
-      <div className="irp-section-heading"><div><span className="mono">Deliverables</span><h3>Organization reports</h3></div></div>
-      {assessments.map((assessment) => <div key={assessment.assessmentId}>
-        <div><b>{assessment.orgName}</b>{assessment.reused ? <span className="badge">Existing result reused</span> : null}</div>
-        <div className="irp-export-actions">
-          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=report&${exportProfile}`} target="_blank">Report</a>
-          <a className="btn secondary" href={`/api/assessments/${assessment.assessmentId}/export?format=deck&${exportProfile}`} target="_blank">Deck</a>
-        </div>
-      </div>)}
-    </section> : null}
   </div>;
 }

@@ -145,11 +145,14 @@
 .irp-demo-document ul{margin:6px 0 0;padding-left:20px}
 .irp-web-report{--critical:#ff6b6b;--high:#ffaa4a;--medium:#5ab4ff;--low:#4fd98e;display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr);gap:0;overflow:hidden;container-type:inline-size}
 .irp-report-heading,.irp-section-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
-.irp-report-heading{padding-bottom:20px;border-bottom:1px solid var(--line)}
+.irp-report-heading{padding-bottom:26px;border-bottom:1px solid var(--line)}
 .irp-report-heading>div{min-width:0}
 .irp-report-heading>div:first-child{flex:1 1 auto}
-.irp-report-heading h2{margin:6px 0 4px;font-size:clamp(28px,4vw,44px);overflow-wrap:anywhere}
+.irp-report-heading h2{margin:0 0 12px;font-size:clamp(28px,4vw,44px);overflow-wrap:anywhere}
 .irp-report-heading p{margin:0;color:var(--muted);overflow-wrap:anywhere}
+.irp-report-heading .irp-report-title{color:var(--text);font-size:17px;font-weight:700}
+.irp-report-heading .irp-report-byline{margin-top:5px;font-size:13px}
+.irp-report-heading .irp-report-document{margin-top:12px;font-size:13px}
 .irp-report-heading-actions{display:flex;flex:0 1 260px;max-width:min(260px,100%);min-width:0;flex-direction:column;align-items:flex-end;gap:10px}
 .irp-export-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 .irp-export-actions .btn{min-height:38px;padding:8px 12px;font-size:12px}

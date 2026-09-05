@@ -34,9 +34,10 @@ export function NetworkIrpReport({ result, profile = "customer", showHeading = t
     {internal ? <div className="irp-internal-watermark">Internal QA - Not for Customer Distribution</div> : null}
     {showHeading ? <header className="irp-report-heading">
       <div>
-        <span className="mono">Network incident response plan gap analysis</span>
         <h2>{result.network_name}</h2>
-        <p>{organizations.length} independent organization report{organizations.length === 1 ? "" : "s"} consolidated into this network report.</p>
+        <p className="irp-report-title">Network Incident Response Plan Gap Analysis</p>
+        <p className="irp-report-byline">Prepared by {result.prepared_by || "Silhouette LLC"}</p>
+        <p className="irp-report-document">{organizations.length} independent organization report{organizations.length === 1 ? "" : "s"} consolidated into this network report.</p>
       </div>
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>

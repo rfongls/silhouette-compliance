@@ -18,14 +18,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (!canAccessReportProfile(profile, guard.session.user.role)) return NextResponse.json({ error: "Administrator access is required for internal reports" }, { status: 403 });
   const quote = await prisma.runQuote.findFirst({
     where: { id: params.id, accountId: guard.session.user.accountId, module: "irp", reportDeletedAt: null },
-    select: { assessmentScope: true, parentOrgName: true, reportAssessmentIds: true, networkResult: true }
+    select: { assessmentScope: true, parentOrgName: true, preparedBy: true, reportAssessmentIds: true, networkResult: true }
   });
   if (!quote) return NextResponse.json({ error: "Report not found" }, { status: 404 });
   if (!new Set(["report", "deck"]).has(format)) return NextResponse.json({ error: "Unsupported export format" }, { status: 400 });
   if (!quote.networkResult || quote.assessmentScope !== "network") return NextResponse.json({ error: "Network report not found" }, { status: 404 });
+  const networkResult = {
+    ...(quote.networkResult as Record<string, unknown>),
+    prepared_by: (quote.networkResult as Record<string, unknown>).prepared_by || quote.preparedBy || "Silhouette LLC"
+  };
   const name = slugify(String(quote.parentOrgName || "network"));
   if (format === "deck") {
-    const deck = await buildNetworkGapPptx(quote.networkResult, { profile });
+    const deck = await buildNetworkGapPptx(networkResult, { profile });
     return new Response(new Uint8Array(deck), { headers: {
       "content-type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       "content-disposition": `attachment; filename="${name}-network-irp-gap-analysis${profile === "internal" ? "-internal-qa" : ""}.pptx"`,
@@ -46,8 +50,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ error: "One or more organization reports are unavailable for the detailed findings package" }, { status: 409 });
   }
   const [executiveReport, detailedFindings] = await Promise.all([
-    buildNetworkGapPdf(quote.networkResult, { profile }),
-    buildNetworkFindingsPdf(quote.networkResult, assessments, { profile })
+    buildNetworkGapPdf(networkResult, { profile }),
+    buildNetworkFindingsPdf(networkResult, assessments, { profile })
   ]);
   const reportPackage = await buildPdfPackage([
     { name: `${name}-network-irp-executive-report${profile === "internal" ? "-internal-qa" : ""}.pdf`, data: executiveReport },

@@ -180,6 +180,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const result = {
       ...modelResult,
+      prepared_by: assessment.preparedBy || "Silhouette LLC",
       data_handling: {
         status: "UPLOADER_ATTESTED_NO_KNOWN_PHI",
         message: "The uploader attested that they reviewed the submitted files and removed PHI. Silhouette did not inspect, classify, or certify the uploads for PHI.",
@@ -227,7 +228,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       });
       const reportRows = delivered.filter((row) => row.result).map((row) => ({ assessmentId: row.id, orgName: row.orgName || "Organization", result: row.result }));
       reportAssessments = reportRows.map((row) => ({ assessmentId: row.assessmentId, orgName: row.orgName, result: row.result as typeof result }));
-      networkReport = quote?.assessmentScope === "network" && quote.parentOrgName ? buildNetworkReport(quote.parentOrgName, reportRows) : null;
+      networkReport = quote?.assessmentScope === "network" && quote.parentOrgName
+        ? buildNetworkReport(quote.parentOrgName, reportRows, quote.preparedBy || assessment.preparedBy || "Silhouette LLC")
+        : null;
       await prisma.runQuote.update({
         where: { id: quoteId },
         data: { reportAssessmentIds: reportRows.map((row) => row.assessmentId), networkResult: networkReport || undefined, networkGeneratedAt: networkReport ? new Date() : undefined }

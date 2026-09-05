@@ -23,6 +23,7 @@ export async function GET(req: Request) {
       id: true,
       orgId: true,
       orgName: true,
+      preparedBy: true,
       industry: true,
       createdAt: true,
       updatedAt: true,
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
   });
   const quote = quoteId ? await prisma.runQuote.findFirst({
     where: { id: quoteId, accountId: guard.session.user.accountId },
-    select: { id: true, assessmentScope: true, parentOrgName: true, networkResult: true, networkGeneratedAt: true }
+    select: { id: true, assessmentScope: true, parentOrgName: true, preparedBy: true, networkResult: true, networkGeneratedAt: true }
   }) : null;
   return NextResponse.json({
     assessments: assessments.map(({ ledger, boardSnapshot, _count, ...assessment }) => ({
@@ -68,7 +69,9 @@ export async function GET(req: Request) {
         ? boardSnapshot.map((row) => row && typeof row === "object" && "standardKey" in row ? String(row.standardKey) : "").filter(Boolean)
         : []
     })),
-    networkReport: quote?.networkResult || null,
-    network: quote ? { quoteId: quote.id, assessmentScope: quote.assessmentScope, parentOrgName: quote.parentOrgName, generatedAt: quote.networkGeneratedAt } : null
+    networkReport: quote?.networkResult && typeof quote.networkResult === "object"
+      ? { ...(quote.networkResult as Record<string, unknown>), prepared_by: (quote.networkResult as Record<string, unknown>).prepared_by || quote.preparedBy || "Silhouette LLC" }
+      : null,
+    network: quote ? { quoteId: quote.id, assessmentScope: quote.assessmentScope, parentOrgName: quote.parentOrgName, preparedBy: quote.preparedBy, generatedAt: quote.networkGeneratedAt } : null
   });
 }

@@ -19,7 +19,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const a = await prisma.assessment.findFirst({ where: { id: params.id, accountId: guard.session.user.accountId } });
   if (!a?.result) return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
   if (!new Set(["report", "deck"]).has(format)) return NextResponse.json({ error: "Unsupported export format" }, { status: 400 });
-  const result = a.result as any;
+  const result: any = {
+    ...(a.result as Record<string, unknown>),
+    prepared_by: (a.result as Record<string, unknown>).prepared_by || a.preparedBy || "Silhouette LLC"
+  };
   const name = slugify(String(result?.organization_name || "organization"));
   if (format === "deck") {
     const deck = await buildGapPptx(result, { profile });

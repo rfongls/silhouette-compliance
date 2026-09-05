@@ -166,6 +166,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const [wizardError, setWizardError] = useState("");
   const [assessmentScope, setAssessmentScope] = useState<AssessmentScope>("self");
   const [parentOrgName, setParentOrgName] = useState("");
+  const [preparedBy, setPreparedBy] = useState(demo ? "Silhouette LLC" : "");
   const [industry, setIndustry] = useState("health-center");
   const [standards, setStandards] = useState(availableDefaults("health-center", availableStandardsByIndustry, demo));
   const [orgs, setOrgs] = useState<ReviewedOrg[]>(demo ? [{
@@ -180,6 +181,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   const [phiAttested, setPhiAttested] = useState(demo);
   const [acceptedQuote, setAcceptedQuote] = useState<RunQuote | null>(demo ? {
     id: "demo",
+    preparedBy: "Silhouette LLC",
     orgNames: [demoOrgName("health-center")],
     orgCount: 1,
     documentCount: 1,
@@ -261,6 +263,9 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
         const restoredRows = Array.isArray(quoteData?.assessments) ? quoteData.assessments as AssessmentProgress[] : [];
         const restoredFailures = restoredRows.filter((row) => row.status === "FAILED" || row.status === "REFUNDED");
         if (restoredFailures.length) quoteRows = restoredFailures;
+        if (quoteData?.network?.preparedBy) {
+          setPreparedBy(String(quoteData.network.preparedBy));
+        }
         if (quoteData?.network?.assessmentScope === "network") {
           setAssessmentScope("network");
           setParentOrgName(String(quoteData.network.parentOrgName || ""));
@@ -440,6 +445,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
     setWizardError("");
     setAssessmentScope("self");
     setParentOrgName("");
+    setPreparedBy(demo ? "Silhouette LLC" : "");
     setIndustry("health-center");
     setStandards(availableDefaults("health-center", availableStandardsByIndustry, demo));
     setOrgs(demo ? [{ ...newOrg(demoOrgName("health-center")), documents: [{ name: DEMO_POLICY_NAME, text: DEMO_POLICY_TEXT }] }] : [newOrg("")]);
@@ -484,6 +490,9 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
   }
 
   function wizardStepError(step: IrpWizardStep) {
+    if (step === 1 && !preparedBy.trim()) {
+      return "Enter the organization or author preparing this report before continuing.";
+    }
     if (step === 1 && assessmentScope === "network" && !parentOrgName.trim()) {
       return "Enter the network or parent organization name before continuing.";
     }
@@ -537,6 +546,11 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
 
   function changeParentOrgName(value: string) {
     setParentOrgName(value);
+    clearQuote();
+  }
+
+  function changePreparedBy(value: string) {
+    setPreparedBy(value);
     clearQuote();
   }
 
@@ -614,6 +628,10 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       alert("Enter the network or parent organization name.");
       return null;
     }
+    if (!preparedBy.trim()) {
+      alert("Enter the organization or author preparing this report.");
+      return null;
+    }
     if (!standards.length) {
       alert(isAdmin ? "No published base control board is available for this domain. Publish one before starting the assessment." : "No scoring standards are currently available for this industry.");
       return null;
@@ -632,7 +650,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
       const res = await fetch("/api/run-quotes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
+        body: JSON.stringify({ module: "irp", assessmentScope, parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null, preparedBy: preparedBy.trim(), industry, standards, orgNames: validOrgs.map((org) => org.name), documents, phiAttested })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -676,6 +694,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
           demo: false,
           assessmentScope,
           parentOrgName: assessmentScope === "network" ? parentOrgName.trim() : null,
+          preparedBy: preparedBy.trim(),
           orgName: validOrgs[0]?.name,
           industry,
           standards,
@@ -765,7 +784,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
 
   async function run() {
     if (demo) {
-      const demoResult = demoAssessment("", industry);
+      const demoResult = { ...demoAssessment("", industry), prepared_by: "Silhouette LLC" };
       setElapsedSeconds(0);
       setResult(demoResult);
       setAssessmentId("demo");
@@ -892,6 +911,11 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
               <input className="input" value={parentOrgName} onChange={(event) => changeParentOrgName(event.target.value)} placeholder="Network, association, or parent organization" />
               <span className="muted">This name labels the consolidated report and is not an additional billed organization.</span>
             </label> : null}
+            <label className="irp-wizard-field">
+              Prepared by
+              <input className="input" value={preparedBy} onChange={(event) => changePreparedBy(event.target.value)} placeholder="Organization or analyst preparing this report" />
+              <span className="muted">This name appears as the report author in the web report, PDF, and presentation deck.</span>
+            </label>
           </section> : null}
 
           {wizardStep === 2 ? <section className="irp-wizard-page">
@@ -977,6 +1001,7 @@ export function IrpClient({ demo, isAdmin, characterLimitPerOrg, availableStanda
             <p className="muted">Confirm the scope below before preparing the run. Once confirmed, the quote is locked to this organization and policy set.</p>
             <dl className="irp-review-summary">
               <div><dt>Assessment</dt><dd>{assessmentScope === "self" ? "My organization" : `Client or network: ${parentOrgName.trim()}`}</dd></div>
+              <div><dt>Prepared by</dt><dd>{preparedBy.trim()}</dd></div>
               <div><dt>Industry</dt><dd>{selectedIndustry?.label || industry}</dd></div>
               <div><dt>Standards</dt><dd>{selectedStandardLabels.join(", ")}</dd></div>
               <div><dt>Organizations</dt><dd>{reviewOrgs.length}: {reviewOrgs.map((org) => org.name.trim()).join(", ")}</dd></div>

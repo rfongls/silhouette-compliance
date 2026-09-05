@@ -24,6 +24,14 @@ function organizationKey(name: string) {
 
 class QuoteAlreadyClaimedError extends Error {}
 
+function withPreparedBy(result: unknown, preparedBy: unknown) {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return result;
+  return {
+    ...(result as Record<string, unknown>),
+    prepared_by: String(preparedBy || (result as Record<string, unknown>).prepared_by || "Silhouette LLC")
+  };
+}
+
 function dataHandlingAttestation() {
   return {
     status: "UPLOADER_ATTESTED_NO_KNOWN_PHI",
@@ -56,13 +64,13 @@ async function consumedQuoteResponse(quote: any, accountId: string) {
       .map((assessment) => ({
         assessmentId: assessment.id,
         orgName: assessment.orgName || "Organization",
-        result: assessment.result,
+        result: withPreparedBy(assessment.result, quote.preparedBy),
         reused: true
       }));
     if (assessments.length) {
       return NextResponse.json({
         assessments,
-        networkReport: quote.networkResult || null,
+        networkReport: withPreparedBy(quote.networkResult, quote.preparedBy) || null,
         quoteId: quote.id,
         assessmentId: assessments[0].assessmentId,
         result: assessments[0].result,
@@ -142,6 +150,10 @@ export async function handleIrpAssessment(req: Request) {
   const isAdmin = isEffectiveAdmin(guard.session);
   const assessmentScope = body.assessmentScope === "network" ? "network" : "self";
   const parentOrgName = assessmentScope === "network" ? String(body.parentOrgName || "").trim() : null;
+  const preparedBy = String(body.preparedBy || "").trim();
+  if (!preparedBy) {
+    return NextResponse.json({ error: "Enter the organization or author preparing this report." }, { status: 400 });
+  }
   if (assessmentScope === "network" && !parentOrgName) {
     return NextResponse.json({ error: "Enter the network or parent organization name." }, { status: 400 });
   }
@@ -168,8 +180,8 @@ export async function handleIrpAssessment(req: Request) {
 
   const quotedOrgNames = Array.isArray(quote.orgNames) ? quote.orgNames.map((name) => String(name || "").trim()).filter(Boolean) : [];
   const orgNamesMatch = quotedOrgNames.length === orgNames.length && quotedOrgNames.every((name, index) => name === orgNames[index]);
-  const quoteContext = JSON.stringify({ industry, standards: [...standards].sort(), assessmentScope, parentOrgName });
-  if (!orgNamesMatch || quote.assessmentScope !== assessmentScope || (quote.parentOrgName || null) !== parentOrgName || quote.sourceDigest !== quoteSourceDigest(documents, quoteContext)) {
+  const quoteContext = JSON.stringify({ industry, standards: [...standards].sort(), assessmentScope, parentOrgName, preparedBy });
+  if (!orgNamesMatch || quote.assessmentScope !== assessmentScope || (quote.parentOrgName || null) !== parentOrgName || (quote.preparedBy || "") !== preparedBy || quote.sourceDigest !== quoteSourceDigest(documents, quoteContext)) {
     return NextResponse.json({ error: "Uploaded documents, domain, or selected standards changed while preparing the run. Start the run again." }, { status: 409 });
   }
 
@@ -197,15 +209,15 @@ export async function handleIrpAssessment(req: Request) {
     const assessmentHash = assessmentFingerprint(integrity.sourceSetHash, controlSet.snapshot, IRP_PROMPT_VERSION, SCORING_POLICY_VERSION);
     const orgId = organizationKey(orgName);
     const prior = await prisma.assessment.findFirst({
-      where: { accountId, orgId, sourceSetHash: assessmentHash, status: "DELIVERED" },
+      where: { accountId, orgId, preparedBy, sourceSetHash: assessmentHash, status: "DELIVERED" },
       orderBy: { createdAt: "desc" }
     });
-    if (prior?.result) cached.push({ assessmentId: prior.id, orgName, result: prior.result, reused: true });
+    if (prior?.result) cached.push({ assessmentId: prior.id, orgName, result: withPreparedBy(prior.result, preparedBy), reused: true });
     else pending.push({ orgName, orgId, documents: rows, integrity, assessmentHash });
   }
 
   if (!pending.length) {
-    const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, cached) : null;
+    const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, cached, preparedBy) : null;
     const claimed = await prisma.runQuote.updateMany({
       where: { id: quote.id, accountId, module: "irp", status: quote.status },
       data: { status: "CONSUMED", reportAssessmentIds: cached.map((row) => row.assessmentId), networkResult: networkReport || undefined, networkGeneratedAt: networkReport ? new Date() : undefined }
@@ -244,6 +256,7 @@ export async function handleIrpAssessment(req: Request) {
             accountId,
             orgId: item.orgId,
             orgName: item.orgName,
+            preparedBy,
             industry,
             status: "RUNNING",
             ledgerId: ledger.id,
@@ -345,6 +358,7 @@ export async function handleIrpAssessment(req: Request) {
       });
       const result = {
         ...modelResult,
+        prepared_by: preparedBy,
         data_handling: dataHandlingAttestation(),
         control_board: {
           citation: controlSet.cite,
@@ -430,7 +444,7 @@ export async function handleIrpAssessment(req: Request) {
   if (!delivered.length) {
     return NextResponse.json({ error: failed[0]?.error || "Assessment processing failed. Purchased credits were restored.", failed }, { status: 500 });
   }
-  const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, delivered) : null;
+  const networkReport = assessmentScope === "network" ? buildNetworkReport(parentOrgName!, delivered, preparedBy) : null;
   await prisma.runQuote.update({
     where: { id: quote.id },
     data: {

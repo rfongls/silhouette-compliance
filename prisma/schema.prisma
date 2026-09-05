@@ -164,6 +164,7 @@ model Assessment {
   id                String       @id @default(cuid())
   orgId             String
   orgName           String?
+  preparedBy        String?
   accountId         String
   industry          String
   status            AssessStatus
@@ -258,6 +259,7 @@ model RunQuote {
   orgNames                Json?
   assessmentScope         String    @default("self")
   parentOrgName           String?
+  preparedBy              String?
   orgCount                Int       @default(1)
   creditsApplied          Int       @default(0)
   creditsToPurchase       Int       @default(0)

@@ -237,6 +237,7 @@ test("printable report keeps every finding while exporting only the curated road
 
 test("download exports produce separate executive and detailed PDFs in one package", async () => {
   const result: any = demoAssessment("", "health-center");
+  result.prepared_by = "Example Advisory Group";
   result.control_results = structuredClone(result.findings);
   result.control_results[0].requirement = "Disseminate the policy to {{ insert: param, ac-1_prm_1 }} and review it annually.";
   const executivePdf = await buildGapExecutivePdf(result);
@@ -267,10 +268,11 @@ test("download exports produce separate executive and detailed PDFs in one packa
   assert.ok(deck.length > 10_000);
   for (const parsed of [executive, detailed]) {
     assert.equal(
-      (parsed.text.match(/Silhouette LLC \| Incident Response Plan Analysis/g) || []).length,
+      (parsed.text.match(/Example Advisory Group \| Incident Response Plan Analysis/g) || []).length,
       parsed.numpages - 1,
       "Every non-cover page should have one footer without creating footer-only pages"
     );
+    assert.match(parsed.text, /Prepared by Example Advisory Group/);
     assert.doesNotMatch(parsed.text, /Confidential/);
     assert.match(parsed.text, /Table of Contents/);
   }

@@ -26,9 +26,10 @@ test("network report keeps the parent identity separate from child organizations
         findings: [{ control_id: "IR-1", risk_level: "Critical", status: "Partial", standards: ["HIPAA"], requirement: "Maintain an IRP" }]
       }
     }
-  ]);
+  ], "Example Advisory Group");
 
   assert.equal(report.network_name, "Hawaii Care Network");
+  assert.equal(report.prepared_by, "Example Advisory Group");
   assert.deepEqual(report.organizations.map((row) => row.organization_name), ["Center Alpha", "Center Beta"]);
   assert.equal(report.organization_count, 2);
   assert.equal(report.compliance_score, 85);

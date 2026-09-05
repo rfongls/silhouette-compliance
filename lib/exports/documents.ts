@@ -55,25 +55,25 @@ function scoreColor(score: number) {
   return COLORS.critical;
 }
 
-function createPdf(title: string, draw: (doc: PdfDoc) => void) {
+function createPdf(title: string, draw: (doc: PdfDoc) => void, preparedBy = "Silhouette LLC") {
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({
       size: "LETTER",
       margins: { top: 46, right: 46, bottom: 76, left: 46 },
       bufferPages: true,
-      info: { Title: clean(title), Author: "Silhouette LLC", Subject: "Incident Response Plan Gap Analysis" }
+      info: { Title: clean(title), Author: clean(preparedBy), Subject: "Incident Response Plan Gap Analysis" }
     });
     const chunks: Buffer[] = [];
     doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
     doc.on("error", reject);
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     draw(doc);
-    addPdfFooters(doc);
+    addPdfFooters(doc, preparedBy);
     doc.end();
   });
 }
 
-function addPdfFooters(doc: PdfDoc) {
+function addPdfFooters(doc: PdfDoc, preparedBy: string) {
   const range = doc.bufferedPageRange();
   for (let index = range.start; index < range.start + range.count; index += 1) {
     doc.switchToPage(index);
@@ -85,7 +85,7 @@ function addPdfFooters(doc: PdfDoc) {
     const y = doc.page.height - 31;
     doc.save().strokeColor(COLORS.line).lineWidth(0.5).moveTo(46, y - 7).lineTo(doc.page.width - 46, y - 7).stroke();
     doc.font("Helvetica").fontSize(7).fillColor(COLORS.muted)
-      .text("Silhouette LLC | Incident Response Plan Analysis", 46, y, { width: 360, height: 10, lineBreak: false })
+      .text(`${clean(preparedBy)} | Incident Response Plan Analysis`, 46, y, { width: 360, height: 10, lineBreak: false })
       .text(`${index + 1} of ${range.count}`, doc.page.width - 110, y, { width: 64, height: 10, align: "right", lineBreak: false });
     doc.restore();
     doc.page.margins.bottom = previousBottomMargin;
@@ -94,12 +94,12 @@ function addPdfFooters(doc: PdfDoc) {
   }
 }
 
-function cover(doc: PdfDoc, title: string, subtitle: string) {
+function cover(doc: PdfDoc, title: string, subtitle: string, preparedBy: string) {
   doc.rect(0, 0, doc.page.width, doc.page.height).fill(COLORS.dark);
-  doc.fillColor("#d7c4ff").font("Helvetica-Bold").fontSize(10).text("SILHOUETTE LLC", 54, 218, { characterSpacing: 2.8 });
-  doc.fillColor(COLORS.white).font("Times-Bold").fontSize(34).text(clean(title), 54, 256, { width: doc.page.width - 108, lineGap: 5 });
-  doc.rect(54, doc.y + 18, 330, 3).fill(COLORS.purple);
-  doc.fillColor("#d7c4ff").font("Helvetica").fontSize(13).text(clean(subtitle), 54, doc.y + 28, { width: 430, lineGap: 4 });
+  doc.fillColor(COLORS.white).font("Times-Bold").fontSize(34).text(clean(title), 54, 220, { width: doc.page.width - 108, lineGap: 5 });
+  doc.rect(54, doc.y + 20, 330, 3).fill(COLORS.purple);
+  doc.fillColor("#d7c4ff").font("Helvetica").fontSize(13).text(clean(subtitle), 54, doc.y + 30, { width: 430, lineGap: 4 });
+  doc.fillColor("#a99bbc").font("Helvetica").fontSize(9).text(`Prepared by ${clean(preparedBy)}`, 54, doc.y + 14, { width: 430, lineGap: 3 });
 }
 
 function currentPageIndex(doc: PdfDoc) {
@@ -385,6 +385,7 @@ function renderControlAppendix(doc: PdfDoc, controls: any[]) {
 export async function buildGapExecutivePdf(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
+  const preparedBy = clean(r.prepared_by || "Silhouette LLC");
   const findings = Array.isArray(r.findings) ? r.findings : [];
   const controls = Array.isArray(r.control_results) ? r.control_results : findings;
   const buckets = Object.values(r.bucket_scores || {}) as any[];
@@ -405,7 +406,7 @@ export async function buildGapExecutivePdf(result: any, options?: ReportExportOp
   ];
 
   return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
-    cover(doc, org, `Incident Response Plan Gap Analysis${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`);
+    cover(doc, org, `Incident Response Plan Gap Analysis${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`, preparedBy);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Executive Summary", undefined, navigation);
     metricCards(doc, summaryCards);
@@ -443,12 +444,13 @@ export async function buildGapExecutivePdf(result: any, options?: ReportExportOp
     heading(doc, "Conclusion and Limitations");
     body(doc, "This assessment covers submitted documentation only. Operational controls and configurations not captured in reviewed artifacts are outside scope. Findings should be reviewed with compliance counsel before regulatory submission.");
     renderPdfNavigation(doc, navigation);
-  });
+  }, preparedBy);
 }
 
 export async function buildGapFindingsPdf(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
+  const preparedBy = clean(r.prepared_by || "Silhouette LLC");
   const findings = Array.isArray(r.findings) ? r.findings : [];
   const controls = Array.isArray(r.control_results) ? r.control_results : findings;
   const standards = Object.keys(r.score_breakdown || {});
@@ -460,7 +462,7 @@ export async function buildGapFindingsPdf(result: any, options?: ReportExportOpt
 
   const internal = internalReport(options);
   return createPdf(`${org} - ${internal ? "Internal IRP Control Matrix" : "IRP Findings and Evidence"}`, (doc) => {
-    cover(doc, org, `${internal ? "Internal QA - Not for Customer Distribution | " : ""}Detailed IRP Findings and Evidence`);
+    cover(doc, org, `${internal ? "Internal QA - Not for Customer Distribution | " : ""}Detailed IRP Findings and Evidence`, preparedBy);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Reviewer Overview", internal ? `${findings.length} findings and ${controls.length} control evaluation records` : `${findings.length} remediation findings`, navigation);
     metricCards(doc, severityCounts);
@@ -482,13 +484,14 @@ export async function buildGapFindingsPdf(result: any, options?: ReportExportOpt
       else body(doc, "No control-level evaluation records were stored for this assessment.");
     }
     renderPdfNavigation(doc, navigation);
-  });
+  }, preparedBy);
 }
 
 export const buildGapPdf = buildGapExecutivePdf;
 
 export async function buildNetworkGapPdf(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
+  const preparedBy = clean(r.prepared_by || "Silhouette LLC");
   const organizations = Array.isArray(r.organizations) ? r.organizations : [];
   const gaps = Array.isArray(r.common_gaps) ? r.common_gaps : [];
   const score = number(r.compliance_score);
@@ -506,7 +509,7 @@ export async function buildNetworkGapPdf(result: any, options?: ReportExportOpti
     { label: "Common gaps", value: String(gaps.length) }
   ];
   return createPdf(`${clean(r.network_name)} - Network IRP Gap Analysis`, (doc) => {
-    cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`);
+    cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`, preparedBy);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Network Executive Summary", undefined, navigation);
     metricCards(doc, summaryCards);
@@ -536,13 +539,14 @@ export async function buildNetworkGapPdf(result: any, options?: ReportExportOpti
       { label: "Coverage", width: 50, value: (row) => `${row.affected_count}/${organizations.length}` }
     ], gaps, 6.6);
     renderPdfNavigation(doc, navigation);
-  });
+  }, preparedBy);
 }
 
 type NetworkAssessmentExport = { orgName: string; result: any };
 
 export async function buildNetworkFindingsPdf(result: any, assessments: NetworkAssessmentExport[], options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
+  const preparedBy = clean(r.prepared_by || "Silhouette LLC");
   const rows = assessments.map((assessment) => ({
     orgName: clean(assessment.orgName || assessment.result?.organization_name || "Organization"),
     result: sanitizeForExport(assessment.result || {}) as any
@@ -557,7 +561,7 @@ export async function buildNetworkFindingsPdf(result: any, assessments: NetworkA
 
   const internal = internalReport(options);
   return createPdf(`${clean(r.network_name)} - ${internal ? "Internal Network IRP Control Matrix" : "Network IRP Findings and Evidence"}`, (doc) => {
-    cover(doc, clean(r.network_name || "Healthcare Network"), `${internal ? "Internal QA - Not for Customer Distribution | " : ""}Detailed Network IRP Findings and Evidence | ${rows.length} organizations`);
+    cover(doc, clean(r.network_name || "Healthcare Network"), `${internal ? "Internal QA - Not for Customer Distribution | " : ""}Detailed Network IRP Findings and Evidence | ${rows.length} organizations`, preparedBy);
     const navigation = startPdfNavigation(doc);
     newSection(doc, "Reviewer Overview", "Complete organization findings and control-level evidence", navigation);
     metricCards(doc, [
@@ -600,13 +604,13 @@ export async function buildNetworkFindingsPdf(result: any, assessments: NetworkA
       }
     });
     renderPdfNavigation(doc, navigation);
-  });
+  }, preparedBy);
 }
 
-function addDeckFooter(pptx: PptxGenJS, slide: PptxGenJS.Slide, label: string) {
+function addDeckFooter(pptx: PptxGenJS, slide: PptxGenJS.Slide, label: string, preparedBy: string) {
   slide.addShape(pptx.ShapeType.line, { x: 0.55, y: 7.08, w: 12.23, h: 0, line: { color: "D8D2E4", pt: 0.6 } });
   slide.addText(clean(label), { x: 0.55, y: 7.13, w: 8.5, h: 0.18, fontFace: "Aptos", fontSize: 6.5, color: "71697E", margin: 0 });
-  slide.addText("Silhouette LLC", { x: 9.5, y: 7.13, w: 3.28, h: 0.18, fontFace: "Aptos", fontSize: 6.5, color: "71697E", align: "right", margin: 0 });
+  slide.addText(clean(preparedBy), { x: 9.5, y: 7.13, w: 3.28, h: 0.18, fontFace: "Aptos", fontSize: 6.5, color: "71697E", align: "right", margin: 0, fit: "shrink" });
 }
 
 function addDeckTitle(slide: PptxGenJS.Slide, eyebrow: string, title: string, subtitle?: string) {
@@ -631,21 +635,22 @@ async function outputDeck(pptx: PptxGenJS) {
 export async function buildGapPptx(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const org = clean(r.organization_name || "Organization");
+  const preparedBy = clean(r.prepared_by || "Silhouette LLC");
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
-  pptx.author = "Silhouette LLC";
+  pptx.author = preparedBy;
   pptx.subject = "Incident Response Plan Gap Analysis";
   pptx.title = `${org} - Incident Response Plan Gap Analysis`;
-  pptx.company = "Silhouette LLC";
+  pptx.company = preparedBy;
   pptx.theme = { headFontFace: "Georgia", bodyFontFace: "Aptos" };
 
   const coverSlide = pptx.addSlide();
   coverSlide.background = { color: "110F1D" };
-  coverSlide.addText("SILHOUETTE LLC", { x: 0.78, y: 1.15, w: 4.8, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "D7C4FF", charSpacing: 3, margin: 0 });
-  coverSlide.addText(org, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
-  coverSlide.addShape(pptx.ShapeType.rect, { x: 0.78, y: 3.08, w: 4.25, h: 0.05, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
-  coverSlide.addText("Incident Response Plan Gap Analysis", { x: 0.78, y: 3.38, w: 9, h: 0.45, fontFace: "Aptos", fontSize: 17, color: "D7C4FF", margin: 0 });
-  coverSlide.addText(`${internalReport(options) ? "INTERNAL QA - NOT FOR CUSTOMER DISTRIBUTION | " : "Confidential | "}${new Date().toLocaleDateString("en-US")}`, { x: 0.78, y: 6.7, w: 8, h: 0.2, fontFace: "Aptos", fontSize: 7.5, color: "A99BBC", margin: 0 });
+  coverSlide.addText(org, { x: 0.78, y: 1.45, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
+  coverSlide.addShape(pptx.ShapeType.rect, { x: 0.78, y: 2.82, w: 4.25, h: 0.05, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
+  coverSlide.addText("Incident Response Plan Gap Analysis", { x: 0.78, y: 3.12, w: 9, h: 0.45, fontFace: "Aptos", fontSize: 17, color: "D7C4FF", margin: 0 });
+  coverSlide.addText(`Prepared by ${preparedBy}`, { x: 0.78, y: 3.72, w: 9, h: 0.3, fontFace: "Aptos", fontSize: 10, color: "A99BBC", margin: 0, fit: "shrink" });
+  if (internalReport(options)) coverSlide.addText("INTERNAL QA - NOT FOR CUSTOMER DISTRIBUTION", { x: 0.78, y: 6.7, w: 8, h: 0.2, fontFace: "Aptos", fontSize: 7.5, color: "A99BBC", margin: 0 });
 
   const score = number(r.compliance_score);
   const readiness = readinessProfile(score);
@@ -663,7 +668,7 @@ export async function buildGapPptx(result: any, options?: ReportExportOptions) {
     summary.addText(entry.key.toUpperCase(), { x: x + 0.22, y: y + 0.18, w: 2.2, h: 0.2, fontFace: "Aptos", fontSize: 7.5, bold: true, color: priorityColor(entry.key).slice(1), margin: 0 });
     summary.addText(String(entry.value), { x: x + 0.22, y: y + 0.46, w: 2.2, h: 0.36, fontFace: "Aptos Display", fontSize: 23, bold: true, color: "17131F", margin: 0 });
   });
-  addDeckFooter(pptx, summary, `${org} | IRP Gap Analysis`);
+  addDeckFooter(pptx, summary, `${org} | IRP Gap Analysis`, preparedBy);
 
   const capabilities = Object.values(r.bucket_scores || {}) as any[];
   const capabilitySlide = pptx.addSlide();
@@ -680,7 +685,7 @@ export async function buildGapPptx(result: any, options?: ReportExportOptions) {
     capabilitySlide.addShape(pptx.ShapeType.rect, { x: x + 3.45, y: y + 0.02, w: 1.65 * Math.min(1, earned / possible), h: 0.13, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
     capabilitySlide.addText(`${earned}/${possible}`, { x: x + 5.18, y: y - 0.02, w: 0.65, h: 0.22, fontFace: "Aptos", fontSize: 9, bold: true, color: "17131F", align: "right", margin: 0 });
   });
-  addDeckFooter(pptx, capabilitySlide, `${org} | IRP Gap Analysis`);
+  addDeckFooter(pptx, capabilitySlide, `${org} | IRP Gap Analysis`, preparedBy);
 
   const standardsSlide = pptx.addSlide();
   addDeckTitle(standardsSlide, "Traceability", "Standards Documentation Coverage", "Each selected publication remains separately measured and identifiable.");
@@ -692,14 +697,14 @@ export async function buildGapPptx(result: any, options?: ReportExportOptions) {
     standardsSlide.addShape(pptx.ShapeType.rect, { x: 5.15, y: y + 0.03, w: 5.7 * Math.min(1, number(value.score) / 100), h: 0.16, fill: { color: "8B5CF6" }, line: { color: "8B5CF6" } });
     standardsSlide.addText(`${number(value.score)}/100`, { x: 11.05, y: y - 0.03, w: 1.05, h: 0.25, fontFace: "Aptos", fontSize: 10, bold: true, color: "17131F", align: "right", margin: 0 });
   });
-  addDeckFooter(pptx, standardsSlide, `${org} | IRP Gap Analysis`);
+  addDeckFooter(pptx, standardsSlide, `${org} | IRP Gap Analysis`, preparedBy);
 
   const findings = Array.isArray(r.findings) ? r.findings : [];
   for (let offset = 0; offset < Math.min(findings.length, 16); offset += 8) {
     const slide = pptx.addSlide();
     addDeckTitle(slide, "Findings", offset === 0 ? "Priority Findings" : "Priority Findings, Continued", "Highest-priority documented gaps for leadership action.");
     addBulletList(slide, findings.slice(offset, offset + 8).map((finding: any) => `${finding.risk_level} | ${finding.capability || finding.control_name || finding.control_id}: ${finding.finding}`), { y: 1.78, h: 4.95, fontSize: 12.5 });
-    addDeckFooter(pptx, slide, `${org} | IRP Gap Analysis`);
+    addDeckFooter(pptx, slide, `${org} | IRP Gap Analysis`, preparedBy);
   }
 
   const phases = Array.isArray(r.remediation_roadmap?.phases) ? r.remediation_roadmap.phases : [];
@@ -711,7 +716,7 @@ export async function buildGapPptx(result: any, options?: ReportExportOptions) {
       const references = Array.isArray(item.references) && item.references.length ? ` Mapped controls: ${item.references.join(", ")}.` : "";
       return `${item.title}: ${item.implementation} Deliverable: ${item.deliverable}. Validate: ${item.validation}.${references}`;
     }), { y: 1.85, h: 4.85, fontSize: 12 });
-    addDeckFooter(pptx, slide, `${org} | Priority Remediation Roadmap`);
+    addDeckFooter(pptx, slide, `${org} | Priority Remediation Roadmap`, preparedBy);
   });
 
   const close = pptx.addSlide();
@@ -725,17 +730,19 @@ export async function buildGapPptx(result: any, options?: ReportExportOptions) {
 export async function buildNetworkGapPptx(result: any, options?: ReportExportOptions) {
   const r = sanitizeForExport(result) as any;
   const network = clean(r.network_name || "Healthcare Network");
+  const preparedBy = clean(r.prepared_by || "Silhouette LLC");
   const organizations = Array.isArray(r.organizations) ? r.organizations : [];
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
-  pptx.author = "Silhouette LLC";
+  pptx.author = preparedBy;
   pptx.title = `${network} - Network IRP Gap Analysis`;
+  pptx.company = preparedBy;
 
   const coverSlide = pptx.addSlide();
   coverSlide.background = { color: "110F1D" };
-  coverSlide.addText("SILHOUETTE LLC", { x: 0.78, y: 1.15, w: 4.8, h: 0.25, fontFace: "Aptos", fontSize: 8, bold: true, color: "D7C4FF", charSpacing: 3, margin: 0 });
-  coverSlide.addText(network, { x: 0.78, y: 1.72, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
-  coverSlide.addText(`Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`, { x: 0.78, y: 3.2, w: 10.8, h: 0.45, fontFace: "Aptos", fontSize: 16, color: "D7C4FF", margin: 0 });
+  coverSlide.addText(network, { x: 0.78, y: 1.45, w: 11.7, h: 1.05, fontFace: "Georgia", fontSize: 34, bold: true, color: "FFFFFF", margin: 0, fit: "shrink" });
+  coverSlide.addText(`Network Incident Response Plan Gap Analysis | ${organizations.length} organizations`, { x: 0.78, y: 3.05, w: 10.8, h: 0.45, fontFace: "Aptos", fontSize: 16, color: "D7C4FF", margin: 0 });
+  coverSlide.addText(`Prepared by ${preparedBy}`, { x: 0.78, y: 3.65, w: 9, h: 0.3, fontFace: "Aptos", fontSize: 10, color: "A99BBC", margin: 0, fit: "shrink" });
   if (internalReport(options)) coverSlide.addText("INTERNAL QA - NOT FOR CUSTOMER DISTRIBUTION", { x: 0.78, y: 6.7, w: 7.2, h: 0.2, fontFace: "Aptos", fontSize: 7.5, bold: true, color: "A99BBC", margin: 0 });
 
   const score = number(r.compliance_score);
@@ -750,12 +757,12 @@ export async function buildNetworkGapPptx(result: any, options?: ReportExportOpt
     const profile = capabilityReadinessSummary(organization.bucket_scores);
     return `${organization.organization_name}: ${readinessProfile(organization.compliance_score)}; ${capabilityReadinessText(profile)}`;
   }), { x: 3.8, y: 1.9, w: 8.2, h: 4.8, fontSize: 13 });
-  addDeckFooter(pptx, summary, `${network} | Network IRP Gap Analysis`);
+  addDeckFooter(pptx, summary, `${network} | Network IRP Gap Analysis`, preparedBy);
 
   const priorities = Array.isArray(r.network_priorities) ? r.network_priorities : [];
   const prioritySlide = pptx.addSlide();
   addDeckTitle(prioritySlide, "Network priorities", "Coordinated Remediation", "Common gaps ranked by affected organizations and risk.");
   addBulletList(prioritySlide, priorities.slice(0, 10).map((priority: any) => `${priority.risk_level} | ${priority.control_name || priority.control_id}: ${priority.affected_count}/${organizations.length} organizations affected`), { y: 1.8, h: 5, fontSize: 13 });
-  addDeckFooter(pptx, prioritySlide, `${network} | Network IRP Gap Analysis`);
+  addDeckFooter(pptx, prioritySlide, `${network} | Network IRP Gap Analysis`, preparedBy);
   return outputDeck(pptx);
 }

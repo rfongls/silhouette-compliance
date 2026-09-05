@@ -27,7 +27,7 @@ function presentationHtml(html: string) {
 
 export function buildGapReport(result: any, opts?: { auditor?: string; title?: string }) {
   const r = sanitizeForExport(result) as any;
-  const auditor = opts?.auditor || "Silhouette LLC";
+  const auditor = opts?.auditor || r.prepared_by || "Silhouette LLC";
   const title = opts?.title || `${r.organization_name || "Organization"} - Incident Response Plan Gap Analysis`;
   const score = Number(r.compliance_score || 0);
   const color = scoreColor(score);

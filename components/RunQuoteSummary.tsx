@@ -4,6 +4,7 @@ export type RunQuote = {
   id: string;
   assessmentScope?: "self" | "network";
   parentOrgName?: string | null;
+  preparedBy?: string | null;
   orgNames: string[];
   orgCount: number;
   creditsApplied?: number;

@@ -72,9 +72,10 @@ export function IrpReport({ result, demo, profile = "customer", showHeading = tr
     {internal ? <div className="irp-internal-watermark">Internal QA - Not for Customer Distribution</div> : null}
     {showHeading ? <header className="irp-report-heading">
       <div>
-        <span className="mono">Incident Response Plan gap analysis</span>
         <h2>{result.organization_name}</h2>
-        <p>{result.document_name || "Incident Response Plan"}{demo ? " | Fictional demonstration report" : ""}</p>
+        <p className="irp-report-title">Incident Response Plan Gap Analysis</p>
+        <p className="irp-report-byline">Prepared by {result.prepared_by || "Silhouette LLC"}</p>
+        <p className="irp-report-document">{result.document_name || "Incident Response Plan"}{demo ? " | Fictional demonstration report" : ""}</p>
       </div>
       <div className="irp-report-heading-actions">
         <span className={`irp-posture-badge ${postureClass(score)}`}>{readiness}</span>

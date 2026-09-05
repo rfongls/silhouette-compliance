@@ -22,7 +22,7 @@ function severity(value: unknown) {
   return Object.keys(SEVERITY_RANK).find((item) => item.toLocaleLowerCase() === normalized) || "Medium";
 }
 
-export function buildNetworkReport(networkName: string, assessments: NetworkAssessment[]) {
+export function buildNetworkReport(networkName: string, assessments: NetworkAssessment[], preparedBy = "Silhouette LLC") {
   const organizations = assessments.map((assessment) => {
     const result = assessment.result || {};
     return {
@@ -105,6 +105,7 @@ export function buildNetworkReport(networkName: string, assessments: NetworkAsse
   return {
     report_type: "network",
     network_name: networkName,
+    prepared_by: preparedBy,
     organization_count: organizations.length,
     compliance_score: complianceScore,
     overall_posture: posture(complianceScore),

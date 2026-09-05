@@ -34,7 +34,11 @@ export async function POST(req: Request) {
   let preflight: IrpPreflightResult | undefined;
   const assessmentScope = body.assessmentScope === "network" ? "network" : "self";
   const parentOrgName = assessmentScope === "network" ? String(body.parentOrgName || "").trim() : null;
+  const preparedBy = module === "irp" ? String(body.preparedBy || "").trim() : null;
   if (module === "irp") {
+    if (!preparedBy) {
+      return NextResponse.json({ error: "Enter the organization or author preparing this report." }, { status: 400 });
+    }
     if (assessmentScope === "network" && !parentOrgName) {
       return NextResponse.json({ error: "Enter the network or parent organization name." }, { status: 400 });
     }
@@ -96,7 +100,7 @@ export async function POST(req: Request) {
         name: String(document?.name || "document.txt"),
         text: String(document?.text || ""),
         orgName: String(document?.orgName || estimate.orgNames[0] || "Organization 1")
-      })), JSON.stringify({ industry: quoteIndustry, standards: [...quoteStandards].sort(), assessmentScope, parentOrgName }))
+      })), JSON.stringify({ industry: quoteIndustry, standards: [...quoteStandards].sort(), assessmentScope, parentOrgName, preparedBy }))
     : undefined;
   const isAdmin = isEffectiveAdmin(guard.session);
   const balance = module === "irp" && !isAdmin
@@ -112,6 +116,7 @@ export async function POST(req: Request) {
       orgNames: estimate.orgNames,
       assessmentScope,
       parentOrgName,
+      preparedBy,
       orgCount: estimate.orgCount,
       creditsApplied: funding.creditsApplied,
       creditsToPurchase: funding.creditsToPurchase,
@@ -135,12 +140,13 @@ export async function POST(req: Request) {
   });
 
   const quoteResponse = isAdmin
-    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, ...funding, preflight, status: quote.status, expiresAt: quote.expiresAt }
+    ? { id: quote.id, ...estimate, assessmentScope, parentOrgName, preparedBy, ...funding, preflight, status: quote.status, expiresAt: quote.expiresAt }
     : {
         id: quote.id,
         orgNames: estimate.orgNames,
         assessmentScope,
         parentOrgName,
+        preparedBy,
         orgCount: estimate.orgCount,
         creditsApplied: funding.creditsApplied,
         creditsToPurchase: funding.creditsToPurchase,

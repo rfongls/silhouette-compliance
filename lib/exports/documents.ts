@@ -407,7 +407,7 @@ export async function buildGapExecutivePdf(result: any, options?: ReportExportOp
   return createPdf(`${org} - Incident Response Plan Gap Analysis`, (doc) => {
     cover(doc, org, `Incident Response Plan Gap Analysis${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`);
     const navigation = startPdfNavigation(doc);
-    newSection(doc, "Executive Summary", `${readiness} readiness | ${clean(r.document_name || "Incident Response Plan")}`, navigation);
+    newSection(doc, "Executive Summary", undefined, navigation);
     metricCards(doc, summaryCards);
     body(doc, capabilityReadinessText(capabilitySummary));
     body(doc, "This readiness profile reflects documented policy evidence. Operational effectiveness should also be validated through interviews, evidence review, and exercises.");
@@ -508,7 +508,7 @@ export async function buildNetworkGapPdf(result: any, options?: ReportExportOpti
   return createPdf(`${clean(r.network_name)} - Network IRP Gap Analysis`, (doc) => {
     cover(doc, clean(r.network_name || "Healthcare Network"), `Network Incident Response Plan Gap Analysis | ${organizations.length} organizations${internalReport(options) ? " | Internal QA - Not for Customer Distribution" : ""}`);
     const navigation = startPdfNavigation(doc);
-    newSection(doc, "Network Executive Summary", readiness, navigation);
+    newSection(doc, "Network Executive Summary", undefined, navigation);
     metricCards(doc, summaryCards);
     body(doc, capabilityReadinessText(capabilitySummary));
     body(doc, `This network profile summarizes documented capability readiness across ${organizations.length} independently assessed organizations.`);

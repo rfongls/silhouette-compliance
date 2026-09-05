@@ -277,6 +277,7 @@ test("download exports produce separate executive and detailed PDFs in one packa
   assert.ok(executivePdf.includes(Buffer.from("/Outlines")), "Executive PDF should expose a bookmark outline");
   assert.ok(findingsPdf.includes(Buffer.from("/Outlines")), "Detailed PDF should expose a bookmark outline");
   assert.match(executive.text, /Executive Summary/);
+  assert.doesNotMatch(executive.text, /Foundational readiness\s*\|\s*.*Incident Response Plan/i);
   assert.match(executive.text, /READINESS PROFILE/i);
   assert.match(executive.text, /Standards\s+Documentation\s+Coverage/);
   assert.doesNotMatch(executive.text, /Readiness index\s*71\/100/i);

@@ -157,14 +157,16 @@ export function IrpReport({ result, assessments, demo, profile = "customer" }: {
       <div className="irp-findings-table-wrap">
         <table className="table irp-findings-table">
           <thead><tr><th>Capability</th><th>Mapped controls</th><th>Status</th><th>Evidence in plan</th><th aria-sort={prioritySort === "none" ? "none" : prioritySort === "high-first" ? "descending" : "ascending"}><button type="button" className="irp-sort-button" onClick={() => setPrioritySort((current) => current === "high-first" ? "low-first" : "high-first")}>Priority <span>{prioritySort === "high-first" ? "H-L" : prioritySort === "low-first" ? "L-H" : "Sort"}</span></button></th><th>Finding</th></tr></thead>
-          <tbody>{visibleFindings.map((finding: any) => <tr key={`${finding.control_id}-${finding.finding}`}>
+          <tbody>{visibleFindings.map((finding: any) => {
+            const mappedControlCount = Number(finding.control_count || finding.control_ids?.length || 1);
+            return <tr key={`${finding.control_id}-${finding.finding}`}>
             <td><b>{finding.capability || finding.control_name || finding.control_id}</b><span>{finding.bucket_label || (finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
-            <td><b>{finding.control_count || finding.control_ids?.length || 1}</b><span>{(finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
+            <td><b>{mappedControlCount} mapped {mappedControlCount === 1 ? "control" : "controls"}</b><span>{(finding.standards || []).map((standard: string) => standardLabel(standard)).join(", ")}</span></td>
             <td><span className={`irp-status status-${String(finding.status).toLocaleLowerCase()}`}>{finding.status}</span></td>
             <td>{finding.evidence || "Not addressed"}</td>
             <td><span className={`irp-priority severity-${findingSeverity(finding).toLocaleLowerCase()}`}>{findingSeverity(finding)}</span></td>
             <td><p>{finding.finding}</p></td>
-          </tr>)}</tbody>
+          </tr>})}</tbody>
         </table>
         {!visibleFindings.length ? <div className="irp-empty-filter">No findings match this filter.</div> : null}
       </div>

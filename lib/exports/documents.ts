@@ -149,13 +149,18 @@ function newSection(doc: PdfDoc, title: string, subtitle?: string, navigation?: 
 }
 
 function heading(doc: PdfDoc, text: string) {
-  ensureSpace(doc, 34);
-  doc.moveDown(0.45).fillColor(COLORS.ink).font("Times-Bold").fontSize(15).text(clean(text));
-  doc.moveDown(0.25);
+  const topGap = 14;
+  ensureSpace(doc, 34 + topGap);
+  doc.x = 46;
+  doc.y += topGap;
+  doc.fillColor(COLORS.ink).font("Times-Bold").fontSize(15).text(clean(text));
+  doc.y += 6;
 }
 
 function body(doc: PdfDoc, text: unknown, options: PDFKit.Mixins.TextOptions = {}) {
+  doc.x = 46;
   doc.fillColor(COLORS.ink).font("Helvetica").fontSize(9).text(clean(text), { lineGap: 3, ...options });
+  doc.y += 5;
 }
 
 function ensureSpace(doc: PdfDoc, height: number) {
@@ -175,7 +180,7 @@ function metricCards(doc: PdfDoc, cards: Array<{ label: string; value: string; c
     doc.fillColor(card.color || COLORS.ink).font("Helvetica-Bold").fontSize(valueSize).text(value, x + 11, top + 32, { width: width - 22, height: 27, ellipsis: true });
   });
   doc.x = 46;
-  doc.y = top + 80;
+  doc.y = top + 90;
 }
 
 function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize = 7.5) {
@@ -214,6 +219,8 @@ function renderTable(doc: PdfDoc, columns: TableColumn[], rows: any[], fontSize 
     doc.x = left;
     doc.y = y + rowHeight;
   });
+  doc.x = left;
+  doc.y += 10;
 }
 
 function renderAssessmentBasis(doc: PdfDoc, report: any, standards: Array<[string, any]>) {

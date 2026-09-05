@@ -10,3 +10,7 @@ tmp/
 *.tsbuildinfo
 HOSTINGER_SILHOUETTE_RUNBOOK.md
 hostinger-backups/
+
+# Machine-local authentication bypass runner. Never deploy this file.
+local-runner.ps1
+.env.runner.local

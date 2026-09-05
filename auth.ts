@@ -6,6 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { getGitHubLogin, isComplianceUserAllowed } from "@/lib/access-gate";
 import { bootstrapComplianceEnv, env, envList, hasEnvPair } from "@/lib/env";
 import { recordEarlyAccessInterest } from "@/lib/early-access";
+import { getLocalAuthSession } from "@/lib/local-auth";
 import { prisma } from "@/lib/prisma";
 
 bootstrapComplianceEnv();
@@ -24,7 +25,7 @@ function isBootstrapAdmin(user: { email?: string | null }, account?: { provider?
   return Boolean(login && adminGitHubLogins.has(login));
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "database" },
   pages: { signIn: "/signin" },
@@ -77,5 +78,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }
   }
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+export async function auth() {
+  return getLocalAuthSession() || nextAuth.auth();
+}
 
 
